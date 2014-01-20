@@ -1,8 +1,6 @@
 # Object files
 *.o
-*.ko
-*.obj
-*.elf
+*.d
 
 # Libraries
 *.lib
@@ -18,7 +16,36 @@
 *.exe
 *.out
 *.app
-*.i*86
-*.x86_64
-*.hex
 
+# Debug symbols on OS X
+*.dSYM
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.un~
+
+# DAMMIT KYLE!
+*.lst
+*.crf
+*.axf
+*.plg
+*.sct
+*.tra
+*.uvgui*
+*.dep
+*.bak
+*.__i
+*.iex
+kernel.htm
+kernel.map
+*.lnp
+
+# latex:
+*.aux
+*.loa
+*.log
+*.toc
+*.lof
