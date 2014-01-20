@@ -42,6 +42,8 @@
 kernel.htm
 kernel.map
 *.lnp
+*.uvopt
+*.htm
 
 # latex:
 *.aux
