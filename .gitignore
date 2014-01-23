@@ -23,6 +23,7 @@
 # Sublime
 *.sublime-project
 *.sublime-workspace
+*.kate-swp
 
 # Vim
 *.un~

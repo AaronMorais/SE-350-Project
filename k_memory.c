@@ -9,12 +9,11 @@
 
 #ifdef DEBUG_0
 #include "printf.h"
-#endif /* ! DEBUG_0 */
-
-/* ----- Global Variables ----- */
-U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
-               /* The first stack starts at the RAM high address */
-	       /* stack grows down. Fully decremental stack */
+#endif
+// The last allocated stack low address. 8 bytes aligned
+// The first stack starts at the RAM high address
+// stack grows down. Fully decremental stack.
+U32 *gp_stack;
 
 /**
  * @brief: Initialize RAM as follows:
@@ -46,37 +45,38 @@ U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
 
 void memory_init(void)
 {
-	U8 *p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
+	U8* p_end = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
   U32* endHeap;
 	
-	/* 8 bytes padding */
+	// 8 bytes padding. Just to be parinoid.
 	p_end += 32;
 
-	/* allocate memory for pcb pointers   */
-	gp_pcbs = (PCB **)p_end;
-	p_end += NUM_TEST_PROCS * sizeof(PCB *);
+	// Allocate memory for pcb pointers
+	gp_pcbs = (PCB**)p_end;
+	p_end += NUM_TEST_PROCS * sizeof(PCB*);
   
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		gp_pcbs[i] = (PCB *)p_end;
+	for (i = 0; i < NUM_TEST_PROCS; i++) {
+		gp_pcbs[i] = (PCB*)p_end;
 		p_end += sizeof(PCB); 
 	}
+
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
 #endif
-	/* allocate memory for stacks */
-	
-	gp_stack = (U32 *)RAM_END_ADDR;
-	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
+
+	// allocate memory for stacks
+	gp_stack = (U32*)RAM_END_ADDR;
+	if ((U32)gp_stack & 0x04) { // 8 byte alignment
 		--gp_stack; 
 	}
-  
-	/* allocate memory for heap, not implemented yet*/
+
+	// Allocate memory for heap
   gpStartBlock = (MemBlock*)p_end;
 	gpEndBlock = (MemBlock*)p_end;
 	endHeap = gp_stack - 32;
-	while( (U32*)p_end <= endHeap ) {
+	while ((U32*)p_end <= endHeap) {
 		PushMemBlock( (MemBlock*)p_end );
 		p_end += MEM_BLOCK_SIZE;
 	}
@@ -88,14 +88,12 @@ void memory_init(void)
  * @return: The top of the stack (i.e. high address)
  * POST:  gp_stack is updated.
  */
-
-U32 *alloc_stack(U32 size_b) 
+U32* alloc_stack(U32 size_b)
 {
-	U32 *sp;
-	sp = gp_stack; /* gp_stack is always 8 bytes aligned */
+	U32* sp = gp_stack; /* gp_stack is always 8 bytes aligned */
 	
 	/* update gp_stack */
-	gp_stack = (U32 *)((U8 *)sp - size_b);
+	gp_stack = (U32*)((U8*)sp - size_b);
 	
 	/* 8 bytes alignement adjustment to exception stack frame */
 	if ((U32)gp_stack & 0x04) {
@@ -104,14 +102,14 @@ U32 *alloc_stack(U32 size_b)
 	return sp;
 }
 
-void *k_request_memory_block(void) {
+void* k_request_memory_block(void) {
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-	return (void *) NULL;
+	return (void*)NULL;
 }
 
-int k_release_memory_block(void *p_mem_blk) {
+int k_release_memory_block(void* p_mem_blk) {
 #ifdef DEBUG_0 
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */

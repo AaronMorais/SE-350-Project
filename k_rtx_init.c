@@ -12,13 +12,12 @@
 
 void k_rtx_init(void)
 {
-        __disable_irq();
-        uart0_init();   
-        memory_init();
-        process_init();
-        __enable_irq();
+	__disable_irq();
+	uart0_init();
+	memory_init();
+	process_init();
+	__enable_irq();
 	
-	/* start the first process */
-	
-        k_release_processor();
+	// Start the first process
+	k_release_processor();
 }
