@@ -48,7 +48,8 @@ void memory_init(void)
 {
 	U8 *p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
-  
+  U32* endHeap;
+	
 	/* 8 bytes padding */
 	p_end += 32;
 
@@ -72,7 +73,13 @@ void memory_init(void)
 	}
   
 	/* allocate memory for heap, not implemented yet*/
-  
+  gpStartBlock = (MemBlock*)p_end;
+	gpEndBlock = (MemBlock*)p_end;
+	endHeap = gp_stack - 32;
+	while( (U32*)p_end <= endHeap ) {
+		PushMemBlock( (MemBlock*)p_end );
+		p_end += MEM_BLOCK_SIZE;
+	}
 }
 
 /**
