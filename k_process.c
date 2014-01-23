@@ -18,6 +18,8 @@
 #include "uart_polling.h"
 #include "k_process.h"
 
+#include "priority_queue.h"
+
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
@@ -62,6 +64,9 @@ void process_init()
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 	}
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+		priority_queue_insert(gp_pcbs[i]);
+	}
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -73,18 +78,19 @@ void process_init()
 
 PCB *scheduler(void)
 {
+	PCB *next_process = priority_queue_pop();
+#ifdef DEBUG_0
+	printf("next_process id: %d", next_process->m_pid);
+#endif
+	gp_current_process = next_process;
+
 	if (gp_current_process == NULL) {
+		//printf("Warning: we shouldn't have a null current process at this point.");
 		gp_current_process = gp_pcbs[0]; 
 		return gp_pcbs[0];
 	}
-
-	if (gp_current_process == gp_pcbs[0]) {
-		return gp_pcbs[1];
-	} else if (gp_current_process == gp_pcbs[1]) {
-		return gp_pcbs[0];
-	} else {
-		return NULL;
-	}
+	
+	return next_process;
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
@@ -100,6 +106,8 @@ int process_switch(PCB *p_pcb_old)
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
+	
+	priority_queue_insert(p_pcb_old);
 
 	if (state == NEW) {
 		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {

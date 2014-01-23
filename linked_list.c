@@ -3,8 +3,8 @@
 MemBlock* gpStartBlock = NULL;
 MemBlock* gpEndBlock = NULL;
 
-void PushMemBlock( MemBlock* pBlock ) {
-	if( gpEndBlock == gpStartBlock ) {
+void PushMemBlock(MemBlock* pBlock) {
+	if(gpEndBlock == gpStartBlock) {
 		gpStartBlock = pBlock;
 		pBlock->pNext = gpEndBlock;
 	} else {
@@ -19,9 +19,11 @@ void PushMemBlock( MemBlock* pBlock ) {
 MemBlock* PopMemBlock() {
 	MemBlock* ret = gpStartBlock;
 	
-	if( gpEndBlock != gpStartBlock ) {
+	if(gpEndBlock != gpStartBlock) {
 		gpStartBlock = gpStartBlock->pNext;
+		return ret;
+	} else {
+		return NULL;
 	}
-	
-	return ret;
+
 }
