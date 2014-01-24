@@ -348,7 +348,7 @@
             <uSurpInc>0</uSurpInc>
             <VariousControls>
               <MiscControls>--c99</MiscControls>
-              <Define></Define>
+              <Define>DEBUG_0</Define>
               <Undefine></Undefine>
               <IncludePath></IncludePath>
             </VariousControls>
