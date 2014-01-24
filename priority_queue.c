@@ -21,7 +21,7 @@ PriorityStatus priority_queue_insert(PCB* proc) {
 	return PRIORITY_STATUS_QUEUE_FULL;
 }
 
-PCB* priority_queue_top(void) {
+PCB* priority_queue_pop(void) {
 	for (int priority = 0; priority < NUM_PRIORITIES; priority++) {
 		PCB** processes = gp_priority_queue[priority];
 		PCB* proc = processes[0];

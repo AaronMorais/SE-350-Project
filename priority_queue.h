@@ -14,6 +14,6 @@ typedef enum {
 
 PriorityStatus priority_queue_insert(PCB* node);
 
-PCB* priority_queue_top(void);
+PCB* priority_queue_pop(void);
 
 #endif

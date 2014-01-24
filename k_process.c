@@ -80,7 +80,7 @@ void process_init()
 
 PCB *scheduler(void)
 {
-	PCB *next_process = priority_queue_top();
+	PCB *next_process = priority_queue_pop();
 
 #ifdef DEBUG_0
 	printf("next_process id is: %d\n", next_process->m_pid);

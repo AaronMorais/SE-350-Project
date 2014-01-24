@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void insert(PCB* pcb) {
+static void insert(PCB* pcb) {
 	PriorityStatus status = priority_queue_insert(pcb);
 	if (status != PRIORITY_STATUS_OK) {
 		printf("ERROR, expected status ok, got %d\n", status);
@@ -11,8 +11,8 @@ void insert(PCB* pcb) {
 	}
 }
 
-void top(PCB* should_be) {
-	PCB* actual = priority_queue_top();
+static void pop(PCB* should_be) {
+	PCB* actual = priority_queue_pop();
 	if (actual != should_be) {
 		printf("ERROR, expected PCB at %p, got PCB at %p.\n", should_be, actual);
 		exit(1);
@@ -31,9 +31,9 @@ int test_basic() {
 	insert(&proc_b);
 	insert(&proc_c);
 
-	top(&proc_a);
-	top(&proc_b);
-	top(&proc_c);
+	pop(&proc_a);
+	pop(&proc_b);
+	pop(&proc_c);
 }
 
 int main() {
