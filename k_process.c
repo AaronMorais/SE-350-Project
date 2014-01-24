@@ -48,6 +48,7 @@ void process_init()
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
 		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
+		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
 	}
   
 	// initilize exception stack frame (i.e. initial context) for each process
@@ -63,6 +64,7 @@ void process_init()
 			*(--sp) = 0x0;
 		}
 		(gp_pcbs[i])->mp_sp = sp;
+		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 	}
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		priority_queue_insert(gp_pcbs[i]);
@@ -79,13 +81,14 @@ void process_init()
 PCB *scheduler(void)
 {
 	PCB *next_process = priority_queue_pop();
+
 #ifdef DEBUG_0
-	printf("next_process id: %d", next_process->m_pid);
+	printf("next_process id is: %d\n", next_process->m_pid);
 #endif
 	gp_current_process = next_process;
 
 	if (gp_current_process == NULL) {
-		//printf("Warning: we shouldn't have a null current process at this point.");
+		printf("Warning: we shouldn't have a null current process at this point.\n");
 		gp_current_process = gp_pcbs[0]; 
 		return gp_pcbs[0];
 	}
@@ -157,9 +160,7 @@ int k_release_processor(void)
 		gp_current_process = p_pcb_old; // revert back to the old process
 		return RTX_ERR;
 	}
-	if (p_pcb_old == NULL) {
-		p_pcb_old = gp_current_process;
-	}
+	
 	process_switch(p_pcb_old);
 	return RTX_OK;
 }

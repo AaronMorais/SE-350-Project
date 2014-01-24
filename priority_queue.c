@@ -21,18 +21,18 @@ int priority_queue_insert(PCB* node) {
 }
 
 PCB* priority_queue_pop(void) {
-	U32 priorityCounter;
-	U32 processCounter;
+	U32 priority;
+	U32 process;
 	PCB* node;
-	for (priorityCounter = 0; priorityCounter < NUM_PRIORITIES; priorityCounter++) {
-		node = gpPriority[priorityCounter][0];
+	for (priority = 0; priority < NUM_PRIORITIES; priority++) {
+		node = gpPriority[priority][0];
 		if (NULL == node) {
 			continue;
 		}
-		for (processCounter = 1; processCounter < NUM_TEST_PROCS; processCounter++) {
-			gpPriority[priorityCounter][processCounter - 1] = gpPriority[priorityCounter][processCounter];
+		for (process = 1; process < NUM_TEST_PROCS; process++) {
+			gpPriority[priority][process - 1] = gpPriority[priority][process];
 		}
-		gpPriority[priorityCounter][processCounter - 1] = NULL;
+		gpPriority[priority][NUM_TEST_PROCS - 1] = NULL;
 		return node;
 	}
 	
