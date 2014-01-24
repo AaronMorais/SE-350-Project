@@ -52,7 +52,7 @@ void process_init()
 	}
   
 	// initilize exception stack frame (i.e. initial context) for each process
-	for (i = 0; i < NUM_TEST_PROCS; i++) {
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
