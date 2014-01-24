@@ -1,18 +1,18 @@
 #include "priority_queue.h"
 
-PCB* gpPriority[NUM_PRIORITIES][NUM_TEST_PROCS] = {NULL};
+static PCB* gp_priority_queue[NUM_PRIORITIES][NUM_TEST_PROCS] = {NULL};
 
 int priority_queue_insert(PCB* node) {
 	U32 counter;
-	if (NULL == node) {
+	if (node == NULL) {
 		return PRIORITY_STATUS_NULL;
-	} else if(NUM_PRIORITIES < node->m_priority) {
+	} else if (node->m_priority > NUM_PRIORITIES) {
 		return PRIORITY_STATUS_PRIORITY_ERR;
 	}
 	
 	for (counter = 0; counter < NUM_TEST_PROCS; counter++) {
-		if (NULL == gpPriority[node->m_priority][counter]) {
-			gpPriority[node->m_priority][counter] = node;
+		if (gp_priority_queue[node->m_priority][counter] == NULL) {
+			gp_priority_queue[node->m_priority][counter] = node;
 			return PRIORITY_STATUS_OK;
 		}
 	}
@@ -21,18 +21,19 @@ int priority_queue_insert(PCB* node) {
 }
 
 PCB* priority_queue_pop(void) {
-	U32 priorityCounter;
-	U32 processCounter;
+	U32 priority;
+	U32 process;
 	PCB* node;
-	for (priorityCounter = 0; priorityCounter < NUM_PRIORITIES; priorityCounter++) {
-		node = gpPriority[priorityCounter][0];
-		if (NULL == node) {
+
+	for (priority = 0; priority < NUM_PRIORITIES; priority++) {
+		node = gp_priority_queue[priority][0];
+		if (node == NULL) {
 			continue;
 		}
-		for (processCounter = 1; processCounter < NUM_TEST_PROCS; processCounter++) {
-			gpPriority[priorityCounter][processCounter - 1] = gpPriority[priorityCounter][processCounter];
+		for (process = 1; process < NUM_TEST_PROCS; process++) {
+			gp_priority_queue[priority][process - 1] = gp_priority_queue[priority][process];
 		}
-		gpPriority[priorityCounter][processCounter - 1] = NULL;
+		gp_priority_queue[priority][NUM_TEST_PROCS - 1] = NULL;
 		return node;
 	}
 	

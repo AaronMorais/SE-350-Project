@@ -10,7 +10,7 @@ typedef enum {
 	PRIORITY_STATUS_NULL = 1,
 	PRIORITY_STATUS_PRIORITY_ERR = 2,
 	PRIORITY_STATUS_ERROR = 3
-}PriorityStatus;
+} PriorityStatus;
 
 int priority_queue_insert( PCB* node );
 
