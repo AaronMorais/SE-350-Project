@@ -109,12 +109,16 @@ PCB* scheduler(void)
  */
 int process_switch(PCB* p_pcb_old)
 {
+	printf("About to proccess_switch");
 	ProcState state = gp_current_process->m_state;
 	
-	priority_queue_insert(p_pcb_old);
+	if (p_pcb_old != NULL) {
+		priority_queue_insert(p_pcb_old);
+	}
 
+	printf("Did Queue insert");
 	if (state == PROC_STATE_NEW) {
-		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
+		if (gp_current_process != p_pcb_old && p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
 			p_pcb_old->m_state = PROC_STATE_READY;
 			p_pcb_old->mp_sp = (U32*) __get_MSP();
 		}
@@ -158,6 +162,7 @@ int k_release_processor(void)
 	gp_current_process = scheduler();
 	
 	if (gp_current_process == NULL) {
+		printf("WARNING: NO PROCESS TO SWITCH TO!");
 		gp_current_process = p_pcb_old; // revert back to the old process
 		return RTX_ERR;
 	}
