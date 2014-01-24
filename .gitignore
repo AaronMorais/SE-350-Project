@@ -53,3 +53,6 @@ kernel.map
 *.log
 *.toc
 *.lof
+
+# Unit test binaries
+*_test
