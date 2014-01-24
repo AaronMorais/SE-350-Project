@@ -24,6 +24,14 @@
 #include "printf.h"
 #endif
 
+// TODO: We should actually include the header files for these...
+// Allocate stack for a process
+extern U32 *alloc_stack(U32 size_b);
+// Pop exception stack frame
+extern void __rte(void);
+// Test process initial set up
+extern void set_test_procs(void);
+
 // Array of PCBs
 PCB **gp_pcbs;
 // Running process
@@ -39,12 +47,9 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
  */
 void process_init() 
 {
-	int i;
-	U32 *sp;
-  
 	// Fill out the initialization table
 	set_test_procs();
-	for (i = 0; i < NUM_TEST_PROCS; i++) {
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
 		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
@@ -53,20 +58,19 @@ void process_init()
   
 	// initilize exception stack frame (i.e. initial context) for each process
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = PROC_STATE_NEW;
 		
-		sp = alloc_stack((g_proc_table[i]).m_stack_size);
+		U32* sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp) = INITIAL_xPSR;      // user process initial xPSR
 		*(--sp) = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
-		for (j = 0; j < 6; j++) { // R0-R3, R12 are cleared with 0
+		for (int j = 0; j < 6; j++) { // R0-R3, R12 are cleared with 0
 			*(--sp) = 0x0;
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 	}
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		priority_queue_insert(gp_pcbs[i]);
 	}
 }
@@ -77,10 +81,9 @@ void process_init()
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-
-PCB *scheduler(void)
+PCB* scheduler(void)
 {
-	PCB *next_process = priority_queue_pop();
+	PCB* next_process = priority_queue_pop();
 
 #ifdef DEBUG_0
 	printf("next_process id is: %d\n", next_process->m_pid);
@@ -104,11 +107,9 @@ PCB *scheduler(void)
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-int process_switch(PCB *p_pcb_old) 
+int process_switch(PCB* p_pcb_old)
 {
-	ProcState state;
-	
-	state = gp_current_process->m_state;
+	ProcState state = gp_current_process->m_state;
 	
 	priority_queue_insert(p_pcb_old);
 
