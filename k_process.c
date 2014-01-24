@@ -55,7 +55,7 @@ void process_init()
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
-		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_state = PROC_STATE_NEW;
 		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp) = INITIAL_xPSR;      // user process initial xPSR
@@ -97,7 +97,7 @@ PCB *scheduler(void)
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
- *@param: p_pcb_old, the old pcb that was in RUN
+ *@param: p_pcb_old, the old pcb that was in PROC_STATE_RUN
  *@return: RTX_OK upon success
  *         RTX_ERR upon failure
  *PRE:  p_pcb_old and gp_current_process are pointing to valid PCBs.
@@ -106,18 +106,18 @@ PCB *scheduler(void)
  */
 int process_switch(PCB *p_pcb_old) 
 {
-	PROC_STATE_E state;
+	ProcState state;
 	
 	state = gp_current_process->m_state;
 	
 	priority_queue_insert(p_pcb_old);
 
-	if (state == NEW) {
-		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
-			p_pcb_old->m_state = RDY;
+	if (state == PROC_STATE_NEW) {
+		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
+			p_pcb_old->m_state = PROC_STATE_READY;
 			p_pcb_old->mp_sp = (U32*) __get_MSP();
 		}
-		gp_current_process->m_state = RUN;
+		gp_current_process->m_state = PROC_STATE_RUN;
 		__set_MSP((U32) gp_current_process->mp_sp);
 		// pop exception stack frame from the stack for a new processes
 		__rte();
@@ -126,12 +126,12 @@ int process_switch(PCB *p_pcb_old)
 	/* The following will only execute if the if block above is FALSE */
 
 	if (gp_current_process != p_pcb_old) {
-		if (state == RDY) {
-			p_pcb_old->m_state = RDY;
+		if (state == PROC_STATE_READY) {
+			p_pcb_old->m_state = PROC_STATE_READY;
 
 			// save the old process's sp
 			p_pcb_old->mp_sp = (U32*) __get_MSP();
-			gp_current_process->m_state = RUN;
+			gp_current_process->m_state = PROC_STATE_RUN;
 
 			//switch to the new proc's stack
 			__set_MSP((U32) gp_current_process->mp_sp);
