@@ -9,7 +9,7 @@
 __asm void __rte(void)
 {
   PRESERVE8            ; 8 bytes alignement of the stack
-  MVN  LR, #:NOT:0xFFFFFFF9  ; set EXC_RETURN value, Thread mode, MSP
+  MOV  LR, #0xFFFFFFF9  ; set EXC_RETURN value, Thread mode, MSP
   BX   LR
 }
 
