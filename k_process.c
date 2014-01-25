@@ -37,19 +37,19 @@ void process_init()
 
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
-int process_create(PROC_INIT* table_entry)
+int process_create(ProcessInitialState* initial_state)
 {
 	PCB* pcb = memory_alloc_pcb();
 	if (!pcb) {
 		return RTX_ERR;
 	}
 
-	pcb->pid = table_entry->pid;
+	pcb->pid = initial_state->pid;
 	pcb->state = PROCESS_STATE_NEW;
-	pcb->priority = table_entry->priority;
+	pcb->priority = initial_state->priority;
 
 	// initilize exception stack frame (i.e. initial context)
-	U32* sp = memory_alloc_stack(table_entry->stack_size);
+	U32* sp = memory_alloc_stack(initial_state->stack_size);
 	if (!sp) {
 		return RTX_ERR;
 	}
@@ -57,7 +57,7 @@ int process_create(PROC_INIT* table_entry)
 	// user process initial xPSR
 	*(--sp) = INITIAL_xPSR;
 	// PC contains the entry point of the process
-	*(--sp) = (U32)table_entry->entry_point;
+	*(--sp) = (U32)initial_state->entry_point;
 	// R0-R3, R12 are cleared with 0
 	for (int j = 0; j < 6; j++) {
 		*(--sp) = 0x0;

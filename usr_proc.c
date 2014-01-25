@@ -11,7 +11,7 @@
 
 void create_test_procs()
 {
-	PROC_INIT test_proc = {0};
+	ProcessInitialState test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
 		test_proc.priority = PROCESS_PRIORITY_LOWEST;
