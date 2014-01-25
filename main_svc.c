@@ -26,7 +26,7 @@ int main()
 	SystemInit(); 
 #ifdef DEBUG_0
 	init_printf(NULL, putc);
-#endif /* DEBUG_0 */
+#endif
 	
 	/* start the RTX and built-in processes */
 	rtx_init();  

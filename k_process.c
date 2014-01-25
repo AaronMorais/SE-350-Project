@@ -24,6 +24,8 @@
 #include "printf.h"
 #endif
 
+#define LOG(str) printf(str "\r\n")
+
 // TODO: We should actually include the header files for these...
 // Allocate stack for a process
 extern U32 *alloc_stack(U32 size_b);
@@ -78,22 +80,17 @@ void process_init()
 /*@brief: scheduler, pick the pid of the next to run process
  *@return: PCB pointer of the next to run process
  *         NULL if error happens
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
  */
 PCB* scheduler(void)
 {
 	PCB* next_process = priority_queue_pop();
-
-#ifdef DEBUG_0
-	printf("next_process id is: %d\n", next_process->m_pid);
-#endif
-	gp_current_process = next_process;
-
-	if (gp_current_process == NULL) {
-		printf("Warning: we shouldn't have a null current process at this point.\n");
-		gp_current_process = gp_pcbs[0]; 
-		return gp_pcbs[0];
+	
+	if (next_process == NULL) {
+		printf("Warning: No processes on ready queue.\n");
+	} else {
+	#ifdef DEBUG_0
+		printf("next_process id is: %d\r\n", next_process->m_pid);
+	#endif
 	}
 	
 	return next_process;
@@ -109,44 +106,34 @@ PCB* scheduler(void)
  */
 int process_switch(PCB* p_pcb_old)
 {
-	printf("About to proccess_switch");
+	LOG("About to proccess_switch");
 	ProcState state = gp_current_process->m_state;
 	
 	if (p_pcb_old != NULL) {
 		priority_queue_insert(p_pcb_old);
 	}
-
-	printf("Did Queue insert");
-	if (state == PROC_STATE_NEW) {
-		if (gp_current_process != p_pcb_old && p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
+	
+	if (state == PROC_STATE_READY || state == PROC_STATE_NEW) {
+		if (p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
 			p_pcb_old->m_state = PROC_STATE_READY;
 			p_pcb_old->mp_sp = (U32*) __get_MSP();
 		}
+		
 		gp_current_process->m_state = PROC_STATE_RUN;
+
+		// switch to the new proc's stack
 		__set_MSP((U32) gp_current_process->mp_sp);
-		// pop exception stack frame from the stack for a new processes
-		__rte();
-	} 
-	
-	/* The following will only execute if the if block above is FALSE */
-
-	if (gp_current_process != p_pcb_old) {
-		if (state == PROC_STATE_READY) {
-			p_pcb_old->m_state = PROC_STATE_READY;
-
-			// save the old process's sp
-			p_pcb_old->mp_sp = (U32*) __get_MSP();
-			gp_current_process->m_state = PROC_STATE_RUN;
-
-			//switch to the new proc's stack
-			__set_MSP((U32) gp_current_process->mp_sp);
-		} else {
-			// revert back to the old proc on error
-			gp_current_process = p_pcb_old;
-			return RTX_ERR;
-		} 
+		
+		if (state == PROC_STATE_NEW) {
+			// pop exception stack frame from the stack for a new processes
+			__rte();
+		}
+		return RTX_OK;
 	}
-	return RTX_OK;
+	
+	// revert back to the old proc on error
+	gp_current_process = p_pcb_old;
+	return RTX_ERR;
 }
 
 /**
@@ -156,9 +143,10 @@ int process_switch(PCB* p_pcb_old)
  */
 int k_release_processor(void)
 {
-	PCB *p_pcb_old = NULL;
-
-	p_pcb_old = gp_current_process;
+	// Slow things down to make them easier to debug
+	for (volatile int i = 0; i < 10000000; i++) {}
+		
+	PCB *p_pcb_old = gp_current_process;
 	gp_current_process = scheduler();
 	
 	if (gp_current_process == NULL) {
