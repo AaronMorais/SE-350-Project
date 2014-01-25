@@ -113,32 +113,29 @@ int process_switch(PCB* new_proc)
 	}
 	
 	ProcState state = new_proc->m_state;
+	if (state != PROC_STATE_READY && state != PROC_STATE_NEW) {
+		LOG("Invalid process state!");
+		return RTX_ERR;
+	}
 	
-	if (gp_current_process != NULL) {
+	if (gp_current_process && gp_current_process->m_state != PROC_STATE_NEW) {
 		priority_queue_insert(gp_current_process);
+		gp_current_process->m_state = PROC_STATE_READY;
+		gp_current_process->mp_sp = (U32*) __get_MSP();
 	}
 	
-	if (state == PROC_STATE_READY || state == PROC_STATE_NEW) {
-		if (gp_current_process && gp_current_process->m_state != PROC_STATE_NEW) {
-			gp_current_process->m_state = PROC_STATE_READY;
-			gp_current_process->mp_sp = (U32*) __get_MSP();
-		}
-		
-		new_proc->m_state = PROC_STATE_RUN;
-
-		// switch to the new proc's stack
-		__set_MSP((U32) new_proc->mp_sp);
-		
-		gp_current_process = new_proc;
-		
-		if (state == PROC_STATE_NEW) {
-			// pop exception stack frame from the stack for a new processes
-			__rte();
-		}
-		return RTX_OK;
-	}
+	new_proc->m_state = PROC_STATE_RUN;
+	__set_MSP((U32) new_proc->mp_sp);
 	
-	return RTX_ERR;
+	gp_current_process = new_proc;
+	
+	if (state == PROC_STATE_NEW) {
+		// pop exception stack frame from the stack for a new processes
+		// Note: This actually causes us to start executing the procees
+		// with crazy assembly magic (See HAL.c)!
+		__rte();
+	}
+	return RTX_OK;
 }
 
 /**
