@@ -452,9 +452,9 @@
               <FilePath>.\priority_queue.c</FilePath>
             </File>
             <File>
-              <FileName>rtx.c</FileName>
+              <FileName>syscall.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\rtx.c</FilePath>
+              <FilePath>.\syscall.c</FilePath>
             </File>
           </Files>
         </Group>
