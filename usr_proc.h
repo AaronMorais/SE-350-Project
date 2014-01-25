@@ -1,16 +1,3 @@
-/**
- * @file:   usr_proc.h
- * @brief:  Two user processes header file
- * @author: Yiqing Huang
- * @date:   2014/01/17
- */
- 
-#ifndef USR_PROC_H_
-#define USR_PROC_H
+#pragma once
 
-void set_test_procs(void);
-void proc1(void);
-void proc2(void);
-void proc3(void);
-
-#endif /* USR_PROC_H_ */
+void create_test_procs(void);

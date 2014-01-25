@@ -71,7 +71,7 @@ int process_create(ProcessInitialState* initial_state)
  *@return: PCB pointer of the next to run process
  *         NULL if error happens
  */
-PCB* scheduler(void)
+static PCB* scheduler(void)
 {
 	PCB* next_process = priority_queue_pop();
 	
@@ -89,11 +89,11 @@ PCB* scheduler(void)
 // WARNING: This currently uses __get_MSP() and __set_MSP(), which
 // means the user processes run in privileged mode (not really ideal...),
 // and it will need to change to support interrupts.
-int process_switch(PCB* new_proc)
+static int switch_to_process(PCB* new_proc)
 {
 	LOG("About to proccess_switch");
 	if (new_proc == NULL) {
-		LOG("NULL passed to process_switch!");
+		LOG("NULL passed to switch_to_process!");
 		return RTX_ERR;
 	}
 	
@@ -138,5 +138,5 @@ int k_release_processor(void)
 		return RTX_ERR;
 	}
 	
-	return process_switch(new_proc);
+	return switch_to_process(new_proc);
 }
