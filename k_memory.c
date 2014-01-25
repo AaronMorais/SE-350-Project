@@ -1,10 +1,42 @@
-/**
- * @file:   k_memory.c
- * @brief:  kernel memory managment routines
- * @author: Yiqing Huang
- * @date:   2014/01/17
- */
+/*
+This file should contain everything that directly manages memory.
 
+We lay out our RAM something like the following:
+
+0x10000000 +---------------------------+ Low Address
+           |                           |
+           |       RTX  Image          |
+           |...........................|
+           |Image$$RW_IRAM1$$ZI$$Limit |
+           |---------------------------|
+           |         Padding           |
+           |---------------------------|
+           |          PCB 1            |
+           |---------------------------|
+           |          PCB 2            |
+           |---------------------------|
+           |           ...             |
+           |---------------------------|
+           |          PCB n            |
+           |---------------------------|<--- gp_pcb_end
+           |                           |
+           |          HEAP             |
+           |   (shared between all     |
+           |        processes)         |
+           |                           |
+           |---------------------------|<--- gp_stack
+           |       Proc n stack        |
+           |---------------------------|
+           |           ...             |
+           |---------------------------|
+           |       Proc 2 stack        |
+           |---------------------------|
+           |       Proc 1 stack        |
+0x10008000 +---------------------------+ High Address
+
+Note: PCBs and stacks must be allocated before the heap!
+
+*/
 #include "k_memory.h"
 #include "linked_list.h"
 
@@ -22,31 +54,6 @@ U32* gp_stack = NULL;
 PCB* gp_pcb_end = NULL;
 
 
-/**
- * @brief: Initialize RAM as follows:
-
-0x10000000 +---------------------------+ Low Address
-           |                           |
-           |       RTX  Image          |
-           |...........................|
-           |Image$$RW_IRAM1$$ZI$$Limit |
-           |---------------------------|
-           |        Padding            |
-           |---------------------------|
-           |        PCB 1              |
-           |---------------------------|
-           |        PCB 2              |
-           |---------------------------|<--- gp_pcb_end
-           |                           |
-           |        HEAP               |
-           |                           |
-           |---------------------------|<--- gp_stack
-           |    Proc 2 STACK           |
-           |---------------------------|
-           |    Proc 1 STACK           |
-0x10008000 +---------------------------+ High Address
-
-*/
 void memory_init(void)
 {
 	// This symbol is defined in the scatter file (see RVCT Linker User Guide)
@@ -98,8 +105,9 @@ PCB* memory_alloc_pcb(void)
 	return gp_pcb_end++;
 }
 
-// WARNING WARNING WARNING Make sure this is called *AFTER* all
-// calls to memory_alloc_stack and memory_alloc_pcb!!!
+// Note: Make sure this is called *AFTER* all calls to
+// memory_alloc_stack and memory_alloc_pcb, otherwise those
+// calls will fail!
 void memory_init_heap()
 {
 	gpStartBlock = (MemBlock*)gp_pcb_end;
