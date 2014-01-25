@@ -1,4 +1,4 @@
-#include "rtx.h"
+#include "syscall.h"
 
 void rtx_init(void)
 {

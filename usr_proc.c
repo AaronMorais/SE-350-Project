@@ -1,6 +1,6 @@
 // This file should contain userland processes to test the
 // various functionalities of the kernel.
-#include "rtx.h"
+#include "syscall.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
 #include "k_process.h"
