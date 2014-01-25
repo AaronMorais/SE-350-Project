@@ -78,9 +78,7 @@ static PCB* scheduler(void)
 	if (next_process == NULL) {
 		printf("Warning: No processes on ready queue.\n");
 	} else {
-	#ifdef DEBUG_0
-		printf("next_process id is: %d\r\n", next_process->pid);
-	#endif
+		LOG("next_process id is: %d", next_process->pid);
 	}
 	
 	return next_process;

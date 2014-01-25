@@ -124,22 +124,19 @@ void memory_init_heap()
 
 void* k_request_memory_block(void) {
 	MemBlock* ret;
-#ifdef DEBUG_0 
-	printf("k_request_memory_block: entering...\n");
-#endif
+	LOG("k_request_memory_block: entering...\n");
 	
 	ret = NULL;
 	while (NULL == ret) {
 		ret = PopMemBlock();
 	}
-	printf("request memory block ret %x", ret);
+	LOG("request memory block ret %x", ret);
 	return (void*) ret;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
-#ifdef DEBUG_0 
-	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
-#endif
+	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
+
 	// TODO we may need to release it to the highest priority
 	// We don't clean because by C convention, everything is instantiated
 	PushMemBlock((MemBlock*)p_mem_blk);

@@ -13,7 +13,7 @@ static void proc1(void)
 {
 	int i = 0;
 	while (1) {
-		uart0_put_char('0' + i%26);
+		uart0_put_char('0' + i%10);
 		i++;
 		if (i%5 != 0) continue;
 
@@ -36,7 +36,7 @@ static void proc2(void)
 		uart0_put_string("\n\r");
 		int ret_val = release_processor();
 #ifdef DEBUG_0
-		printf("proc1: ret_val=%d\r\n", ret_val);
+		printf("proc2: ret_val=%d\r\n", ret_val);
 #endif
 	}
 }
@@ -52,7 +52,7 @@ static void proc3(void)
 		uart0_put_string("\n\r");
 		int ret_val = release_processor();
 #ifdef DEBUG_0
-		printf("proc1: ret_val=%d\r\n", ret_val);
+		printf("proc3: ret_val=%d\r\n", ret_val);
 #endif
 	}
 }

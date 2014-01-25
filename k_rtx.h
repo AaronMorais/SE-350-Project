@@ -2,7 +2,12 @@
 
 #include "rtx_shared.h"
 
-#define LOG(str) printf(str "\r\n")
+#ifdef DEBUG_0
+#include "printf.h"
+#define LOG(format, ...) printf(format "\r\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
 
 typedef enum {
 	PROCESS_STATE_NEW   = 0,
