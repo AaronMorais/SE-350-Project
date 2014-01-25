@@ -45,7 +45,7 @@ int process_create(PROC_INIT* table_entry)
 	}
 
 	pcb->pid = table_entry->pid;
-	pcb->state = PROC_STATE_NEW;
+	pcb->state = PROCESS_STATE_NEW;
 	pcb->priority = table_entry->priority;
 
 	// initilize exception stack frame (i.e. initial context)
@@ -97,24 +97,24 @@ int process_switch(PCB* new_proc)
 		return RTX_ERR;
 	}
 	
-	ProcState state = new_proc->state;
-	if (state != PROC_STATE_READY && state != PROC_STATE_NEW) {
+	ProcessState state = new_proc->state;
+	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
 		return RTX_ERR;
 	}
 	
-	if (gp_current_process && gp_current_process->state != PROC_STATE_NEW) {
+	if (gp_current_process && gp_current_process->state != PROCESS_STATE_NEW) {
 		priority_queue_insert(gp_current_process);
-		gp_current_process->state = PROC_STATE_READY;
+		gp_current_process->state = PROCESS_STATE_READY;
 		gp_current_process->sp = (U32*) __get_MSP();
 	}
 	
-	new_proc->state = PROC_STATE_RUN;
+	new_proc->state = PROCESS_STATE_RUN;
 	__set_MSP((U32) new_proc->sp);
 	
 	gp_current_process = new_proc;
 	
-	if (state == PROC_STATE_NEW) {
+	if (state == PROCESS_STATE_NEW) {
 		// pop exception stack frame from the stack for a new processes
 		extern void __rte(void);
 		// Note: This actually causes us to start executing the procees

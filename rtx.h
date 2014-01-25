@@ -1,17 +1,9 @@
+// This file contains the "user" facing API (i.e. the API provided to
+// userland processes that wish to interact with the kernel).
 #pragma once
 
-#define RTX_ERR -1
-#define NULL 0
-#define NUM_TEST_PROCS 3
+#include "rtx_shared.h"
 
-#define HIGH    0
-#define MEDIUM  1
-#define LOW     2
-#define LOWEST  3
-
-typedef unsigned int U32;
-
-/* ----- RTX User API ----- */
 #define __SVC_0  __svc_indirect(0)
 
 extern void k_rtx_init(void);
