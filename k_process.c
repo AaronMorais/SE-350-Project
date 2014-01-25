@@ -17,6 +17,7 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
+#include "k_memory.h"
 
 #include "priority_queue.h"
 
@@ -26,9 +27,6 @@
 
 #define LOG(str) printf(str "\r\n")
 
-// TODO: We should actually include the header files for these...
-// Allocate stack for a process
-extern U32 *alloc_stack(U32 size_b);
 // Pop exception stack frame
 extern void __rte(void);
 // Test process initial set up
@@ -44,7 +42,7 @@ PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /**
- * @biref: initialize all processes in the system
+ * @brief: initialize all processes in the system
  * NOTE: We assume there are only two user processes in the system in this example.
  */
 void process_init() 
@@ -63,7 +61,7 @@ void process_init()
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = PROC_STATE_NEW;
 		
-		U32* sp = alloc_stack((g_proc_table[i]).m_stack_size);
+		U32* sp = memory_alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp) = INITIAL_xPSR;      // user process initial xPSR
 		*(--sp) = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
 		for (int j = 0; j < 6; j++) { // R0-R3, R12 are cleared with 0
@@ -145,9 +143,6 @@ int process_switch(PCB* new_proc)
  */
 int k_release_processor(void)
 {
-	// Slow things down to make them easier to debug
-	for (volatile int i = 0; i < 10000000; i++) {}
-		
 	PCB *new_proc = scheduler();
 	
 	if (new_proc == NULL) {
