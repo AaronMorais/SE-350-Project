@@ -25,8 +25,8 @@
 #include "printf.h"
 #endif
 
-// Running process
-PCB *gp_current_process = NULL;
+// Currently running process
+static PCB* s_current_process = NULL;
 
 void process_init()
 {
@@ -103,16 +103,16 @@ int process_switch(PCB* new_proc)
 		return RTX_ERR;
 	}
 	
-	if (gp_current_process && gp_current_process->state != PROCESS_STATE_NEW) {
-		priority_queue_insert(gp_current_process);
-		gp_current_process->state = PROCESS_STATE_READY;
-		gp_current_process->sp = (U32*) __get_MSP();
+	if (s_current_process && s_current_process->state != PROCESS_STATE_NEW) {
+		priority_queue_insert(s_current_process);
+		s_current_process->state = PROCESS_STATE_READY;
+		s_current_process->sp = (U32*) __get_MSP();
 	}
 	
 	new_proc->state = PROCESS_STATE_RUN;
 	__set_MSP((U32) new_proc->sp);
 	
-	gp_current_process = new_proc;
+	s_current_process = new_proc;
 	
 	if (state == PROCESS_STATE_NEW) {
 		// pop exception stack frame from the stack for a new processes
@@ -127,7 +127,7 @@ int process_switch(PCB* new_proc)
 /**
  * @brief release_processor(). 
  * @return RTX_ERR on error and zero on success
- * POST: gp_current_process gets updated to next to run process
+ * POST: s_current_process gets updated to next to run process
  */
 int k_release_processor(void)
 {

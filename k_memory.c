@@ -18,13 +18,13 @@ We lay out our RAM something like the following:
            |           ...             |
            |---------------------------|
            |          PCB n            |
-           |---------------------------|<--- gp_pcb_end
+           |---------------------------|<--- s_current_pcb_allocations_end
            |                           |
            |          HEAP             |
            |   (shared between all     |
            |        processes)         |
            |                           |
-           |---------------------------|<--- gp_stack
+           |---------------------------|<--- s_current_stack_allocations_end
            |       Proc n stack        |
            |---------------------------|
            |           ...             |
@@ -50,9 +50,8 @@ Note: PCBs and stacks must be allocated before the heap!
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
 // stack grows down. Fully decremental stack.
-U32* gp_stack = NULL;
-PCB* gp_pcb_end = NULL;
-
+static U32* s_current_stack_allocations_end = NULL;
+static PCB* s_current_pcb_allocations_end = NULL;
 
 void memory_init(void)
 {
@@ -63,12 +62,12 @@ void memory_init(void)
 	// Padding. Just to be parinoid.
 	p_begin += 32;
 
-	gp_pcb_end = (PCB*)p_begin;
+	s_current_pcb_allocations_end = (PCB*)p_begin;
 
 	// allocate memory for stacks
-	gp_stack = (U32*)RAM_END_ADDR;
-	if ((U32)gp_stack & 0x04) { // 8 byte alignment
-		--gp_stack;
+	s_current_stack_allocations_end = (U32*)RAM_END_ADDR;
+	if ((U32)s_current_stack_allocations_end & 0x04) { // 8 byte alignment
+		--s_current_stack_allocations_end;
 	}
 }
 
@@ -76,33 +75,33 @@ void memory_init(void)
  * @brief: allocate stack for a process, align to 8 bytes boundary
  * @param: size, stack size in bytes
  * @return: The top of the stack (i.e. high address)
- * POST:  gp_stack is updated.
+ * POST:  s_current_stack_allocations_end is updated.
  */
 U32* memory_alloc_stack(U32 size_b)
 {
-	if (!gp_stack) {
+	if (!s_current_stack_allocations_end) {
 		LOG("Attempted to call memory_alloc_stack after heap has already been created, or before memory_init!");
 		return NULL;
 	}
-	U32* sp = gp_stack; /* gp_stack is always 8 bytes aligned */
+	// s_current_stack_allocations_end is always 8 bytes aligned
+	U32* sp = s_current_stack_allocations_end;
 
-	/* update gp_stack */
-	gp_stack = (U32*)((U8*)sp - size_b);
+	s_current_stack_allocations_end = (U32*)((U8*)sp - size_b);
 
 	/* 8 bytes alignement adjustment to exception stack frame */
-	if ((U32)gp_stack & 0x04) {
-		--gp_stack;
+	if ((U32)s_current_stack_allocations_end & 0x04) {
+		--s_current_stack_allocations_end;
 	}
 	return sp;
 }
 
 PCB* memory_alloc_pcb(void)
 {
-	if (!gp_pcb_end) {
+	if (!s_current_pcb_allocations_end) {
 		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
 		return NULL;
 	}
-	return gp_pcb_end++;
+	return s_current_pcb_allocations_end++;
 }
 
 // Note: Make sure this is called *AFTER* all calls to
@@ -110,17 +109,17 @@ PCB* memory_alloc_pcb(void)
 // calls will fail!
 void memory_init_heap()
 {
-	gpStartBlock = (MemBlock*)gp_pcb_end;
-	gpEndBlock = (MemBlock*)gp_pcb_end;
+	gpStartBlock = (MemBlock*)s_current_pcb_allocations_end;
+	gpEndBlock = (MemBlock*)s_current_pcb_allocations_end;
 
-	U32* endHeap = gp_stack - 32;
-	while ((U32*)gp_pcb_end <= endHeap) {
-		PushMemBlock((MemBlock*)gp_pcb_end);
-		gp_pcb_end += MEM_BLOCK_SIZE;
+	U32* endHeap = s_current_stack_allocations_end - 32;
+	while ((U32*)s_current_pcb_allocations_end <= endHeap) {
+		PushMemBlock((MemBlock*)s_current_pcb_allocations_end);
+		s_current_pcb_allocations_end += MEM_BLOCK_SIZE;
 	}
 
-	gp_pcb_end = NULL;
-	gp_stack = NULL;
+	s_current_pcb_allocations_end = NULL;
+	s_current_stack_allocations_end = NULL;
 }
 
 void* k_request_memory_block(void) {

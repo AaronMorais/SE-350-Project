@@ -1,6 +1,6 @@
 #include "priority_queue.h"
 
-static PCB* gp_priority_queue[NUM_PRIORITIES][NUM_TEST_PROCS] = {NULL};
+static PCB* s_priority_queue[NUM_PRIORITIES][NUM_TEST_PROCS] = {NULL};
 
 PriorityStatus priority_queue_insert(PCB* proc) {
 	if (proc == NULL) {
@@ -10,7 +10,7 @@ PriorityStatus priority_queue_insert(PCB* proc) {
 		return PRIORITY_STATUS_INVALID_PRIORITY;
 	}
 
-	PCB** processes = gp_priority_queue[proc->priority];
+	PCB** processes = s_priority_queue[proc->priority];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		if (processes[i] == NULL) {
 			processes[i] = proc;
@@ -23,7 +23,7 @@ PriorityStatus priority_queue_insert(PCB* proc) {
 
 PCB* priority_queue_pop(void) {
 	for (int priority = 0; priority < NUM_PRIORITIES; priority++) {
-		PCB** processes = gp_priority_queue[priority];
+		PCB** processes = s_priority_queue[priority];
 		PCB* proc = processes[0];
 		if (proc == NULL) {
 			continue;
