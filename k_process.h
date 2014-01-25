@@ -6,5 +6,6 @@
 #define INITIAL_xPSR 0x01000000
 
 void process_init(void);
+int process_create(PROC_INIT* table_entry);
 PCB* scheduler(void);
 int k_release_process(void);

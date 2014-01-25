@@ -15,13 +15,11 @@
 #define RAM_END_ADDR 0x10008000
 #define MEM_BLOCK_SIZE 512 // 128 * 4 bytes
 
-// TODO: Should include process.h for this instead.
-extern PCB **gp_pcbs;
-
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
 // stack grows down. Fully decremental stack.
-U32 *gp_stack;
+U32* gp_stack = NULL;
+PCB* gp_pcb_end = NULL;
 
 
 /**
@@ -34,13 +32,11 @@ U32 *gp_stack;
            |Image$$RW_IRAM1$$ZI$$Limit |
            |---------------------------|
            |        Padding            |
-           |---------------------------|<--- gp_pcbs
-           |        PCB pointers       |
            |---------------------------|
            |        PCB 1              |
            |---------------------------|
            |        PCB 2              |
-           |---------------------------|
+           |---------------------------|<--- gp_pcb_end
            |                           |
            |        HEAP               |
            |                           |
@@ -60,33 +56,12 @@ void memory_init(void)
 	// Padding. Just to be parinoid.
 	p_begin += 32;
 
-	// Allocate memory for pcb pointers
-	gp_pcbs = (PCB**)p_begin;
-	p_begin += NUM_TEST_PROCS * sizeof(PCB*);
-  
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		gp_pcbs[i] = (PCB*)p_begin;
-		p_begin += sizeof(PCB);
-	}
-
-#ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-#endif
+	gp_pcb_end = (PCB*)p_begin;
 
 	// allocate memory for stacks
 	gp_stack = (U32*)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { // 8 byte alignment
-		--gp_stack; 
-	}
-
-	// Allocate memory for heap
-	gpStartBlock = (MemBlock*)p_begin;
-	gpEndBlock = (MemBlock*)p_begin;
-	U32* endHeap = gp_stack - 32;
-	while ((U32*)p_begin <= endHeap) {
-		PushMemBlock( (MemBlock*)p_begin );
-		p_begin += MEM_BLOCK_SIZE;
+		--gp_stack;
 	}
 }
 
@@ -98,6 +73,10 @@ void memory_init(void)
  */
 U32* memory_alloc_stack(U32 size_b)
 {
+	if (!gp_stack) {
+		LOG("Attempted to call memory_alloc_stack after heap has already been created, or before memory_init!");
+		return NULL;
+	}
 	U32* sp = gp_stack; /* gp_stack is always 8 bytes aligned */
 
 	/* update gp_stack */
@@ -108,6 +87,32 @@ U32* memory_alloc_stack(U32 size_b)
 		--gp_stack;
 	}
 	return sp;
+}
+
+PCB* memory_alloc_pcb(void)
+{
+	if (!gp_pcb_end) {
+		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
+		return NULL;
+	}
+	return gp_pcb_end++;
+}
+
+// WARNING WARNING WARNING Make sure this is called *AFTER* all
+// calls to memory_alloc_stack and memory_alloc_pcb!!!
+void memory_init_heap()
+{
+	gpStartBlock = (MemBlock*)gp_pcb_end;
+	gpEndBlock = (MemBlock*)gp_pcb_end;
+
+	U32* endHeap = gp_stack - 32;
+	while ((U32*)gp_pcb_end <= endHeap) {
+		PushMemBlock((MemBlock*)gp_pcb_end);
+		gp_pcb_end += MEM_BLOCK_SIZE;
+	}
+
+	gp_pcb_end = NULL;
+	gp_stack = NULL;
 }
 
 void* k_request_memory_block(void) {

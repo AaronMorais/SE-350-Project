@@ -9,6 +9,7 @@
 #include "rtx.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
+#include "k_process.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -17,17 +18,19 @@
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
-void set_test_procs() {
-	int i;
-	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_priority=LOWEST;
-		g_test_procs[i].m_stack_size=0x100;
+void create_test_procs() {
+	PROC_INIT test_proc = {0};
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
+		test_proc.m_pid = (U32)(i+1);
+		test_proc.m_priority = LOWEST;
+		test_proc.m_stack_size = 0x100;
+		switch (i) {
+		case 0: test_proc.mpf_start_pc = &proc1; break;
+		case 1: test_proc.mpf_start_pc = &proc2; break;
+		case 2: test_proc.mpf_start_pc = &proc3; break;
+		}
+		process_create(&test_proc);
 	}
-  
-	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[2].mpf_start_pc = &proc3;
 }
 
 

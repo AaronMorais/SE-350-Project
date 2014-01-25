@@ -25,54 +25,46 @@
 #include "printf.h"
 #endif
 
-#define LOG(str) printf(str "\r\n")
-
-// Pop exception stack frame
-extern void __rte(void);
-// Test process initial set up
-extern void set_test_procs(void);
-
-// Array of PCBs
-PCB **gp_pcbs;
 // Running process
 PCB *gp_current_process = NULL;
 
-// Process initialization table
-PROC_INIT g_proc_table[NUM_TEST_PROCS];
-extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
-
-/**
- * @brief: initialize all processes in the system
- * NOTE: We assume there are only two user processes in the system in this example.
- */
-void process_init() 
+void process_init()
 {
-	// Fill out the initialization table
-	set_test_procs();
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
-		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
-		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
-		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
+	// Test process initial set up
+	extern void create_test_procs(void);
+	create_test_procs();
+}
+
+// Note: This must be called during system initialization, before
+// heap_init() is called (we don't yet have dynamic processes :(.
+int process_create(PROC_INIT* table_entry)
+{
+	PCB* pcb = memory_alloc_pcb();
+	if (!pcb) {
+		return RTX_ERR;
 	}
-  
-	// initilize exception stack frame (i.e. initial context) for each process
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
-		(gp_pcbs[i])->m_state = PROC_STATE_NEW;
-		
-		U32* sp = memory_alloc_stack((g_proc_table[i]).m_stack_size);
-		*(--sp) = INITIAL_xPSR;      // user process initial xPSR
-		*(--sp) = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
-		for (int j = 0; j < 6; j++) { // R0-R3, R12 are cleared with 0
-			*(--sp) = 0x0;
-		}
-		(gp_pcbs[i])->mp_sp = sp;
-		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
+
+	pcb->m_pid = table_entry->m_pid;
+	pcb->m_state = PROC_STATE_NEW;
+	pcb->m_priority = table_entry->m_priority;
+
+	// initilize exception stack frame (i.e. initial context)
+	U32* sp = memory_alloc_stack(table_entry->m_stack_size);
+	if (!sp) {
+		return RTX_ERR;
 	}
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		priority_queue_insert(gp_pcbs[i]);
+
+	// user process initial xPSR
+	*(--sp) = INITIAL_xPSR;
+	// PC contains the entry point of the process
+	*(--sp) = (U32)table_entry->mpf_start_pc;
+	// R0-R3, R12 are cleared with 0
+	for (int j = 0; j < 6; j++) {
+		*(--sp) = 0x0;
 	}
+	pcb->mp_sp = sp;
+
+	return priority_queue_insert(pcb);
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -94,14 +86,9 @@ PCB* scheduler(void)
 	return next_process;
 }
 
-/*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
- *@param: p_pcb_old, the old pcb that was in PROC_STATE_RUN
- *@return: RTX_OK upon success
- *         RTX_ERR upon failure
- *PRE:  p_pcb_old and gp_current_process are pointing to valid PCBs.
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
- */
+// WARNING: This currently uses __get_MSP() and __set_MSP(), which
+// means the user processes run in privileged mode (not really ideal...),
+// and it will need to change to support interrupts.
 int process_switch(PCB* new_proc)
 {
 	LOG("About to proccess_switch");
@@ -129,6 +116,7 @@ int process_switch(PCB* new_proc)
 	
 	if (state == PROC_STATE_NEW) {
 		// pop exception stack frame from the stack for a new processes
+		extern void __rte(void);
 		// Note: This actually causes us to start executing the procees
 		// with crazy assembly magic (See HAL.c)!
 		__rte();

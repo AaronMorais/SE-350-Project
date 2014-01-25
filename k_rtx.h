@@ -12,6 +12,8 @@
 #define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
 #endif
 
+#define LOG(str) printf(str "\r\n")
+
 typedef unsigned char U8;
 typedef unsigned int U32;
 
