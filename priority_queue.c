@@ -6,11 +6,11 @@ PriorityStatus priority_queue_insert(PCB* proc) {
 	if (proc == NULL) {
 		return PRIORITY_STATUS_INVALID_PCB;
 	}
-	if (proc->m_priority < 0 || proc->m_priority > NUM_PRIORITIES) {
+	if (proc->priority < 0 || proc->priority > NUM_PRIORITIES) {
 		return PRIORITY_STATUS_INVALID_PRIORITY;
 	}
 
-	PCB** processes = gp_priority_queue[proc->m_priority];
+	PCB** processes = gp_priority_queue[proc->priority];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		if (processes[i] == NULL) {
 			processes[i] = proc;

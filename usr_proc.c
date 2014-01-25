@@ -21,13 +21,13 @@ PROC_INIT g_test_procs[NUM_TEST_PROCS];
 void create_test_procs() {
 	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		test_proc.m_pid = (U32)(i+1);
-		test_proc.m_priority = LOWEST;
-		test_proc.m_stack_size = 0x100;
+		test_proc.pid = (U32)(i+1);
+		test_proc.priority = LOWEST;
+		test_proc.stack_size = 0x100;
 		switch (i) {
-		case 0: test_proc.mpf_start_pc = &proc1; break;
-		case 1: test_proc.mpf_start_pc = &proc2; break;
-		case 2: test_proc.mpf_start_pc = &proc3; break;
+		case 0: test_proc.entry_point = &proc1; break;
+		case 1: test_proc.entry_point = &proc2; break;
+		case 2: test_proc.entry_point = &proc3; break;
 		}
 		process_create(&test_proc);
 	}

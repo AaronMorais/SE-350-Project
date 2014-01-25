@@ -25,17 +25,17 @@ typedef enum {
 
 typedef struct {
 	// Stack pointer
-	U32 *mp_sp;
+	U32 *sp;
 	// Process ID
-	U32 m_pid;
-	ProcState m_state;
-	U32 m_priority;
+	U32 pid;
+	ProcState state;
+	U32 priority;
 } PCB;
 
 /* initialization table item */
-typedef struct proc_init {
-	int m_pid;
-	int m_priority;
-	int m_stack_size;
-	void (*mpf_start_pc) ();
+typedef struct {
+	int pid;
+	int priority;
+	int stack_size;
+	void (*entry_point) ();
 } PROC_INIT;

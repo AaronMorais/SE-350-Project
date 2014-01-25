@@ -21,11 +21,11 @@ static void pop(PCB* should_be) {
 
 int test_basic() {
 	PCB proc_a = {0};
-	proc_a.m_priority = 1;
+	proc_a.priority = 1;
 	PCB proc_b = {0};
-	proc_b.m_priority = 1;
+	proc_b.priority = 1;
 	PCB proc_c = {0};
-	proc_c.m_priority = 1;
+	proc_c.priority = 1;
 
 	insert(&proc_a);
 	insert(&proc_b);

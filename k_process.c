@@ -44,12 +44,12 @@ int process_create(PROC_INIT* table_entry)
 		return RTX_ERR;
 	}
 
-	pcb->m_pid = table_entry->m_pid;
-	pcb->m_state = PROC_STATE_NEW;
-	pcb->m_priority = table_entry->m_priority;
+	pcb->pid = table_entry->pid;
+	pcb->state = PROC_STATE_NEW;
+	pcb->priority = table_entry->priority;
 
 	// initilize exception stack frame (i.e. initial context)
-	U32* sp = memory_alloc_stack(table_entry->m_stack_size);
+	U32* sp = memory_alloc_stack(table_entry->stack_size);
 	if (!sp) {
 		return RTX_ERR;
 	}
@@ -57,12 +57,12 @@ int process_create(PROC_INIT* table_entry)
 	// user process initial xPSR
 	*(--sp) = INITIAL_xPSR;
 	// PC contains the entry point of the process
-	*(--sp) = (U32)table_entry->mpf_start_pc;
+	*(--sp) = (U32)table_entry->entry_point;
 	// R0-R3, R12 are cleared with 0
 	for (int j = 0; j < 6; j++) {
 		*(--sp) = 0x0;
 	}
-	pcb->mp_sp = sp;
+	pcb->sp = sp;
 
 	return priority_queue_insert(pcb);
 }
@@ -79,7 +79,7 @@ PCB* scheduler(void)
 		printf("Warning: No processes on ready queue.\n");
 	} else {
 	#ifdef DEBUG_0
-		printf("next_process id is: %d\r\n", next_process->m_pid);
+		printf("next_process id is: %d\r\n", next_process->pid);
 	#endif
 	}
 	
@@ -97,20 +97,20 @@ int process_switch(PCB* new_proc)
 		return RTX_ERR;
 	}
 	
-	ProcState state = new_proc->m_state;
+	ProcState state = new_proc->state;
 	if (state != PROC_STATE_READY && state != PROC_STATE_NEW) {
 		LOG("Invalid process state!");
 		return RTX_ERR;
 	}
 	
-	if (gp_current_process && gp_current_process->m_state != PROC_STATE_NEW) {
+	if (gp_current_process && gp_current_process->state != PROC_STATE_NEW) {
 		priority_queue_insert(gp_current_process);
-		gp_current_process->m_state = PROC_STATE_READY;
-		gp_current_process->mp_sp = (U32*) __get_MSP();
+		gp_current_process->state = PROC_STATE_READY;
+		gp_current_process->sp = (U32*) __get_MSP();
 	}
 	
-	new_proc->m_state = PROC_STATE_RUN;
-	__set_MSP((U32) new_proc->mp_sp);
+	new_proc->state = PROC_STATE_RUN;
+	__set_MSP((U32) new_proc->sp);
 	
 	gp_current_process = new_proc;
 	
