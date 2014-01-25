@@ -104,25 +104,32 @@ PCB* scheduler(void)
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-int process_switch(PCB* p_pcb_old)
+int process_switch(PCB* new_proc)
 {
 	LOG("About to proccess_switch");
-	ProcState state = gp_current_process->m_state;
+	if (new_proc == NULL) {
+		LOG("NULL passed to process_switch!");
+		return RTX_ERR;
+	}
 	
-	if (p_pcb_old != NULL) {
-		priority_queue_insert(p_pcb_old);
+	ProcState state = new_proc->m_state;
+	
+	if (gp_current_process != NULL) {
+		priority_queue_insert(gp_current_process);
 	}
 	
 	if (state == PROC_STATE_READY || state == PROC_STATE_NEW) {
-		if (p_pcb_old && p_pcb_old->m_state != PROC_STATE_NEW) {
-			p_pcb_old->m_state = PROC_STATE_READY;
-			p_pcb_old->mp_sp = (U32*) __get_MSP();
+		if (gp_current_process && gp_current_process->m_state != PROC_STATE_NEW) {
+			gp_current_process->m_state = PROC_STATE_READY;
+			gp_current_process->mp_sp = (U32*) __get_MSP();
 		}
 		
-		gp_current_process->m_state = PROC_STATE_RUN;
+		new_proc->m_state = PROC_STATE_RUN;
 
 		// switch to the new proc's stack
-		__set_MSP((U32) gp_current_process->mp_sp);
+		__set_MSP((U32) new_proc->mp_sp);
+		
+		gp_current_process = new_proc;
 		
 		if (state == PROC_STATE_NEW) {
 			// pop exception stack frame from the stack for a new processes
@@ -131,8 +138,6 @@ int process_switch(PCB* p_pcb_old)
 		return RTX_OK;
 	}
 	
-	// revert back to the old proc on error
-	gp_current_process = p_pcb_old;
 	return RTX_ERR;
 }
 
@@ -146,15 +151,12 @@ int k_release_processor(void)
 	// Slow things down to make them easier to debug
 	for (volatile int i = 0; i < 10000000; i++) {}
 		
-	PCB *p_pcb_old = gp_current_process;
-	gp_current_process = scheduler();
+	PCB *new_proc = scheduler();
 	
-	if (gp_current_process == NULL) {
-		printf("WARNING: NO PROCESS TO SWITCH TO!");
-		gp_current_process = p_pcb_old; // revert back to the old process
+	if (new_proc == NULL) {
+		LOG("No process to switch to.");
 		return RTX_ERR;
 	}
 	
-	process_switch(p_pcb_old);
-	return RTX_OK;
+	return process_switch(new_proc);
 }
