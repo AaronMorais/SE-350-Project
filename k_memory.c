@@ -1,14 +1,22 @@
 /*
 This file should contain everything that directly manages memory.
 
-We lay out our RAM something like the following:
+We lay out our RAM something like the following (see the lab manual for further details)
 
-0x10000000 +---------------------------+ Low Address
+0x00000000 +---------------------------+ Low Address (RO microflash)
+           |                           |
+           |    OS Code (read-only)    |
+           |                           |
+0x00080000 +---------------------------|
+           .                           .
+                Unmapped addresses
+           .                           .
+0x10000000 |---------------------------|<--- Start of RAM (R/W)
            |                           |
            |       RTX  Image          |
-           |...........................|
-           |Image$$RW_IRAM1$$ZI$$Limit |
-           |---------------------------|
+           | (Static/global variables) |
+           |                           |
+           |---------------------------|<--- Image$$RW_IRAM1$$ZI$$Limit
            |         Padding           |
            |---------------------------|
            |          PCB 1            |
@@ -34,7 +42,8 @@ We lay out our RAM something like the following:
            |       Proc 1 stack        |
 0x10008000 +---------------------------+ High Address
 
-Note: PCBs and stacks must be allocated before the heap!
+Note: PCBs and stacks must be allocated before the heap (because otherwise,
+we can't know where the heap should go)!
 
 */
 #include "k_memory.h"
