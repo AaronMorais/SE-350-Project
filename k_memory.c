@@ -1,84 +1,82 @@
-/**
- * @file:   k_memory.c
- * @brief:  kernel memory managment routines
- * @author: Yiqing Huang
- * @date:   2014/01/17
- */
+/*
+This file should contain everything that directly manages memory.
 
+We lay out our RAM something like the following (see the lab manual for further details)
+
+0x00000000 +---------------------------+ Low Address (RO microflash)
+           |                           |
+           |    OS Code (read-only)    |
+           |                           |
+0x00080000 +---------------------------|
+           .                           .
+                Unmapped addresses
+           .                           .
+0x10000000 |---------------------------|<--- Start of RAM (R/W)
+           |                           |
+           |       RTX  Image          |
+           | (Static/global variables) |
+           |                           |
+           |---------------------------|<--- Image$$RW_IRAM1$$ZI$$Limit
+           |         Padding           |
+           |---------------------------|
+           |          PCB 1            |
+           |---------------------------|
+           |          PCB 2            |
+           |---------------------------|
+           |           ...             |
+           |---------------------------|
+           |          PCB n            |
+           |---------------------------|<--- s_current_pcb_allocations_end
+           |                           |
+           |          HEAP             |
+           |   (shared between all     |
+           |        processes)         |
+           |                           |
+           |---------------------------|<--- s_current_stack_allocations_end
+           |       Proc n stack        |
+           |---------------------------|
+           |           ...             |
+           |---------------------------|
+           |       Proc 2 stack        |
+           |---------------------------|
+           |       Proc 1 stack        |
+0x10008000 +---------------------------+ High Address
+
+Note: PCBs and stacks must be allocated before the heap (because otherwise,
+we can't know where the heap should go)!
+
+*/
 #include "k_memory.h"
+#include "linked_list.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
+
+#define RAM_END_ADDR 0x10008000
+#define MEM_BLOCK_SIZE 512 // 128 * 4 bytes
+
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
 // stack grows down. Fully decremental stack.
-U32 *gp_stack;
-
-/**
- * @brief: Initialize RAM as follows:
-
-0x10008000+---------------------------+ High Address
-          |    Proc 1 STACK           |
-          |---------------------------|
-          |    Proc 2 STACK           |
-          |---------------------------|<--- gp_stack
-          |                           |
-          |        HEAP               |
-          |                           |
-          |---------------------------|
-          |        PCB 2              |
-          |---------------------------|
-          |        PCB 1              |
-          |---------------------------|
-          |        PCB pointers       |
-          |---------------------------|<--- gp_pcbs
-          |        Padding            |
-          |---------------------------|  
-          |Image$$RW_IRAM1$$ZI$$Limit |
-          |...........................|          
-          |       RTX  Image          |
-          |                           |
-0x10000000+---------------------------+ Low Address
-
-*/
+static U32* s_current_stack_allocations_end = NULL;
+static PCB* s_current_pcb_allocations_end = NULL;
 
 void memory_init(void)
 {
-	U8* p_end = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
-	int i;
-  U32* endHeap;
+	// This symbol is defined in the scatter file (see RVCT Linker User Guide)
+	extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
+	U8* p_begin = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
 	
-	// 8 bytes padding. Just to be parinoid.
-	p_end += 32;
+	// Padding. Just to be parinoid.
+	p_begin += 32;
 
-	// Allocate memory for pcb pointers
-	gp_pcbs = (PCB**)p_end;
-	p_end += NUM_TEST_PROCS * sizeof(PCB*);
-  
-	for (i = 0; i < NUM_TEST_PROCS; i++) {
-		gp_pcbs[i] = (PCB*)p_end;
-		p_end += sizeof(PCB); 
-	}
-
-#ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-#endif
+	s_current_pcb_allocations_end = (PCB*)p_begin;
 
 	// allocate memory for stacks
-	gp_stack = (U32*)RAM_END_ADDR;
-	if ((U32)gp_stack & 0x04) { // 8 byte alignment
-		--gp_stack; 
-	}
-
-	// Allocate memory for heap
-  gpStartBlock = (MemBlock*)p_end;
-	gpEndBlock = (MemBlock*)p_end;
-	endHeap = gp_stack - 32;
-	while ((U32*)p_end <= endHeap) {
-		PushMemBlock( (MemBlock*)p_end );
-		p_end += MEM_BLOCK_SIZE;
+	s_current_stack_allocations_end = (U32*)RAM_END_ADDR;
+	if ((U32)s_current_stack_allocations_end & 0x04) { // 8 byte alignment
+		--s_current_stack_allocations_end;
 	}
 }
 
@@ -86,40 +84,68 @@ void memory_init(void)
  * @brief: allocate stack for a process, align to 8 bytes boundary
  * @param: size, stack size in bytes
  * @return: The top of the stack (i.e. high address)
- * POST:  gp_stack is updated.
+ * POST:  s_current_stack_allocations_end is updated.
  */
-U32* alloc_stack(U32 size_b)
+U32* memory_alloc_stack(U32 size_b)
 {
-	U32* sp = gp_stack; /* gp_stack is always 8 bytes aligned */
-	
-	/* update gp_stack */
-	gp_stack = (U32*)((U8*)sp - size_b);
-	
+	if (!s_current_stack_allocations_end) {
+		LOG("Attempted to call memory_alloc_stack after heap has already been created, or before memory_init!");
+		return NULL;
+	}
+	// s_current_stack_allocations_end is always 8 bytes aligned
+	U32* sp = s_current_stack_allocations_end;
+
+	s_current_stack_allocations_end = (U32*)((U8*)sp - size_b);
+
 	/* 8 bytes alignement adjustment to exception stack frame */
-	if ((U32)gp_stack & 0x04) {
-		--gp_stack; 
+	if ((U32)s_current_stack_allocations_end & 0x04) {
+		--s_current_stack_allocations_end;
 	}
 	return sp;
 }
 
+PCB* memory_alloc_pcb(void)
+{
+	if (!s_current_pcb_allocations_end) {
+		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
+		return NULL;
+	}
+	return s_current_pcb_allocations_end++;
+}
+
+// Note: Make sure this is called *AFTER* all calls to
+// memory_alloc_stack and memory_alloc_pcb, otherwise those
+// calls will fail!
+void memory_init_heap()
+{
+	gpStartBlock = (MemBlock*)s_current_pcb_allocations_end;
+	gpEndBlock = (MemBlock*)s_current_pcb_allocations_end;
+
+	U32* endHeap = s_current_stack_allocations_end - 32;
+	while ((U32*)s_current_pcb_allocations_end <= endHeap) {
+		PushMemBlock((MemBlock*)s_current_pcb_allocations_end);
+		s_current_pcb_allocations_end += MEM_BLOCK_SIZE;
+	}
+
+	s_current_pcb_allocations_end = NULL;
+	s_current_stack_allocations_end = NULL;
+}
+
 void* k_request_memory_block(void) {
 	MemBlock* ret;
-#ifdef DEBUG_0 
-	printf("k_request_memory_block: entering...\n");
-#endif /* ! DEBUG_0 */
+	LOG("k_request_memory_block: entering...\n");
 	
 	ret = NULL;
 	while (NULL == ret) {
 		ret = PopMemBlock();
 	}
-	printf("request memory block ret %x", ret);
+	LOG("request memory block ret %x", ret);
 	return (void*) ret;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
-#ifdef DEBUG_0 
-	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
-#endif /* ! DEBUG_0 */
+	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
+
 	// TODO we may need to release it to the highest priority
 	// We don't clean because by C convention, everything is instantiated
 	PushMemBlock((MemBlock*)p_mem_blk);

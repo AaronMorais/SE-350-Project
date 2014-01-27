@@ -1,39 +1,33 @@
 #pragma once
 
-#define RTX_ERR -1
-#define RTX_OK  0
-
-#define NULL 0
-#define NUM_TEST_PROCS 3
+#include "rtx_shared.h"
 
 #ifdef DEBUG_0
-#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
+#include "printf.h"
+#define LOG(format, ...) printf(format "\r\n", ##__VA_ARGS__)
 #else
-#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+#define LOG(...)
 #endif
 
-typedef unsigned char U8;
-typedef unsigned int U32;
-
 typedef enum {
-	PROC_STATE_NEW = 0,
-	PROC_STATE_READY = 1,
-	PROC_STATE_RUN = 2,
-} ProcState;
+	PROCESS_STATE_NEW   = 0,
+	PROCESS_STATE_READY = 1,
+	PROCESS_STATE_RUN   = 2,
+} ProcessState;
 
 typedef struct {
 	// Stack pointer
-	U32 *mp_sp;
+	U32 *sp;
 	// Process ID
-	U32 m_pid;
-	ProcState m_state;
-	U32 m_priority;
+	U32 pid;
+	ProcessState state;
+	U32 priority;
 } PCB;
 
 /* initialization table item */
-typedef struct proc_init {
-	int m_pid;
-	int m_priority;
-	int m_stack_size;
-	void (*mpf_start_pc) ();
-} PROC_INIT;
+typedef struct {
+	int pid;
+	int priority;
+	int stack_size;
+	void (*entry_point) ();
+} ProcessInitialState;
