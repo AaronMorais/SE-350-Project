@@ -68,8 +68,8 @@ void memory_init(void)
 	extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
 	U8* p_begin = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
 	
-	// Padding. Just to be parinoid.
-	p_begin += 32;
+	// 8 bytes padding
+	p_begin += 4;
 
 	s_current_pcb_allocations_end = (PCB*)p_begin;
 
