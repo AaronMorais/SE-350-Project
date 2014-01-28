@@ -8,8 +8,7 @@
 typedef enum {
 	PRIORITY_STATUS_OK = 0,
 	PRIORITY_STATUS_INVALID_PCB = 1,
-	PRIORITY_STATUS_INVALID_PRIORITY = 2,
-	PRIORITY_STATUS_QUEUE_FULL = 3
+	PRIORITY_STATUS_INVALID_PRIORITY = 2
 } PriorityStatus;
 
 PriorityStatus priority_queue_insert(PCB* node);
