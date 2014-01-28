@@ -15,13 +15,14 @@ typedef enum {
 	PROCESS_STATE_RUN   = 2,
 } ProcessState;
 
-typedef struct {
+typedef struct PCB {
 	// Stack pointer
 	U32 *sp;
 	// Process ID
 	U32 pid;
 	ProcessState state;
 	U32 priority;
+	struct PCB* p_next;
 } PCB;
 
 /* initialization table item */

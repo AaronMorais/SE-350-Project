@@ -61,6 +61,8 @@ we can't know where the heap should go)!
 // stack grows down. Fully decremental stack.
 static U32* s_current_stack_allocations_end = NULL;
 static PCB* s_current_pcb_allocations_end = NULL;
+PCB* s_current_pcb_allocations_start = NULL;
+unsigned int g_pcb_counter = 0;
 
 void memory_init(void)
 {
@@ -68,8 +70,10 @@ void memory_init(void)
 	extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
 	U8* p_begin = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
 	
-	// Padding. Just to be parinoid.
+	// 8 bytes padding
 	p_begin += 32;
+
+	s_current_pcb_allocations_start = (PCB*)p_begin;
 
 	s_current_pcb_allocations_end = (PCB*)p_begin;
 
@@ -110,6 +114,7 @@ PCB* memory_alloc_pcb(void)
 		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
 		return NULL;
 	}
+	g_pcb_counter++;
 	return s_current_pcb_allocations_end++;
 }
 
@@ -122,11 +127,14 @@ void memory_init_heap()
 	gpEndBlock = (MemBlock*)s_current_pcb_allocations_end;
 
 	U32* endHeap = s_current_stack_allocations_end - 32;
-	while ((U32*)s_current_pcb_allocations_end <= endHeap) {
-		PushMemBlock((MemBlock*)s_current_pcb_allocations_end);
-		s_current_pcb_allocations_end += MEM_BLOCK_SIZE;
+	while ((U32*)gpEndBlock <= endHeap) {
+		PushMemBlock(gpEndBlock);
+		gpEndBlock += MEM_BLOCK_SIZE;
 	}
+}
 
+// Clearing them so that more processes and  stacks can't be made later
+void clear_pcb_stack_allocation_ptrs() {
 	s_current_pcb_allocations_end = NULL;
 	s_current_stack_allocations_end = NULL;
 }

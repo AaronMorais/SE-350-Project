@@ -12,12 +12,17 @@
 static void proc1(void)
 {
 	int i = 0;
+	int counter = 0;
 	while (1) {
 		uart0_put_char('0' + i%10);
 		i++;
 		if (i%5 != 0) continue;
 
 		uart0_put_string("\n\r");
+		if( counter == 0 ) {
+			counter++;
+			set_process_priority(2,PROCESS_PRIORITY_HIGH); 
+		}
 		int ret_val = release_processor();
 #ifdef DEBUG_0
 		printf("proc1: ret_val=%d\r\n", ret_val);

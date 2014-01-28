@@ -17,6 +17,7 @@ void k_rtx_init(void)
 	memory_init();
 	process_init();
 	memory_init_heap();
+	clear_pcb_stack_allocation_ptrs();
 	__enable_irq();
 	
 	// Start the first process
