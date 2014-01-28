@@ -30,19 +30,13 @@ PriorityStatus priority_queue_insert(PCB* proc) {
 
 PCB* priority_queue_pop(void) {
 	PCB* priority_list = NULL;
-	unsigned int highest_priority;
 	for (unsigned int priority = 0; priority < NUM_PRIORITIES; priority++) {
 		priority_list = s_priority_queue[priority];
-		highest_priority = priority;
-		if(priority_list != NULL) break;
+		if(priority_list == NULL) continue;
+		s_priority_queue[priority] = priority_list->p_next;
+		return priority_list;
 	}
-	
-	if (priority_list == NULL) return NULL;
-
-	PCB* ret = priority_list;
-	s_priority_queue[highest_priority] = priority_list->p_next;
-	
-	return ret;
+	return NULL;
 }
 
 void priority_change(int id, int prev_priority) {
