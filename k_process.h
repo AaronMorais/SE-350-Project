@@ -8,4 +8,4 @@
 void process_init(void);
 int process_create(ProcessInitialState* initial_state);
 PCB* scheduler(void);
-int k_release_process(void);
+int k_release_processor(void);
