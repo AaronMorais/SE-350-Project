@@ -48,6 +48,7 @@ we can't know where the heap should go)!
 */
 #include "k_memory.h"
 #include "linked_list.h"
+#include "priority_queue.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -61,6 +62,7 @@ we can't know where the heap should go)!
 // stack grows down. Fully decremental stack.
 static U32* s_current_stack_allocations_end = NULL;
 static PCB* s_current_pcb_allocations_end = NULL;
+static PCB* s_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
 PCB* s_current_pcb_allocations_start = NULL;
 unsigned int g_pcb_counter = 0;
 
@@ -142,20 +144,36 @@ void clear_pcb_stack_allocation_ptrs() {
 void* k_request_memory_block(void) {
 	MemBlock* ret;
 	LOG("k_request_memory_block: entering...\n");
-	
-	ret = NULL;
-	while (NULL == ret) {
-		ret = PopMemBlock();
-	}
+
+	ret = PopMemBlock();
+  while (ret == NULL) {
+    priority_queue_insert(g_current_process,s_blocked_process_priority_queue);
+    g_current_process->state = PROCESS_STATE_BLOCKED;
+    k_release_processor();
+  }
+
 	LOG("request memory block ret %x", ret);
 	return (void*) ret;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
 	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
+  if (p_mem_blk == NULL) {
+    return RTX_ERR;
+  }
 
-	// TODO we may need to release it to the highest priority
 	// We don't clean because by C convention, everything is instantiated
 	PushMemBlock((MemBlock*)p_mem_blk);
+  // We get the highest priority and push it into the ready queue
+  PCB* highest_priority_block = priority_queue_pop(s_blocked_process_priority_queue);
+  if ( highest_priority_block != NULL) {
+    highest_priority_block->state = PROCESS_STATE_READY;
+    priority_queue_insert(highest_priority_block, s_ready_process_priority_queue);
+    if( highest_priority_block->priority < g_current_process->priority ) {
+      LOG("k_release_memory_block: popped priority is higher than current. Preempting the process");
+      k_release_processor();
+    }
+  }
+
 	return RTX_OK;
 }

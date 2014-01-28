@@ -14,7 +14,9 @@ typedef enum {
 	PROCESS_PRIORITY_MEDIUM       = 1,
 	PROCESS_PRIORITY_LOW          = 2,
 	PROCESS_PRIORITY_LOWEST       = 3,
-	PROCESS_PRIORITY_NULL_PROCESS = 4
+	PROCESS_PRIORITY_NULL_PROCESS = 4,
+
+  PROCESS_PRIORITY_NUM          = 5
 } ProcessPriority;
 
 typedef unsigned char U8;

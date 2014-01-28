@@ -1,6 +1,8 @@
 #pragma once
 
 #include "k_rtx.h"
+#include "priority_queue.h"
+#include "k_process.h"
 
 extern PCB* s_current_pcb_allocations_start;
 extern unsigned int g_pcb_counter;

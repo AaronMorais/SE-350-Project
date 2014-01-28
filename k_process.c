@@ -19,14 +19,13 @@
 #include "k_process.h"
 #include "k_memory.h"
 
-#include "priority_queue.h"
-
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
 
 // Currently running process
-static PCB* s_current_process = NULL;
+PCB* g_current_process = NULL;
+PCB* s_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void process_init()
 {
@@ -64,7 +63,7 @@ int process_create(ProcessInitialState* initial_state)
 	}
 	pcb->sp = sp;
 
-	return priority_queue_insert(pcb);
+	return priority_queue_insert(pcb, s_ready_process_priority_queue);
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -73,14 +72,14 @@ int process_create(ProcessInitialState* initial_state)
  */
 static PCB* scheduler(void)
 {
-	PCB* next_process = priority_queue_pop();
-	
+	PCB* next_process = priority_queue_pop(s_ready_process_priority_queue);
+
 	if (next_process == NULL) {
 		printf("Warning: No processes on ready queue.\n");
 	} else {
 		LOG("next_process id is: %d", next_process->pid);
 	}
-	
+
 	return next_process;
 }
 
@@ -94,24 +93,24 @@ static int switch_to_process(PCB* new_proc)
 		LOG("NULL passed to switch_to_process!");
 		return RTX_ERR;
 	}
-	
+
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
 		return RTX_ERR;
 	}
-	
-	if (s_current_process && s_current_process->state != PROCESS_STATE_NEW) {
-		priority_queue_insert(s_current_process);
-		s_current_process->state = PROCESS_STATE_READY;
-		s_current_process->sp = (U32*) __get_MSP();
+
+	if (g_current_process && g_current_process->state != PROCESS_STATE_NEW) {
+		priority_queue_insert(g_current_process, s_ready_process_priority_queue);
+		g_current_process->state = PROCESS_STATE_READY;
+		g_current_process->sp = (U32*) __get_MSP();
 	}
-	
+
 	new_proc->state = PROCESS_STATE_RUN;
 	__set_MSP((U32) new_proc->sp);
-	
-	s_current_process = new_proc;
-	
+
+	g_current_process = new_proc;
+
 	if (state == PROCESS_STATE_NEW) {
 		// pop exception stack frame from the stack for a new processes
 		extern void __rte(void);
@@ -152,14 +151,14 @@ int k_set_process_priority(int id, int prior) {
 			valid = 1;
 		}
 	}
-	
+
 	if( valid == 0 ) {
 		LOG("k_set_process_priority: Attempted to set a priority id that doesn't exist!");
 		return -1;
 	}
-	
+
 	// change the queue....
-	priority_change(id, previous_priority);
+	priority_change(id, previous_priority, s_ready_process_priority_queue);
 	return 0;
 }
 
