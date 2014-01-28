@@ -45,3 +45,29 @@ PCB* priority_queue_pop(void) {
 	return ret;
 }
 
+void priority_change(int id, int prev_priority) {
+	PCB* priority_list = s_priority_queue[prev_priority];
+	
+	if (priority_list == NULL)
+		return;
+	
+	if (priority_list->pid == id ) {
+		s_priority_queue[prev_priority] = priority_list->p_next;
+		priority_list->p_next = NULL;
+		priority_queue_insert(priority_list);
+		return;
+	}
+		
+	while (priority_list->p_next != NULL) {
+		if (priority_list->p_next->pid == id) {
+			PCB* target_pcb = priority_list->p_next;
+			priority_list->p_next = target_pcb->p_next;
+			priority_queue_insert(target_pcb);
+			return;
+		}
+		priority_list = priority_list->p_next;
+	}
+	
+	return;
+}
+

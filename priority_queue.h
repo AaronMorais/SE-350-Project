@@ -12,7 +12,7 @@ typedef enum {
 } PriorityStatus;
 
 PriorityStatus priority_queue_insert(PCB* node);
-
 PCB* priority_queue_pop(void);
+void priority_change(int id, int prev_priority);
 
 #endif

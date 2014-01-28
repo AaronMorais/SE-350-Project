@@ -138,3 +138,37 @@ int k_release_processor(void)
 	
 	return switch_to_process(new_proc);
 }
+
+int k_set_process_priority(int id, int prior) {
+	int valid = 0;
+	int previous_priority = 0;
+	if( prior < 0 || prior >= PROCESS_PRIORITY_NULL_PROCESS )
+		return -1;
+	
+	for( unsigned int i = 0; i < g_pcb_counter; i++ ){
+		if( s_current_pcb_allocations_start[i].pid == id ) {
+			previous_priority = s_current_pcb_allocations_start[i].priority;
+			s_current_pcb_allocations_start[i].priority = prior;
+			valid = 1;
+		}
+	}
+	
+	if( valid == 0 ) {
+		LOG("k_set_process_priority: Attempted to set a priority id that doesn't exist!");
+		return -1;
+	}
+	
+	// change the queue....
+	priority_change(id, previous_priority);
+	return 0;
+}
+
+int k_get_process_priority(int id) {
+	for( unsigned int i = 0; i < g_pcb_counter; i++ ){
+		if( s_current_pcb_allocations_start[i].pid == id ) {
+			return s_current_pcb_allocations_start[i].priority;
+		}
+	}
+	
+	return -1;
+}
