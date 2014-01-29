@@ -108,7 +108,9 @@ static int switch_to_process(PCB* new_proc)
 		LOG("NULL passed to switch_to_process!");
 		return RTX_ERR;
 	}
-
+	
+	if (new_proc == g_current_process) return RTX_OK;
+ 	
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
