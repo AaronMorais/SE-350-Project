@@ -27,11 +27,26 @@
 PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
+void null_process() {
+	while (1) {
+		k_release_processor();	
+		LOG("Running null process");
+	}
+}
+
 void process_init()
 {
 	// Test process initial set up
 	extern void create_test_procs(void);
 	create_test_procs();
+	
+	// Set up NULL process
+	ProcessInitialState null_state;
+	null_state.pid = (U32)(0);
+	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
+	null_state.stack_size = 0x100;
+	null_state.entry_point = &null_process;
+	process_create(&null_state);
 }
 
 // Note: This must be called during system initialization, before
