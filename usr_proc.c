@@ -12,6 +12,7 @@
 static void proc1(void)
 {
 	while (1) {
+		printf("proc1\r\n");
 		void* mem = request_memory_block();
 		release_memory_block(mem);
 		set_process_priority(2, PROCESS_PRIORITY_HIGH);
@@ -24,6 +25,7 @@ static void proc1(void)
 static void proc2(void)
 {
 	while (1) {
+		printf("proc2\r\n");
 		set_process_priority(1, PROCESS_PRIORITY_HIGH);
 		release_processor();
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
@@ -35,6 +37,7 @@ static void proc2(void)
 static void proc3(void)
 {
 	while (1) {
+		printf("proc3\r\n");
 		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
 		release_processor();
 	}
@@ -46,7 +49,7 @@ void create_test_procs()
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
 		test_proc.priority = PROCESS_PRIORITY_LOWEST;
-		test_proc.stack_size = 0x100;
+		test_proc.stack_size = 0x200;
 		switch (i) {
 		case 0: test_proc.entry_point = &proc1; break;
 		case 1: test_proc.entry_point = &proc2; break;

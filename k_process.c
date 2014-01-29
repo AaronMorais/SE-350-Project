@@ -44,7 +44,7 @@ void process_init()
 	ProcessInitialState null_state;
 	null_state.pid = (U32)(0);
 	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
-	null_state.stack_size = 0x100;
+	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
 	process_create(&null_state);
 }
@@ -90,7 +90,7 @@ static PCB* scheduler(void)
 	PCB* next_process = priority_queue_pop(g_ready_process_priority_queue);
 
 	if (next_process == NULL) {
-		printf("Warning: No processes on ready queue.\n");
+		LOG("Warning: No processes on ready queue.\n");
 	} else {
 		LOG("next_process id is: %d", next_process->pid);
 	}
@@ -117,6 +117,7 @@ static int switch_to_process(PCB* new_proc)
 		return RTX_ERR;
 	}
 
+	LOG("before g_current_process if");
 	if (g_current_process && g_current_process->state != PROCESS_STATE_NEW) {
 		g_current_process->state = PROCESS_STATE_READY;
 		g_current_process->sp = (U32*) __get_MSP();
@@ -132,8 +133,10 @@ static int switch_to_process(PCB* new_proc)
 		extern void __rte(void);
 		// Note: This actually causes us to start executing the procees
 		// with crazy assembly magic (See HAL.c)!
+			LOG("About to __rte");
 		__rte();
 	}
+	LOG("About to return");
 	return RTX_OK;
 }
 
