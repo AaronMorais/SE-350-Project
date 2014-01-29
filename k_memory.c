@@ -26,7 +26,7 @@ We lay out our RAM something like the following (see the lab manual for further 
            |           ...             |
            |---------------------------|
            |          PCB n            |
-           |---------------------------|<--- s_current_pcb_allocations_end
+           |---------------------------|<--- s_pcb_allocations_end
            |                           |
            |          HEAP             |
            |   (shared between all     |
@@ -48,19 +48,24 @@ we can't know where the heap should go)!
 */
 #include "k_memory.h"
 #include "linked_list.h"
+#include "priority_queue.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
 
 #define RAM_END_ADDR 0x10008000
-#define MEM_BLOCK_SIZE 512 // 128 * 4 bytes
+#define MEM_BLOCK_SIZE (128 / sizeof(MemBlock*)) // 128 divided by sizeof(MemBlock*)
 
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
 // stack grows down. Fully decremental stack.
 static U32* s_current_stack_allocations_end = NULL;
-static PCB* s_current_pcb_allocations_end = NULL;
+static PCB* s_pcb_allocations_end = NULL;
+
+PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
+PCB* s_pcb_allocations_start = NULL;
+unsigned int g_pcb_counter = 0;
 
 void memory_init(void)
 {
@@ -68,10 +73,12 @@ void memory_init(void)
 	extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
 	U8* p_begin = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
 	
-	// 8 bytes padding
+	// 4 bytes padding
 	p_begin += 4;
 
-	s_current_pcb_allocations_end = (PCB*)p_begin;
+	s_pcb_allocations_start = (PCB*)p_begin;
+
+	s_pcb_allocations_end = (PCB*)p_begin;
 
 	// allocate memory for stacks
 	s_current_stack_allocations_end = (U32*)RAM_END_ADDR;
@@ -106,11 +113,12 @@ U32* memory_alloc_stack(U32 size_b)
 
 PCB* memory_alloc_pcb(void)
 {
-	if (!s_current_pcb_allocations_end) {
+	if (!s_pcb_allocations_end) {
 		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
 		return NULL;
 	}
-	return s_current_pcb_allocations_end++;
+	g_pcb_counter++;
+	return s_pcb_allocations_end++;
 }
 
 // Note: Make sure this is called *AFTER* all calls to
@@ -118,36 +126,55 @@ PCB* memory_alloc_pcb(void)
 // calls will fail!
 void memory_init_heap()
 {
-	gpStartBlock = (MemBlock*)s_current_pcb_allocations_end;
-	gpEndBlock = (MemBlock*)s_current_pcb_allocations_end;
+	gpStartBlock = (MemBlock*)s_pcb_allocations_end;
+	gpEndBlock = (MemBlock*)s_pcb_allocations_end;
 
 	U32* endHeap = s_current_stack_allocations_end - 32;
-	while ((U32*)s_current_pcb_allocations_end <= endHeap) {
-		PushMemBlock((MemBlock*)s_current_pcb_allocations_end);
-		s_current_pcb_allocations_end += MEM_BLOCK_SIZE;
+	while ((U32*)gpEndBlock <= endHeap) {
+		PushMemBlock(gpEndBlock);
+		gpEndBlock += MEM_BLOCK_SIZE;
 	}
+}
 
-	s_current_pcb_allocations_end = NULL;
+// Clearing them so that more processes and  stacks can't be made later
+void clear_pcb_stack_allocation_ptrs() {
+	s_pcb_allocations_end = NULL;
 	s_current_stack_allocations_end = NULL;
 }
 
 void* k_request_memory_block(void) {
 	MemBlock* ret;
 	LOG("k_request_memory_block: entering...\n");
-	
-	ret = NULL;
-	while (NULL == ret) {
-		ret = PopMemBlock();
-	}
+
+	ret = PopMemBlock();
+  while (ret == NULL) {
+    priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
+    g_current_process->state = PROCESS_STATE_BLOCKED;
+    k_release_processor();
+  }
+
 	LOG("request memory block ret %x", ret);
 	return (void*) ret;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
 	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
+  if (p_mem_blk == NULL) {
+    return RTX_ERR;
+  }
 
-	// TODO we may need to release it to the highest priority
 	// We don't clean because by C convention, everything is instantiated
 	PushMemBlock((MemBlock*)p_mem_blk);
+  // We get the highest priority and push it into the ready queue
+  PCB* highest_priority_block = priority_queue_pop(g_blocked_process_priority_queue);
+  if (highest_priority_block != NULL) {
+    highest_priority_block->state = PROCESS_STATE_READY;
+    priority_queue_insert(g_ready_process_priority_queue, highest_priority_block);
+    if (highest_priority_block->priority < g_current_process->priority) {
+      LOG("k_release_memory_block: popped priority is higher than current. Preempting the process");
+      k_release_processor();
+    }
+  }
+
 	return RTX_OK;
 }

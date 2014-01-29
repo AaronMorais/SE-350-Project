@@ -27,3 +27,17 @@ int release_memory_block(void* block)
 	extern int _release_memory_block(U32 p_func, void* p_mem_blk) __svc_indirect(0);
 	return _release_memory_block((U32)k_release_memory_block, block);
 }
+
+int set_process_priority(int process_id, int priority)
+{
+	extern int k_set_process_priority(int, int);
+	extern int _set_process_priority(U32 p_func, int id, int prior) __svc_indirect(0);
+	return _set_process_priority((U32)k_set_process_priority, process_id, priority);
+}
+
+int get_process_priority(int process_id)
+{
+	extern int k_get_process_priority(int);
+	extern int _get_process_priority(U32 p_func, int id) __svc_indirect(0);
+	return _get_process_priority((U32)k_get_process_priority, process_id);
+}
