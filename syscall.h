@@ -8,3 +8,5 @@ void rtx_init(void);
 int release_processor(void);
 void* request_memory_block(void);
 int release_memory_block(void*);
+int get_process_priority(int process_id);
+int set_process_priority(int process_id, int priority);
