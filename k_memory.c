@@ -72,7 +72,7 @@ void memory_init(void)
 	// This symbol is defined in the scatter file (see RVCT Linker User Guide)
 	extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
 	U8* p_begin = (U8*)&Image$$RW_IRAM1$$ZI$$Limit;
-	
+
 	// 8 bytes padding
 	p_begin += 32;
 
@@ -148,7 +148,7 @@ void* k_request_memory_block(void) {
 
 	ret = PopMemBlock();
   while (ret == NULL) {
-    priority_queue_insert(g_current_process,g_blocked_process_priority_queue);
+    priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
     g_current_process->state = PROCESS_STATE_BLOCKED;
     k_release_processor();
   }
@@ -167,10 +167,10 @@ int k_release_memory_block(void* p_mem_blk) {
 	PushMemBlock((MemBlock*)p_mem_blk);
   // We get the highest priority and push it into the ready queue
   PCB* highest_priority_block = priority_queue_pop(g_blocked_process_priority_queue);
-  if ( highest_priority_block != NULL) {
+  if (highest_priority_block != NULL) {
     highest_priority_block->state = PROCESS_STATE_READY;
-    priority_queue_insert(highest_priority_block, g_ready_process_priority_queue);
-    if( highest_priority_block->priority < g_current_process->priority ) {
+    priority_queue_insert(g_ready_process_priority_queue, highest_priority_block);
+    if (highest_priority_block->priority < g_current_process->priority) {
       LOG("k_release_memory_block: popped priority is higher than current. Preempting the process");
       k_release_processor();
     }

@@ -78,7 +78,7 @@ int process_create(ProcessInitialState* initial_state)
 	}
 	pcb->sp = sp;
 
-	return priority_queue_insert(pcb, g_ready_process_priority_queue);
+	return priority_queue_insert(g_ready_process_priority_queue, pcb);
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -142,9 +142,9 @@ static int switch_to_process(PCB* new_proc)
  */
 int k_release_processor(void)
 {
-	priority_queue_insert(g_current_process, g_ready_process_priority_queue);
+	priority_queue_insert(g_ready_process_priority_queue, g_current_process);
 	PCB *new_proc = scheduler();
-
+	
 	if (new_proc == NULL) {
 		LOG("No process to switch to.");
 		return RTX_ERR;
@@ -173,10 +173,10 @@ int k_set_process_priority(int id, int priority) {
 	}
 
 	// change the ready queue.... if we can find it
-	int found = priority_change(id, previous_priority, g_ready_process_priority_queue);
+	int found = priority_change(g_ready_process_priority_queue, id, previous_priority);
 
 	if (found == 0) // We try to find it in the other queue and change the priority there
-		priority_change(id, previous_priority, g_blocked_process_priority_queue);
+		priority_change(g_blocked_process_priority_queue, id, previous_priority);
 
 	PCB* top_priority_running = priority_queue_top(g_ready_process_priority_queue);
 

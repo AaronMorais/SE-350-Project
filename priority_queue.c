@@ -1,6 +1,6 @@
 #include "priority_queue.h"
 
-PriorityStatus priority_queue_insert(PCB* proc, PCB** ppHead) {
+PriorityStatus priority_queue_insert(PCB** ppHead, PCB* proc) {
 	if (proc == NULL) {
 		return PRIORITY_STATUS_INVALID_PCB;
 	}
@@ -48,7 +48,7 @@ PCB* priority_queue_top(PCB** ppHead) {
 
 // Returns 0 if process was not found
 // Returns 1 if process was found
-int priority_change(int id, int prev_priority, PCB** ppReady) {
+int priority_change(PCB** ppReady, int id, int prev_priority) {
 	PCB* priority_list = ppReady[prev_priority];
 
 	if (priority_list == NULL)
@@ -57,7 +57,7 @@ int priority_change(int id, int prev_priority, PCB** ppReady) {
 	if (priority_list->pid == id ) {
 		ppReady[prev_priority] = priority_list->p_next;
 		priority_list->p_next = NULL;
-		priority_queue_insert(priority_list, ppReady);
+		priority_queue_insert(ppReady, priority_list);
 		return 1;
 	}
 
@@ -65,7 +65,7 @@ int priority_change(int id, int prev_priority, PCB** ppReady) {
 		if (priority_list->p_next->pid == id) {
 			PCB* target_pcb = priority_list->p_next;
 			priority_list->p_next = target_pcb->p_next;
-			priority_queue_insert(target_pcb, ppReady);
+			priority_queue_insert(ppReady, target_pcb);
 			return 1;
 		}
 		priority_list = priority_list->p_next;
