@@ -34,6 +34,7 @@ PCB* priority_queue_pop(void) {
 		priority_list = s_priority_queue[priority];
 		if(priority_list == NULL) continue;
 		s_priority_queue[priority] = priority_list->p_next;
+		priority_list->p_next = NULL;
 		return priority_list;
 	}
 	return NULL;
