@@ -11,54 +11,32 @@
 
 static void proc1(void)
 {
-	int i = 0;
-	int counter = 0;
 	while (1) {
-		uart0_put_char('0' + i%10);
-		i++;
-		if (i%5 != 0) continue;
-
-		uart0_put_string("\n\r");
-		if( counter == 0 ) {
-			counter++;
-			set_process_priority(2,PROCESS_PRIORITY_HIGH); 
-		}
-		int ret_val = release_processor();
-#ifdef DEBUG_0
-		printf("proc1: ret_val=%d\r\n", ret_val);
-#endif
+		void* mem = request_memory_block();
+		release_memory_block(mem);
+		set_process_priority(2, PROCESS_PRIORITY_HIGH);
+		release_processor();
+		set_process_priority(2, PROCESS_PRIORITY_LOW);
+		release_processor();
 	}
 }
 
 static void proc2(void)
 {
-	int i = 0;
 	while (1) {
-		uart0_put_char('a' + i%26);
-		i++;
-		if (i%5 != 0) continue;
-
-		uart0_put_string("\n\r");
-		int ret_val = release_processor();
-#ifdef DEBUG_0
-		printf("proc2: ret_val=%d\r\n", ret_val);
-#endif
+		set_process_priority(1, PROCESS_PRIORITY_HIGH);
+		release_processor();
+		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
+		release_processor();
+		request_memory_block();
 	}
 }
 
 static void proc3(void)
 {
-	int i = 0;
 	while (1) {
-		uart0_put_char('A' + i%26);
-		i++;
-		if (i%5 != 0) continue;
-
-		uart0_put_string("\n\r");
-		int ret_val = release_processor();
-#ifdef DEBUG_0
-		printf("proc3: ret_val=%d\r\n", ret_val);
-#endif
+		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
+		release_processor();
 	}
 }
 
