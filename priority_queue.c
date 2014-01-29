@@ -46,6 +46,21 @@ PCB* priority_queue_top(PCB** ppHead) {
   return NULL;
 }
 
+//void priority_queue_print(PCB** ppHead) {
+//  PCB* priority_list = NULL;
+//  for (unsigned int priority = 0; priority < PROCESS_PRIORITY_NUM; priority++) {
+//    priority_list = ppHead[priority];
+//		LOG("Entered priority #%d", priority);
+//    while (priority_list != NULL) {
+//			LOG("  pid:%d", priority_list->pid);
+//			priority_list = priority_list->p_next;
+//		}
+//  }
+//}
+
+void priority_queue_print(PCB** ppHead) {
+	return;
+}
 // Returns 0 if process was not found
 // Returns 1 if process was found
 int priority_change(PCB** ppReady, int id, int prev_priority) {

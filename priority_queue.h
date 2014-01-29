@@ -12,6 +12,7 @@ typedef enum {
 PriorityStatus priority_queue_insert(PCB** ppHead, PCB* proc);
 PCB* priority_queue_pop(PCB** ppHead);
 PCB* priority_queue_top(PCB** ppHead);
+void priority_queue_print(PCB** ppHead);
 int priority_change(PCB** ppReady, int id, int prev_priority);
 
 #endif

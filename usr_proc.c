@@ -32,6 +32,7 @@ static void proc1(void)
 
 static void proc2(void)
 {
+	printf("proc2!!!!!!!!!!!!!");
 	int i = 0;
 	while (1) {
 		uart0_put_char('a' + i%26);
