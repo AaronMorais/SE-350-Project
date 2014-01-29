@@ -40,6 +40,7 @@ PCB* priority_queue_pop(PCB** ppHead) {
 
 	PCB* ret = priority_list;
 	ppHead[highest_priority] = priority_list->p_next;
+	ret->p_next = NULL;
 
 	return ret;
 }
