@@ -6,7 +6,7 @@
 #define INITIAL_xPSR 0x01000000
 
 extern PCB* g_current_process;
-extern PCB* s_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
+extern PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void process_init(void);
 int process_create(ProcessInitialState* initial_state);

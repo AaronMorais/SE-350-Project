@@ -27,34 +27,38 @@ PriorityStatus priority_queue_insert(PCB* proc, PCB** ppHead) {
 
 
 PCB* priority_queue_pop(PCB** ppHead) {
-	PCB* priority_list = NULL;
-	unsigned int highest_priority;
-
-	for (unsigned int priority = 0; priority < PROCESS_PRIORITY_NUM; priority++) {
-		priority_list = ppHead[priority];
-		highest_priority = priority;
-		if(priority_list != NULL) break;
-	}
-
-	if (priority_list == NULL) return NULL;
-
-	PCB* ret = priority_list;
-	ppHead[highest_priority] = priority_list->p_next;
-
-	return ret;
+  PCB* pcb = priority_queue_top(ppHead);
+  if (pcb) {
+    ppHead[pcb->priority] = pcb->p_next;
+    pcb->p_next = NULL;
+    return pcb;
+  }
+  return NULL;
 }
 
-void priority_change(int id, int prev_priority, PCB** ppReady) {
+PCB* priority_queue_top(PCB** ppHead) {
+  PCB* priority_list = NULL;
+  for (unsigned int priority = 0; priority < PROCESS_PRIORITY_NUM; priority++) {
+    priority_list = ppHead[priority];
+    if(priority_list == NULL) continue;
+    return priority_list;
+  }
+  return NULL;
+}
+
+// Returns 0 if process was not found
+// Returns 1 if process was found
+int priority_change(int id, int prev_priority, PCB** ppReady) {
 	PCB* priority_list = ppReady[prev_priority];
 
 	if (priority_list == NULL)
-		return;
+		return 0;
 
 	if (priority_list->pid == id ) {
 		ppReady[prev_priority] = priority_list->p_next;
 		priority_list->p_next = NULL;
 		priority_queue_insert(priority_list, ppReady);
-		return;
+		return 1;
 	}
 
 	while (priority_list->p_next != NULL) {
@@ -62,11 +66,11 @@ void priority_change(int id, int prev_priority, PCB** ppReady) {
 			PCB* target_pcb = priority_list->p_next;
 			priority_list->p_next = target_pcb->p_next;
 			priority_queue_insert(target_pcb, ppReady);
-			return;
+			return 1;
 		}
 		priority_list = priority_list->p_next;
 	}
 
-	return;
+	return 0;
 }
 

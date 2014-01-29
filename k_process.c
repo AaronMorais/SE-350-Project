@@ -25,7 +25,7 @@
 
 // Currently running process
 PCB* g_current_process = NULL;
-PCB* s_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
+PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void process_init()
 {
@@ -63,7 +63,7 @@ int process_create(ProcessInitialState* initial_state)
 	}
 	pcb->sp = sp;
 
-	return priority_queue_insert(pcb, s_ready_process_priority_queue);
+	return priority_queue_insert(pcb, g_ready_process_priority_queue);
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -72,7 +72,7 @@ int process_create(ProcessInitialState* initial_state)
  */
 static PCB* scheduler(void)
 {
-	PCB* next_process = priority_queue_pop(s_ready_process_priority_queue);
+	PCB* next_process = priority_queue_pop(g_ready_process_priority_queue);
 
 	if (next_process == NULL) {
 		printf("Warning: No processes on ready queue.\n");
@@ -101,7 +101,6 @@ static int switch_to_process(PCB* new_proc)
 	}
 
 	if (g_current_process && g_current_process->state != PROCESS_STATE_NEW) {
-		priority_queue_insert(g_current_process, s_ready_process_priority_queue);
 		g_current_process->state = PROCESS_STATE_READY;
 		g_current_process->sp = (U32*) __get_MSP();
 	}
@@ -122,14 +121,15 @@ static int switch_to_process(PCB* new_proc)
 }
 
 /**
- * @brief release_processor(). 
+ * @brief release_processor().
  * @return RTX_ERR on error and zero on success
- * POST: s_current_process gets updated to next to run process
+ * POST: g_current_process gets updated to next to run process
  */
 int k_release_processor(void)
 {
+	priority_queue_insert(g_current_process, g_ready_process_priority_queue);
 	PCB *new_proc = scheduler();
-	
+
 	if (new_proc == NULL) {
 		LOG("No process to switch to.");
 		return RTX_ERR;
@@ -138,27 +138,41 @@ int k_release_processor(void)
 	return switch_to_process(new_proc);
 }
 
-int k_set_process_priority(int id, int prior) {
+int k_set_process_priority(int id, int priority) {
 	int valid = 0;
 	int previous_priority = 0;
-	if( prior < 0 || prior >= PROCESS_PRIORITY_NULL_PROCESS )
+	if (priority < 0 || priority >= PROCESS_PRIORITY_NULL_PROCESS)
 		return -1;
-	
-	for( unsigned int i = 0; i < g_pcb_counter; i++ ){
-		if( s_current_pcb_allocations_start[i].pid == id ) {
+
+	for (unsigned int i = 0; i < g_pcb_counter; i++) {
+		if (s_current_pcb_allocations_start[i].pid == id) {
 			previous_priority = s_current_pcb_allocations_start[i].priority;
-			s_current_pcb_allocations_start[i].priority = prior;
+			s_current_pcb_allocations_start[i].priority = priority;
 			valid = 1;
 		}
 	}
 
-	if( valid == 0 ) {
+	if (valid == 0) {
 		LOG("k_set_process_priority: Attempted to set a priority id that doesn't exist!");
 		return -1;
 	}
 
-	// change the queue....
-	priority_change(id, previous_priority, s_ready_process_priority_queue);
+	// change the ready queue.... if we can find it
+	int found = priority_change(id, previous_priority, g_ready_process_priority_queue);
+
+	if (found == 0) // We try to find it in the other queue and change the priority there
+		priority_change(id, previous_priority, g_blocked_process_priority_queue);
+
+	PCB* top_priority_running = priority_queue_top(g_ready_process_priority_queue);
+
+	// Preempting if the id isn't the same and the priority given is higher than the current running process
+	// OR if the process is trying to change itself (which it wont find itself in the blocked or running queue)
+	// and the top of the running queue has higher priority
+	if(g_current_process->priority > top_priority_running->priority) {
+		LOG("k_set_process_priority: setting a priority to be higher than itself. Preempting." );
+		k_release_processor();
+	}
+
 	return 0;
 }
 

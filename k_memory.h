@@ -6,6 +6,7 @@
 
 extern PCB* s_current_pcb_allocations_start;
 extern unsigned int g_pcb_counter;
+extern PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void memory_init(void);
 PCB* memory_alloc_pcb(void);
