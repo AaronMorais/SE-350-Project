@@ -55,7 +55,7 @@ we can't know where the heap should go)!
 #endif
 
 #define RAM_END_ADDR 0x10008000
-#define MEM_BLOCK_SIZE 512 // 128 * 4 bytes
+#define MEM_BLOCK_SIZE (128 / sizeof(MemBlock*)) // 128 divided by sizeof(MemBlock*)
 
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
