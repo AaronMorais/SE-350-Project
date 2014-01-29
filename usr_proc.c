@@ -15,7 +15,7 @@ static void proc1(void)
 		printf("proc1\r\n");
 		void* mem = request_memory_block();
 		release_memory_block(mem);
-		set_process_priority(2, PROCESS_PRIORITY_HIGH);
+//		set_process_priority(2, PROCESS_PRIORITY_HIGH);
 		release_processor();
 		set_process_priority(2, PROCESS_PRIORITY_LOW);
 		release_processor();
@@ -26,7 +26,7 @@ static void proc2(void)
 {
 	while (1) {
 		printf("proc2\r\n");
-		set_process_priority(1, PROCESS_PRIORITY_HIGH);
+//		set_process_priority(1, PROCESS_PRIORITY_HIGH);
 		release_processor();
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		release_processor();
@@ -43,17 +43,30 @@ static void proc3(void)
 	}
 }
 
+static void proc4(void)
+{
+	while (1) {
+			set_process_priority(4, PROCESS_PRIORITY_HIGH);
+			printf("proc4\r\n");
+			request_memory_block();
+	}
+}
+
 void create_test_procs()
 {
 	ProcessInitialState test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
 		test_proc.priority = PROCESS_PRIORITY_LOWEST;
+		if (i == 3) {
+			test_proc.priority = PROCESS_PRIORITY_HIGH;
+		}
 		test_proc.stack_size = 0x200;
 		switch (i) {
 		case 0: test_proc.entry_point = &proc1; break;
 		case 1: test_proc.entry_point = &proc2; break;
 		case 2: test_proc.entry_point = &proc3; break;
+		case 3: test_proc.entry_point = &proc4; break;
 		}
 		process_create(&test_proc);
 	}

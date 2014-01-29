@@ -5,11 +5,11 @@ MemBlock* gpEndBlock = NULL;
 
 void PushMemBlock(MemBlock* pBlock) {
 	if(gpEndBlock == gpStartBlock) {
-		gpStartBlock = pBlock;
-		pBlock->pNext = gpEndBlock;
+		gpEndBlock = pBlock;
+		pBlock->pNext = gpStartBlock;
 	} else {
-		MemBlock* temp = gpStartBlock;
-		gpStartBlock = pBlock;
+		MemBlock* temp = gpEndBlock;
+		gpEndBlock = pBlock;
 		pBlock->pNext = temp;
 	}
 	
@@ -17,10 +17,10 @@ void PushMemBlock(MemBlock* pBlock) {
 }
 
 MemBlock* PopMemBlock() {
-	MemBlock* ret = gpStartBlock;
+	MemBlock* ret = gpEndBlock;
 	
 	if(gpEndBlock != gpStartBlock) {
-		gpStartBlock = gpStartBlock->pNext;
+		gpEndBlock = gpEndBlock->pNext;
 		return ret;
 	} else {
 		return NULL;

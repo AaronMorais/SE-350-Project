@@ -130,9 +130,11 @@ void memory_init_heap()
 	gpEndBlock = (MemBlock*)s_pcb_allocations_end;
 
 	U32* endHeap = s_current_stack_allocations_end - 32;
-	while ((U32*)gpEndBlock <= endHeap) {
-		PushMemBlock(gpEndBlock);
-		gpEndBlock += MEM_BLOCK_SIZE;
+	
+	MemBlock* alloc_ptr = gpEndBlock;
+	while ((U32*)alloc_ptr <= endHeap) {
+		PushMemBlock(alloc_ptr);
+		alloc_ptr += MEM_BLOCK_SIZE;
 	}
 }
 

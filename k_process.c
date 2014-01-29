@@ -147,7 +147,9 @@ static int switch_to_process(PCB* new_proc)
  */
 int k_release_processor(void)
 {
-	priority_queue_insert(g_ready_process_priority_queue, g_current_process);
+	if( g_current_process->state != PROCESS_STATE_BLOCKED )
+		priority_queue_insert(g_ready_process_priority_queue, g_current_process);
+	
 	PCB *new_proc = scheduler();
 	
 	if (new_proc == NULL) {
