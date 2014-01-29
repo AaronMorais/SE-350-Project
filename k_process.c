@@ -43,7 +43,7 @@ void process_init()
 	
 	// Set up NULL process
 	ProcessInitialState null_state;
-	null_state.pid = (U32)(NUM_TEST_PROCS + 1);
+	null_state.pid = (U32)(0);
 	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
 	null_state.stack_size = 0x100;
 	null_state.entry_point = &null_process;
