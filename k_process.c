@@ -160,9 +160,9 @@ int k_set_process_priority(int id, int priority) {
 		return -1;
 
 	for (unsigned int i = 0; i < g_pcb_counter; i++) {
-		if (s_current_pcb_allocations_start[i].pid == id) {
-			previous_priority = s_current_pcb_allocations_start[i].priority;
-			s_current_pcb_allocations_start[i].priority = priority;
+		if (s_pcb_allocations_start[i].pid == id) {
+			previous_priority = s_pcb_allocations_start[i].priority;
+			s_pcb_allocations_start[i].priority = priority;
 			valid = 1;
 		}
 	}
@@ -193,8 +193,8 @@ int k_set_process_priority(int id, int priority) {
 
 int k_get_process_priority(int id) {
 	for( unsigned int i = 0; i < g_pcb_counter; i++ ){
-		if( s_current_pcb_allocations_start[i].pid == id ) {
-			return s_current_pcb_allocations_start[i].priority;
+		if( s_pcb_allocations_start[i].pid == id ) {
+			return s_pcb_allocations_start[i].priority;
 		}
 	}
 	

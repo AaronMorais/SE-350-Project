@@ -26,7 +26,7 @@ We lay out our RAM something like the following (see the lab manual for further 
            |           ...             |
            |---------------------------|
            |          PCB n            |
-           |---------------------------|<--- s_current_pcb_allocations_end
+           |---------------------------|<--- s_pcb_allocations_end
            |                           |
            |          HEAP             |
            |   (shared between all     |
@@ -61,10 +61,10 @@ we can't know where the heap should go)!
 // The first stack starts at the RAM high address
 // stack grows down. Fully decremental stack.
 static U32* s_current_stack_allocations_end = NULL;
-static PCB* s_current_pcb_allocations_end = NULL;
+static PCB* s_pcb_allocations_end = NULL;
 
 PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
-PCB* s_current_pcb_allocations_start = NULL;
+PCB* s_pcb_allocations_start = NULL;
 unsigned int g_pcb_counter = 0;
 
 void memory_init(void)
@@ -76,9 +76,9 @@ void memory_init(void)
 	// 8 bytes padding
 	p_begin += 32;
 
-	s_current_pcb_allocations_start = (PCB*)p_begin;
+	s_pcb_allocations_start = (PCB*)p_begin;
 
-	s_current_pcb_allocations_end = (PCB*)p_begin;
+	s_pcb_allocations_end = (PCB*)p_begin;
 
 	// allocate memory for stacks
 	s_current_stack_allocations_end = (U32*)RAM_END_ADDR;
@@ -113,12 +113,12 @@ U32* memory_alloc_stack(U32 size_b)
 
 PCB* memory_alloc_pcb(void)
 {
-	if (!s_current_pcb_allocations_end) {
+	if (!s_pcb_allocations_end) {
 		LOG("Attempted to call memory_alloc_pcb after heap has already been created, or before memory_init!");
 		return NULL;
 	}
 	g_pcb_counter++;
-	return s_current_pcb_allocations_end++;
+	return s_pcb_allocations_end++;
 }
 
 // Note: Make sure this is called *AFTER* all calls to
@@ -126,8 +126,8 @@ PCB* memory_alloc_pcb(void)
 // calls will fail!
 void memory_init_heap()
 {
-	gpStartBlock = (MemBlock*)s_current_pcb_allocations_end;
-	gpEndBlock = (MemBlock*)s_current_pcb_allocations_end;
+	gpStartBlock = (MemBlock*)s_pcb_allocations_end;
+	gpEndBlock = (MemBlock*)s_pcb_allocations_end;
 
 	U32* endHeap = s_current_stack_allocations_end - 32;
 	while ((U32*)gpEndBlock <= endHeap) {
@@ -138,7 +138,7 @@ void memory_init_heap()
 
 // Clearing them so that more processes and  stacks can't be made later
 void clear_pcb_stack_allocation_ptrs() {
-	s_current_pcb_allocations_end = NULL;
+	s_pcb_allocations_end = NULL;
 	s_current_stack_allocations_end = NULL;
 }
 

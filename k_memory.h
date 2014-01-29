@@ -4,7 +4,7 @@
 #include "priority_queue.h"
 #include "k_process.h"
 
-extern PCB* s_current_pcb_allocations_start;
+extern PCB* s_pcb_allocations_start;
 extern unsigned int g_pcb_counter;
 extern PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
 
