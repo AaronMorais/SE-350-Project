@@ -6,19 +6,19 @@
 #include "uart_polling.h"
 #include "k_process.h"
 
-// Global variables for processes to change and check
-#define TOTAL_NUMBER_OF_TESTS         	 7
-#define GET_PRIORITY_TEST_0              0
-#define SET_PRIORITY_TEST_1              1
-#define RELEASE_PROCESSOR_TEST_2         2
-#define RELEASE_MEMORY_TEST_3            3
-#define REQUEST_MEMORY_TEST_4            4
-#define	RELEASE_MEMORY_UNBLOCKED_TEST_5  5
-#define	REQUEST_MEMORY_BLOCKED_TEST_6    6
+typedef enum {
+	SET_PRIORITY_TEST              = 0,
+	RELEASE_PROCESSOR_TEST         = 1,
+	RELEASE_MEMORY_TEST            = 2,
+	REQUEST_MEMORY_TEST            = 3,
+	RELEASE_MEMORY_UNBLOCKED_TEST  = 4,
+	REQUEST_MEMORY_BLOCKED_TEST    = 5,
+	TEST_NUM											 = 6
+} Test;
 
 static int s_passing_tests = 0;
 static int s_failing_tests = 0;
-static int test_results[TOTAL_NUMBER_OF_TESTS] = {0};
+static int test_results[TEST_NUM] = {0};
 
 static int times_proc1_ran = 0;
 static int times_proc2_ran = 0;
@@ -39,9 +39,7 @@ static void proc1(void)
 {
 	while (1) {
 		times_proc1_ran++;
-		if (times_proc1_ran == 1 && get_process_priority(1) == PROCESS_PRIORITY_MEDIUM) {			
-			test_results[GET_PRIORITY_TEST_0] = 1;
-		}
+
 		printf("proc1\r\n");
 		set_process_priority(2, PROCESS_PRIORITY_HIGH);
 	}
@@ -56,7 +54,7 @@ static void proc2(void)
 		times_proc2_ran++;
 		//it should have it's priority set by proc1
 		if (times_proc1_ran == 1 && get_process_priority(2) == PROCESS_PRIORITY_HIGH) {
-			test_results[SET_PRIORITY_TEST_1] = 1;
+			test_results[SET_PRIORITY_TEST] = 1;
 		}
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		
@@ -72,7 +70,7 @@ static void proc2(void)
 	}
 }
 
-// Starts as priority LOW
+// Starts as priority MEDIUM
 static void proc3(void)
 {
 	while (1) {
@@ -80,7 +78,7 @@ static void proc3(void)
 		times_proc3_ran++;
 //#### asserts that proc2 ran the 3 times and that this is running because of the release processor call
 		if (times_proc2_ran == 3 && times_proc3_ran == 1 && after_set_priority_before_release) {
-			test_results[RELEASE_PROCESSOR_TEST_2] = 1;
+			test_results[RELEASE_PROCESSOR_TEST] = 1;
 		}
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		set_process_priority(2, PROCESS_PRIORITY_LOWEST);
@@ -98,7 +96,7 @@ static void proc4(void)
 	mem_block_2 = request_memory_block();
 	
 	if (mem_block_2 != NULL) {
-		test_results[REQUEST_MEMORY_TEST_4] = 1;
+		test_results[REQUEST_MEMORY_TEST] = 1;
 	}
 	
 	// Setting proc5 to have higher priority so it should 
@@ -109,7 +107,7 @@ static void proc4(void)
 	// Proc4 should preempty and go to proc5 since 
 	// since it is no longer blocked and has a memory block
 	s_requested_all_blocks = 1;
-	test_results[REQUEST_MEMORY_BLOCKED_TEST_6] = 1;
+	test_results[REQUEST_MEMORY_BLOCKED_TEST] = 1;
 	release_memory_block(mem_block);
 	
 	// Proc 5 receives the memory block and uses it
@@ -131,13 +129,13 @@ static void proc5(void)
 	// want_all_blocks unblocks after proc4 
 	// releases a block of memory and sets the 
 	// s_request_all_blocks to be true
-	test_results[RELEASE_MEMORY_UNBLOCKED_TEST_5] = 1;
+	test_results[RELEASE_MEMORY_UNBLOCKED_TEST] = 1;
 	int* num_ptr = (int*)want_all_blocks;
 	*num_ptr = 5;
 	
 	int status = release_memory_block(num_ptr);
 	if (status == RTX_OK) {
-		test_results[RELEASE_MEMORY_TEST_3] = 1;
+		test_results[RELEASE_MEMORY_TEST] = 1;
 	}
 	
 	set_process_priority(5, PROCESS_PRIORITY_LOWEST);
@@ -179,8 +177,8 @@ void create_test_procs()
 void run_all_tests()
 {
 	printf("G002_test: START\r\n");
-	printf("G002_test: total %d tests\r\n", TOTAL_NUMBER_OF_TESTS);
-	for (int i = 0; i < TOTAL_NUMBER_OF_TESTS; i++) {
+	printf("G002_test: total %d tests\r\n", TEST_NUM);
+	for (int i = 0; i < TEST_NUM; i++) {
 		if (test_results[i]){
 			printf("G002_test: test %d OK\r\n", i+1);
 			s_passing_tests++;
@@ -189,7 +187,7 @@ void run_all_tests()
 			s_failing_tests++;
 		}
 	}
-	printf("G002_test: %d/%d tests OK\r\n", s_passing_tests, TOTAL_NUMBER_OF_TESTS);
-	printf("G002_test: %d/%d tests FAIL\r\n", s_failing_tests, TOTAL_NUMBER_OF_TESTS);
+	printf("G002_test: %d/%d tests OK\r\n", s_passing_tests, TEST_NUM);
+	printf("G002_test: %d/%d tests FAIL\r\n", s_failing_tests, TEST_NUM);
 	printf("G002_test: END\n");
 }
