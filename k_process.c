@@ -154,7 +154,7 @@ int process_prempt_if_necessary(void)
 	// Priorities have the inverse ordering of normal numbers,
 	// so higher priority numbers are actually lower priority
 	// processes.
-	if (top->priority > g_current_process->priority) {
+	if (top->priority >= g_current_process->priority) {
 		return RTX_OK;
 	}
 
