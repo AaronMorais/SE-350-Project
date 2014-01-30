@@ -9,8 +9,8 @@
 
 #define NUM_TEST_PROCS 6
 
-#include "printf.h"
 #ifdef DEBUG_0
+#include "printf.h"
 #define LOG(format, ...) printf(format "\r\n", ##__VA_ARGS__)
 #else
 #define LOG(...)

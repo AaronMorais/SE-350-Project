@@ -135,18 +135,16 @@ void memory_init_heap()
 
 void* k_request_memory_block(void) {
 	HeapBlock* block = heap_alloc_block();
-	if (block != NULL) {
-		return block;
-	}
+	while (block == NULL) {
+		priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
+		g_current_process->state = PROCESS_STATE_BLOCKED;
 
-	priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
-	g_current_process->state = PROCESS_STATE_BLOCKED;
-
-	// Block until a memory block becomes available
-	k_release_processor();
-	block = heap_alloc_block();
-	if (block == NULL) {
-		LOG("Warning: Blocked process scheduled to run when no blocks free!");
+		// Block until a memory block becomes available
+		k_release_processor();
+		block = heap_alloc_block();
+		if (block == NULL) {
+			LOG("Warning: Blocked process scheduled to run when no blocks free!");
+		}
 	}
 
 	LOG("alloc'd block %x", block);
@@ -158,6 +156,7 @@ int k_release_memory_block(void* p_mem_blk) {
 
 	HeapStatus status = heap_free_block((HeapBlock*)p_mem_blk);
 	if (status != HEAP_STATUS_OK) {
+		LOG("Heap returned error code %d", status);
 		return RTX_ERR;
 	}
 
