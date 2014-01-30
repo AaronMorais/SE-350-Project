@@ -7,7 +7,7 @@
 
 #define NULL 0
 
-#define NUM_TEST_PROCS 3
+#define NUM_TEST_PROCS 4
 
 typedef enum {
 	PROCESS_PRIORITY_HIGH         = 0,
