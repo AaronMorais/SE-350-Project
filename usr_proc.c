@@ -37,14 +37,14 @@ static int times_proc3_ran = 0;
 // and process 2 should start running
 static void proc1(void)
 {
-	while (1) {
-		times_proc1_ran++;
-		if (times_proc1_ran == 1 && get_process_priority(1) == PROCESS_PRIORITY_MEDIUM) {
-			test_results[GET_PRIORITY_TEST] = 1;
-		}
+	//while (1) {
+		//times_proc1_ran++;
+		//if (times_proc1_ran == 1 && get_process_priority(1) == PROCESS_PRIORITY_MEDIUM) {
+//			test_results[GET_PRIORITY_TEST] = 1;
+//		}
 		printf("proc1\r\n");
-		set_process_priority(2, PROCESS_PRIORITY_HIGH);
-	}
+//		set_process_priority(2, PROCESS_PRIORITY_HIGH);
+	//}
 }
 
 static int after_set_priority_before_release = 0;
