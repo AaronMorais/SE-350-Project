@@ -97,7 +97,7 @@ static void proc4(void)
 	void* mem_block = request_memory_block();
 	mem_block_2 = request_memory_block();
 	
-	if( mem_block_2 != NULL ) {
+	if (mem_block_2 != NULL) {
 		test_results[REQUEST_MEMORY_TEST_4] = 1;
 	}
 	
@@ -116,7 +116,7 @@ static void proc4(void)
 	// Then it sets its priority to be lowest, in which
 	// the function comes here, and we set ourself to be
 	// lowest so proc 6 can take over.
-	set_process_priority( 4, PROCESS_PRIORITY_LOWEST );
+	set_process_priority(4, PROCESS_PRIORITY_LOWEST);
 	release_processor();
 }
 
@@ -136,12 +136,11 @@ static void proc5(void)
 	*num_ptr = 5;
 	
 	int status = release_memory_block(num_ptr);
-	// status 0 means it's okay
-	if( status == 0 ) {
+	if (status == RTX_OK) {
 		test_results[RELEASE_MEMORY_TEST_3] = 1;
 	}
 	
-	set_process_priority( 5, PROCESS_PRIORITY_LOWEST );
+	set_process_priority(5, PROCESS_PRIORITY_LOWEST);
 }
 
 static void proc6(void)

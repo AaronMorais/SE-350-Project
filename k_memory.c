@@ -134,27 +134,32 @@ void memory_init_heap()
 }
 
 void* k_request_memory_block(void) {
-	LOG("k_request_memory_block: entering...\n");
+	HeapBlock* block = heap_alloc_block();
+	if (block != NULL) {
+		return block;
+	}
 
-	HeapBlock* ret = heap_alloc_block();
-	while (ret == NULL) {
-		priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
-		g_current_process->state = PROCESS_STATE_BLOCKED;
+	priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
+	g_current_process->state = PROCESS_STATE_BLOCKED;
 
-		// Block until a memory block becomes available
-		k_release_processor();
-		ret = heap_alloc_block();
+	// Block until a memory block becomes available
+	k_release_processor();
+	block = heap_alloc_block();
+	if (block == NULL) {
 		LOG("Warning: Blocked process scheduled to run when no blocks free!");
 	}
 
-	LOG("request memory block ret %x", ret);
-	return (void*)ret;
+	LOG("alloc'd block %x", block);
+	return (void*)block;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
 	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 
-	heap_free_block((HeapBlock*)p_mem_blk);
+	HeapStatus status = heap_free_block((HeapBlock*)p_mem_blk);
+	if (status != HEAP_STATUS_OK) {
+		return RTX_ERR;
+	}
 
 	PCB* blocked_process = priority_queue_pop(g_blocked_process_priority_queue);
 	if (blocked_process == NULL) {
