@@ -25,7 +25,7 @@
 
 // Currently running process
 PCB* g_current_process = NULL;
-PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
+PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 
 void null_process() {
 	while (1) {
@@ -61,6 +61,7 @@ int process_create(ProcessInitialState* initial_state)
 	pcb->pid = initial_state->pid;
 	pcb->state = PROCESS_STATE_NEW;
 	pcb->priority = initial_state->priority;
+	pcb->p_next = NULL;
 
 	// initilize exception stack frame (i.e. initial context)
 	U32* sp = memory_alloc_stack(initial_state->stack_size);
@@ -191,7 +192,7 @@ int k_set_process_priority(int id, int priority) {
 	// Preempting if the id isn't the same and the priority given is higher than the current running process
 	// OR if the process is trying to change itself (which it wont find itself in the blocked or running queue)
 	// and the top of the running queue has higher priority
-	if(g_current_process->priority > top_priority_running->priority) {
+	if(top_priority_running != NULL && g_current_process->priority > top_priority_running->priority) {
 		LOG("k_set_process_priority: setting a priority to be higher than itself. Preempting." );
 		k_release_processor();
 	}

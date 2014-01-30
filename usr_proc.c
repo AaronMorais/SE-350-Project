@@ -7,14 +7,14 @@
 #include "k_process.h"
 
 // Global variables for processes to change and check
-#define TOTAL_NUMBER_OF_TESTS         7
-#define GET_PRIORITY_TEST             0
-#define SET_PRIORITY_TEST             1
-#define RELEASE_PROCESSOR_TEST        2
-#define RELEASE_MEMORY_TEST           3
-#define REQUEST_MEMORY_TEST           4
-#define	RELEASE_MEMORY_UNBLOCKED_TEST 5
-#define	REQUEST_MEMORY_BLOCKED_TEST   6
+#define TOTAL_NUMBER_OF_TESTS         	 7
+#define GET_PRIORITY_TEST_0              0
+#define SET_PRIORITY_TEST_1              1
+#define RELEASE_PROCESSOR_TEST_2         2
+#define RELEASE_MEMORY_TEST_3            3
+#define REQUEST_MEMORY_TEST_4            4
+#define	RELEASE_MEMORY_UNBLOCKED_TEST_5  5
+#define	REQUEST_MEMORY_BLOCKED_TEST_6    6
 
 static int s_passing_tests = 0;
 static int s_failing_tests = 0;
@@ -39,8 +39,8 @@ static void proc1(void)
 {
 	while (1) {
 		times_proc1_ran++;
-		if (times_proc1_ran == 1 && get_process_priority(1) == PROCESS_PRIORITY_MEDIUM) {
-			test_results[GET_PRIORITY_TEST] = 1;
+		if (times_proc1_ran == 1 && get_process_priority(1) == PROCESS_PRIORITY_MEDIUM) {			
+			test_results[GET_PRIORITY_TEST_0] = 1;
 		}
 		printf("proc1\r\n");
 		set_process_priority(2, PROCESS_PRIORITY_HIGH);
@@ -56,7 +56,7 @@ static void proc2(void)
 		times_proc2_ran++;
 		//it should have it's priority set by proc1
 		if (times_proc1_ran == 1 && get_process_priority(2) == PROCESS_PRIORITY_HIGH) {
-			test_results[SET_PRIORITY_TEST] = 1;
+			test_results[SET_PRIORITY_TEST_1] = 1;
 		}
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		
@@ -65,7 +65,7 @@ static void proc2(void)
 //#### waits till proc2 runs twice, sets its priority to be the same level as the other processes
 //#### proc3 should run after releasing processor		
 		if (times_proc2_ran == 3) {
-			set_process_priority(2, PROCESS_PRIORITY_LOW);
+			set_process_priority(2, PROCESS_PRIORITY_MEDIUM);
 			after_set_priority_before_release = 1;
 			release_processor();
 		}
@@ -80,8 +80,10 @@ static void proc3(void)
 		times_proc3_ran++;
 //#### asserts that proc2 ran the 3 times and that this is running because of the release processor call
 		if (times_proc2_ran == 3 && times_proc3_ran == 1 && after_set_priority_before_release) {
-			test_results[RELEASE_PROCESSOR_TEST] = 1;
+			test_results[RELEASE_PROCESSOR_TEST_2] = 1;
 		}
+		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
+		set_process_priority(2, PROCESS_PRIORITY_LOWEST);
 		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
 //		release_processor();
 	}
@@ -96,7 +98,7 @@ static void proc4(void)
 	mem_block_2 = request_memory_block();
 	
 	if( mem_block_2 != NULL ) {
-		test_results[REQUEST_MEMORY_TEST] = 1;
+		test_results[REQUEST_MEMORY_TEST_4] = 1;
 	}
 	
 	// Setting proc5 to have higher priority so it should 
@@ -107,8 +109,15 @@ static void proc4(void)
 	// Proc4 should preempty and go to proc5 since 
 	// since it is no longer blocked and has a memory block
 	s_requested_all_blocks = 1;
-	test_results[REQUEST_MEMORY_BLOCKED_TEST] = 1;
+	test_results[REQUEST_MEMORY_BLOCKED_TEST_6] = 1;
 	release_memory_block(mem_block);
+	
+	// Proc 5 receives the memory block and uses it
+	// Then it sets its priority to be lowest, in which
+	// the function comes here, and we set ourself to be
+	// lowest so proc 6 can take over.
+	set_process_priority( 4, PROCESS_PRIORITY_LOWEST );
+	release_processor();
 }
 
 static void proc5(void)
@@ -122,15 +131,17 @@ static void proc5(void)
 	// want_all_blocks unblocks after proc4 
 	// releases a block of memory and sets the 
 	// s_request_all_blocks to be true
-	test_results[RELEASE_MEMORY_UNBLOCKED_TEST] = 1;
+	test_results[RELEASE_MEMORY_UNBLOCKED_TEST_5] = 1;
 	int* num_ptr = (int*)want_all_blocks;
 	*num_ptr = 5;
 	
 	int status = release_memory_block(num_ptr);
 	// status 0 means it's okay
 	if( status == 0 ) {
-		test_results[RELEASE_MEMORY_TEST] = 1;
+		test_results[RELEASE_MEMORY_TEST_3] = 1;
 	}
+	
+	set_process_priority( 5, PROCESS_PRIORITY_LOWEST );
 }
 
 static void proc6(void)
@@ -143,7 +154,7 @@ void create_test_procs()
 	ProcessInitialState test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
-		test_proc.priority = PROCESS_PRIORITY_LOW;
+		test_proc.priority = PROCESS_PRIORITY_MEDIUM;
 		test_proc.stack_size = 0x200;
 		switch (i) {
 		case 0: 
@@ -152,12 +163,15 @@ void create_test_procs()
 			break;
 		case 1: 
 			test_proc.entry_point = &proc2; 
-			test_proc.priority = PROCESS_PRIORITY_LOWEST; 
+			test_proc.priority = PROCESS_PRIORITY_LOW; 
 			break;
 		case 2: test_proc.entry_point = &proc3; break;
 		case 3: test_proc.entry_point = &proc4; break;
 		case 4: test_proc.entry_point = &proc5; break;
-		case 5: test_proc.entry_point = &proc6; break;
+		case 5: 
+			test_proc.entry_point = &proc6; 
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
 		}
 		process_create(&test_proc);
 	}
@@ -165,18 +179,18 @@ void create_test_procs()
 
 void run_all_tests()
 {
-	printf("G002_test: START\n");
-	printf("G002_test: total %d tests\n", TOTAL_NUMBER_OF_TESTS);
+	printf("G002_test: START\r\n");
+	printf("G002_test: total %d tests\r\n", TOTAL_NUMBER_OF_TESTS);
 	for (int i = 0; i < TOTAL_NUMBER_OF_TESTS; i++) {
 		if (test_results[i]){
-			printf("G002_test: test %d OK\n", i+1);
+			printf("G002_test: test %d OK\r\n", i+1);
 			s_passing_tests++;
 		} else {
-			printf("G002_test: test %d FAIL\n", i+1);
+			printf("G002_test: test %d FAIL\r\n", i+1);
 			s_failing_tests++;
 		}
 	}
-	printf("G002_test: %d/%d tests OK\n", s_passing_tests, TOTAL_NUMBER_OF_TESTS);
-	printf("G002_test: %d/%d tests FAIL\n", s_failing_tests, TOTAL_NUMBER_OF_TESTS);
+	printf("G002_test: %d/%d tests OK\r\n", s_passing_tests, TOTAL_NUMBER_OF_TESTS);
+	printf("G002_test: %d/%d tests FAIL\r\n", s_failing_tests, TOTAL_NUMBER_OF_TESTS);
 	printf("G002_test: END\n");
 }
