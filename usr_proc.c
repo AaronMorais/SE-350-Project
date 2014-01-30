@@ -12,13 +12,14 @@
 static void proc1(void)
 {
 	while (1) {
-		printf("proc1\r\n");
 		void* mem = request_memory_block();
-		release_memory_block(mem);
-		set_process_priority(2, PROCESS_PRIORITY_HIGH);
-		release_processor();
-		set_process_priority(2, PROCESS_PRIORITY_LOW);
-		release_processor();
+		
+		printf("proc1 %p\r\n", mem);
+//		release_memory_block(mem);
+//		set_process_priority(2, PROCESS_PRIORITY_HIGH);
+//		release_processor();
+//		set_process_priority(2, PROCESS_PRIORITY_LOW);
+//		release_processor();
 	}
 }
 
@@ -26,9 +27,9 @@ static void proc2(void)
 {
 	while (1) {
 		printf("proc2\r\n");
-		set_process_priority(1, PROCESS_PRIORITY_HIGH);
+//		set_process_priority(1, PROCESS_PRIORITY_HIGH);
 		release_processor();
-		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
+//		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		release_processor();
 		request_memory_block();
 	}
@@ -38,7 +39,7 @@ static void proc3(void)
 {
 	while (1) {
 		printf("proc3\r\n");
-		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
+//		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
 		release_processor();
 	}
 }
