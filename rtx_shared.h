@@ -7,7 +7,14 @@
 
 #define NULL 0
 
-#define NUM_TEST_PROCS 4
+#define NUM_TEST_PROCS 6
+
+#include "printf.h"
+#ifdef DEBUG_0
+#define LOG(format, ...) printf(format "\r\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
 
 typedef enum {
 	PROCESS_PRIORITY_HIGH         = 0,
