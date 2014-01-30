@@ -25,11 +25,10 @@ static int times_proc2_ran = 0;
 static int times_proc3_ran = 0;
 
 /* 
- * ##### Proc1 and proc2 test the get and set process priority functionality. #####
- * Proc1 starts at MEDIUM priority and proc2 starts at LOWEST priority while everything else is LOW
- * Proc1 asserts that its priority is MEDIUM (testing get process priority)
+ * ##### Proc1 and proc2 test the set process priority functionality. #####
+ * Proc1 starts at MEDIUM priority and proc2 starts at LOW priority while everything else is LOW
  * Proc1 then changes priority of proc2 to be HIGH triggering preemption on proc1 and running proc2
- * Proc2 asserts that proc1 ran only 1 time before proc2 ran implying that the set_process_priority worked (second test)
+ * Proc2 asserts that proc1 ran only 1 time before proc2 ran implying that the set_process_priority worked (first test)
  */
 
 // Starts as priority Medium
@@ -39,18 +38,16 @@ static void proc1(void)
 {
 	while (1) {
 		times_proc1_ran++;
-
-		printf("proc1\r\n");
 		set_process_priority(2, PROCESS_PRIORITY_HIGH);
 	}
 }
 
 static int after_set_priority_before_release = 0;
-// Starts as priority LOWEST
+// Starts as priority LOW
+// Will be set to HIGH and preempt proc1
 static void proc2(void)
 {
 	while (1) {
-		printf("proc2\r\n");
 		times_proc2_ran++;
 		//it should have it's priority set by proc1
 		if (times_proc1_ran == 1 && get_process_priority(2) == PROCESS_PRIORITY_HIGH) {
@@ -60,7 +57,7 @@ static void proc2(void)
 		
 		
 //#### Testing release processor
-//#### waits till proc2 runs twice, sets its priority to be the same level as the other processes
+//#### waits until proc2 runs three times, sets its priority to be the same level as the other processes
 //#### proc3 should run after releasing processor		
 		if (times_proc2_ran == 3) {
 			set_process_priority(2, PROCESS_PRIORITY_MEDIUM);
@@ -74,7 +71,6 @@ static void proc2(void)
 static void proc3(void)
 {
 	while (1) {
-		printf("proc3\r\n");
 		times_proc3_ran++;
 //#### asserts that proc2 ran the 3 times and that this is running because of the release processor call
 		if (times_proc2_ran == 3 && times_proc3_ran == 1 && after_set_priority_before_release) {
@@ -176,18 +172,32 @@ void create_test_procs()
 
 void run_all_tests()
 {
-	printf("G002_test: START\r\n");
-	printf("G002_test: total %d tests\r\n", TEST_NUM);
+	uart0_put_string("G002_test: START\r\n");
+	uart0_put_string("G002_test: total ");
+	uart0_put_char(TEST_NUM + '0');
+	uart0_put_string(" tests\r\n");
 	for (int i = 0; i < TEST_NUM; i++) {
 		if (test_results[i]){
-			printf("G002_test: test %d OK\r\n", i+1);
+			uart0_put_string("G002_test: test ");
+			uart0_put_char((i + 1) + '0');
+			uart0_put_string(" OK\r\n");
 			s_passing_tests++;
 		} else {
-			printf("G002_test: test %d FAIL\r\n", i+1);
+			uart0_put_string("G002_test: test ");
+			uart0_put_char((i + 1) + '0');
+			uart0_put_string(" FAIL\r\n");
 			s_failing_tests++;
 		}
 	}
-	printf("G002_test: %d/%d tests OK\r\n", s_passing_tests, TEST_NUM);
-	printf("G002_test: %d/%d tests FAIL\r\n", s_failing_tests, TEST_NUM);
-	printf("G002_test: END\n");
+	uart0_put_string("G002_test: ");
+	uart0_put_char(s_passing_tests + '0');
+	uart0_put_string("/");
+	uart0_put_char(TEST_NUM + '0');
+	uart0_put_string(" tests OK\r\n");
+	uart0_put_string("G002_test: ");
+	uart0_put_char(s_failing_tests + '0');
+	uart0_put_string("/");
+	uart0_put_char(TEST_NUM + '0');
+	uart0_put_string(" tests FAIL\r\n");
+	uart0_put_string("G002_test: END\n");
 }
