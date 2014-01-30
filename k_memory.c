@@ -47,7 +47,7 @@ we can't know where the heap should go)!
 
 */
 #include "k_memory.h"
-#include "linked_list.h"
+#include "heap.h"
 #include "priority_queue.h"
 
 #ifdef DEBUG_0
@@ -55,7 +55,6 @@ we can't know where the heap should go)!
 #endif
 
 #define RAM_END_ADDR 0x10008000
-#define MEM_BLOCK_SIZE (128 / sizeof(MemBlock*)) // 128 divided by sizeof(MemBlock*)
 
 // The last allocated stack low address. 8 bytes aligned
 // The first stack starts at the RAM high address
@@ -126,14 +125,7 @@ PCB* memory_alloc_pcb(void)
 // calls will fail!
 void memory_init_heap()
 {
-	gpStartBlock = (MemBlock*)s_pcb_allocations_end;
-	gpEndBlock = (MemBlock*)s_pcb_allocations_end;
-
-	U32* endHeap = s_current_stack_allocations_end - 32;
-	while ((U32*)gpEndBlock <= endHeap) {
-		PushMemBlock(gpEndBlock);
-		gpEndBlock += MEM_BLOCK_SIZE;
-	}
+	heap_init((U8*)s_pcb_allocations_end, (U8*)s_current_stack_allocations_end);
 }
 
 // Clearing them so that more processes and  stacks can't be made later
@@ -143,10 +135,10 @@ void clear_pcb_stack_allocation_ptrs() {
 }
 
 void* k_request_memory_block(void) {
-	MemBlock* ret;
+	HeapBlock* ret;
 	LOG("k_request_memory_block: entering...\n");
 
-	ret = PopMemBlock();
+	ret = heap_alloc_block();
   while (ret == NULL) {
     priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
     g_current_process->state = PROCESS_STATE_BLOCKED;
@@ -164,7 +156,7 @@ int k_release_memory_block(void* p_mem_blk) {
   }
 
 	// We don't clean because by C convention, everything is instantiated
-	PushMemBlock((MemBlock*)p_mem_blk);
+	heap_free_block((HeapBlock*)p_mem_blk);
   // We get the highest priority and push it into the ready queue
   PCB* highest_priority_block = priority_queue_pop(g_blocked_process_priority_queue);
   if (highest_priority_block != NULL) {

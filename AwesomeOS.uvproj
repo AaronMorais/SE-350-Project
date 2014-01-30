@@ -442,11 +442,6 @@
               <FilePath>.\usr_proc.c</FilePath>
             </File>
             <File>
-              <FileName>linked_list.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\linked_list.c</FilePath>
-            </File>
-            <File>
               <FileName>priority_queue.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\priority_queue.c</FilePath>
@@ -455,6 +450,11 @@
               <FileName>syscall.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\syscall.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\heap.c</FilePath>
             </File>
           </Files>
         </Group>
