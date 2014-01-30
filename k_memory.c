@@ -141,6 +141,7 @@ void* k_request_memory_block(void) {
 
 		// Block until a memory block becomes available
 		k_release_processor();
+
 		block = heap_alloc_block();
 		if (block == NULL) {
 			LOG("Warning: Blocked process scheduled to run when no blocks free!");
@@ -168,9 +169,10 @@ int k_release_memory_block(void* p_mem_blk) {
 
 	blocked_process->state = PROCESS_STATE_READY;
 	priority_queue_insert(g_ready_process_priority_queue, blocked_process);
+	// Lower numbers = higher priorities
 	if (blocked_process->priority < g_current_process->priority) {
 		LOG("k_release_memory_block: popped priority is higher than current. Preempting the process");
-		k_release_processor();
+		return k_release_processor();
 	}
 
 	return RTX_OK;

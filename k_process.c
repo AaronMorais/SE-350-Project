@@ -138,6 +138,7 @@ static int switch_to_process(PCB* new_proc)
 			LOG("About to __rte");
 		__rte();
 	}
+
 	LOG("About to return");
 	return RTX_OK;
 }

@@ -43,10 +43,12 @@ void heap_init(byte* start_address, byte* end_address) {
 }
 
 HeapStatus heap_free_block(HeapBlock* memory_block) {
-	int offset = memory_block - s_heap_start;
-	int is_aligned = (offset % HEAP_BLOCK_SIZE) == 0;
-	if (!is_aligned) {
-		LOG("WARNING: Invalid memory_block passed to heap_free_block.");
+	U8* byte_aligned_block = (U8*)memory_block;
+	U8* byte_aligned_heap_start = (U8*)s_heap_start;
+	int offset = byte_aligned_block - byte_aligned_heap_start;
+	int alignment = offset % HEAP_BLOCK_SIZE;
+	if (alignment != 0) {
+		LOG("WARNING: memory_block passed to heap_free_block has invalid alignment %d!", alignment);
 		return HEAP_STATUS_INVALID_MEMORY_BLOCK;
 	}
 

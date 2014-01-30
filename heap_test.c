@@ -13,12 +13,23 @@ void test_basic() {
 
 	HeapBlock* mem = heap_alloc_block();
 	assert(mem != NULL);
+	HeapBlock* mem2 = heap_alloc_block();
+	assert(mem2 != NULL);
 
 	status = heap_free_block(mem);
+	assert(status == HEAP_STATUS_OK);
+	status = heap_free_block(mem2);
 	assert(status == HEAP_STATUS_OK);
 
 	status = heap_free_block(NULL);
 	assert(status != HEAP_STATUS_OK);
+
+	mem = heap_alloc_block();
+	assert(mem != NULL);
+	status = heap_free_block((HeapBlock*)((void*)mem + 1));
+	assert(status != HEAP_STATUS_OK);
+	status = heap_free_block(mem);
+	assert(status == HEAP_STATUS_OK);
 
 	for (int i = 0; i < 10; i++) {
 		mem = heap_alloc_block();
