@@ -5,7 +5,7 @@
 typedef enum {
 	PROCESS_STATE_NEW     = 0,
 	PROCESS_STATE_READY   = 1,
-	PROCESS_STATE_RUN     = 2,
+	PROCESS_STATE_RUNNING  = 2,
 	PROCESS_STATE_BLOCKED = 3
 } ProcessState;
 

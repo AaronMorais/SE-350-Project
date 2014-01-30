@@ -123,7 +123,7 @@ static int switch_to_process(PCB* new_proc)
 		g_current_process->sp = (U32*) __get_MSP();
 	}
 
-	new_proc->state = PROCESS_STATE_RUN;
+	new_proc->state = PROCESS_STATE_RUNNING;
 	__set_MSP((U32) new_proc->sp);
 
 	g_current_process = new_proc;
@@ -147,8 +147,9 @@ static int switch_to_process(PCB* new_proc)
  */
 int k_release_processor(void)
 {
-	if( g_current_process->state != PROCESS_STATE_BLOCKED )
+	if (g_current_process->state == PROCESS_STATE_RUNNING) {
 		priority_queue_insert(g_ready_process_priority_queue, g_current_process);
+	}
 	
 	PCB *new_proc = scheduler();
 	
