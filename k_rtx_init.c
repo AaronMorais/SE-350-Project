@@ -12,7 +12,6 @@
 
 void k_rtx_init(void)
 {
-	printf("INSIDE K RTX INIT");
 	__disable_irq();
 	uart0_init();
 	memory_init();
