@@ -38,21 +38,26 @@ void null_process()
 void process_init()
 {
 	// Test process initial set up
-	extern void create_test_procs(void);
-	create_test_procs();
+	extern void set_test_procs(void);
+	set_test_procs();
 	
 	// Set up NULL process
-	ProcessInitialState null_state;
+	PROC_INIT null_state;
 	null_state.pid = (U32)(0);
 	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
 	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
 	process_create(&null_state);
+	
+	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
+		process_create(&g_test_procs[i]);
+	}
 }
 
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
-int process_create(ProcessInitialState* initial_state)
+int process_create(PROC_INIT* initial_state)
 {
 	PCB* pcb = memory_alloc_pcb();
 	if (!pcb) {

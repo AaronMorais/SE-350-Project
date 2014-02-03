@@ -142,9 +142,10 @@ static void proc6(void)
 	run_all_tests();
 }
 
-void create_test_procs()
+PROC_INIT g_test_procs[NUM_TEST_PROCS];
+void set_test_procs()
 {
-	ProcessInitialState test_proc = {0};
+	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
 		test_proc.priority = PROCESS_PRIORITY_MEDIUM;
@@ -166,7 +167,7 @@ void create_test_procs()
 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
 			break;
 		}
-		process_create(&test_proc);
+		g_test_procs[i] = test_proc;
 	}
 }
 

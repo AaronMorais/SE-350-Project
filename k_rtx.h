@@ -25,4 +25,4 @@ typedef struct {
 	int priority;
 	int stack_size;
 	void (*entry_point) ();
-} ProcessInitialState;
+} PROC_INIT;
