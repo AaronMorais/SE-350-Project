@@ -3,6 +3,16 @@ SE350 RTOS
 
 The best OS ever!
 
+Random Acronyms
+---------------
+
+IER: Interupt Enable Register
+THR: Transmit Holding Register. The next character to be transmitted is writted here.
+THRE: Transmitter Holding Register Empty. Triggered when the THR has been written to the I/O device.
+RLS: Recevie Line Status. Triggered on error.
+RBR: Receive Buffer Register. Contains the next received character to be read.
+
+
 Naming Conventions
 ------------------
 
