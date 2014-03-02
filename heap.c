@@ -33,7 +33,7 @@ static int s_num_blocks = 0;
 void heap_init(byte* start_address, byte* end_address) {
 	s_free_space_bitmap = (U8*)start_address;
 	// +1 for the s_free_space_bitmap.
-	s_num_blocks = (end_address - start_address) / (HEAP_BLOCK_SIZE + 1);
+	s_num_blocks = (end_address - start_address) / (sizeof(HeapBlock) + 1);
 
 	for (int i = 0; i < s_num_blocks; i++) {
 		s_free_space_bitmap[i] = BLOCK_FREE;
@@ -46,13 +46,13 @@ HeapStatus heap_free_block(HeapBlock* memory_block) {
 	U8* byte_aligned_block = (U8*)memory_block;
 	U8* byte_aligned_heap_start = (U8*)s_heap_start;
 	int offset = byte_aligned_block - byte_aligned_heap_start;
-	int alignment = offset % HEAP_BLOCK_SIZE;
+	int alignment = offset % sizeof(HeapBlock);
 	if (alignment != 0) {
 		LOG("WARNING: memory_block passed to heap_free_block has invalid alignment %d!", alignment);
 		return HEAP_STATUS_INVALID_MEMORY_BLOCK;
 	}
 
-	int block_number = offset / HEAP_BLOCK_SIZE;
+	int block_number = offset / sizeof(HeapBlock);
 	if (s_free_space_bitmap[block_number] != BLOCK_USED) {
 		LOG("WARNING: Attempted to double-free memory_block!");
 		return HEAP_STATUS_DOUBLE_FREE;
