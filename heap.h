@@ -7,7 +7,7 @@
 typedef unsigned char byte;
 
 typedef struct HeapBlockHeader {
-	int p_id;
+	int source_pid;
   struct HeapBlock* p_next;
 } HeapBlockHeader;
 

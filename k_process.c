@@ -19,6 +19,7 @@
 #include "k_process.h"
 #include "k_memory.h"
 #include "heap.h"
+#include "heap_queue.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -239,8 +240,6 @@ int k_get_process_priority(int pid)
 	return RTX_ERR;
 }
 
-extern void heap_queue_push(HeapBlock** queue, HeapBlock* block);
-extern HeapBlock* heap_queue_pop(HeapBlock** queue);
 int k_send_message(int dest_pid, void* msg)
 {
 	PCB* dest = process_find(dest_pid);
@@ -251,7 +250,7 @@ int k_send_message(int dest_pid, void* msg)
 	
 	HeapBlock* block = heap_block_from_user_block(msg);
 	block->header.source_pid = g_current_process->pid;
-	heap_queue_push(dest->message_queue, block);
+	heap_queue_push(&dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
 		return RTX_OK;
 	}
@@ -264,12 +263,12 @@ int k_send_message(int dest_pid, void* msg)
 
 void* k_receive_message(int* sender_pid)
 {
-	HeapBlock* block = heap_queue_pop(g_current_process->message_queue);
+	HeapBlock* block = heap_queue_pop(&g_current_process->message_queue);
 	
 	while (!block) {
 		g_current_process->state = PROCESS_STATE_BLOCKED_ON_MESSAGE;
 		k_release_processor();
-		block = heap_queue_pop(g_current_process->message_queue);
+		block = heap_queue_pop(&g_current_process->message_queue);
 		if (block == NULL) {
 			LOG("Warning: Blocked on message process scheduled to run when no messages in queue!");
 		}

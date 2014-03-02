@@ -143,29 +143,37 @@ static void proc6(void)
 	set_process_priority(7, PROCESS_PRIORITY_HIGH);
 }
 
-static void strcpy(char dest[], const char source[])
+static void strcpy(char* dst, const char* src)
 {
-	int i = 0;
-	while ((dest[i] = source[i]) != '\0') {
-		i++;
+	while (*src) {
+		*dst++ = *src++;
 	}
 }
 
+static const char* test_phrase = "The quick brown fox jumped over the lazy dog";
 static void proc7(void)
 {
 	set_process_priority(8, PROCESS_PRIORITY_HIGH);
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-	message_envelope->mtype = 1;
-	char* text = "hi";
-	strcpy(message_envelope->mtext, text);
+	message_envelope->mtype = 0xAAAAAAAA;
+	strcpy(message_envelope->mtext, test_phrase);
 	send_message(8, (void*)message_envelope);
-	release_processor();
+	
+	while (1) {
+		release_processor();
+		printf("proc7: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	}
 }
 
 static void proc8(void)
 {
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
-	uart0_put_char(message_envelope->mtext[0]);
+	
+	printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	while (1) {
+		release_processor();
+		printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	}
 }
 
 PROC_INIT g_test_procs[NUM_TEST_PROCS];

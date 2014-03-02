@@ -22,7 +22,7 @@ typedef struct PCB {
 	U32 priority;
 	struct PCB* p_next;
 	// Incoming messages, waiting to be processed.
-	HeapBlock** message_queue;
+	HeapBlock* message_queue;
 } PCB;
 
 /* initialization table item */
