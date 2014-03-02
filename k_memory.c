@@ -149,13 +149,14 @@ void* k_request_memory_block(void) {
 	}
 
 	LOG("alloc'd block %x", block);
-	return (void*)block;
+	return (void*)block->data;
 }
 
 int k_release_memory_block(void* p_mem_blk) {
-	LOG("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
-
-	HeapStatus status = heap_free_block((HeapBlock*)p_mem_blk);
+	HeapBlock* block = (HeapBlock*)((U8*)p_mem_blk - sizeof(HeapBlockHeader));
+	LOG("k_release_memory_block: releasing block @ 0x%x\n", block);
+	
+	HeapStatus status = heap_free_block(block);
 	if (status != HEAP_STATUS_OK) {
 		LOG("Heap returned error code %d", status);
 		return RTX_ERR;
