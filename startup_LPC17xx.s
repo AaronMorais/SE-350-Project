@@ -132,11 +132,8 @@ NMI_Handler     PROC
                 EXPORT  NMI_Handler               [WEAK]
                 B       .
                 ENDP
-HardFault_Handler\
-                PROC
+HardFault_Handler
                 EXPORT  HardFault_Handler         [WEAK]
-                B       .
-                ENDP
 MemManage_Handler\
                 PROC
                 EXPORT  MemManage_Handler         [WEAK]

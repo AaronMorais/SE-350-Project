@@ -456,6 +456,16 @@
               <FileType>1</FileType>
               <FilePath>.\heap.c</FilePath>
             </File>
+            <File>
+              <FileName>heap_queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\heap_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>hard_fault.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\hard_fault.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
