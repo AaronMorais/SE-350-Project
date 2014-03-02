@@ -149,11 +149,11 @@ void* k_request_memory_block(void) {
 	}
 
 	LOG("alloc'd block %x", block);
-	return (void*)block->data;
+	return user_block_from_heap_block(block);
 }
 
 int k_release_memory_block(void* p_mem_blk) {
-	HeapBlock* block = (HeapBlock*)((U8*)p_mem_blk - sizeof(HeapBlockHeader));
+	HeapBlock* block = heap_block_from_user_block(p_mem_blk);
 	LOG("k_release_memory_block: releasing block @ 0x%x\n", block);
 	
 	HeapStatus status = heap_free_block(block);

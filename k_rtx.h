@@ -10,6 +10,9 @@ typedef enum {
 	PROCESS_STATE_BLOCKED_ON_MESSAGE = 4,
 } ProcessState;
 
+struct HeapBlock;
+typedef struct HeapBlock HeapBlock;
+
 typedef struct PCB {
 	// Stack pointer
 	U32 *sp;
@@ -18,6 +21,8 @@ typedef struct PCB {
 	ProcessState state;
 	U32 priority;
 	struct PCB* p_next;
+	// Incoming messages, waiting to be processed.
+	HeapBlock** message_queue;
 } PCB;
 
 /* initialization table item */
