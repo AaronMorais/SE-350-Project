@@ -136,8 +136,8 @@ void memory_init_heap()
 void* k_request_memory_block(void) {
 	HeapBlock* block = heap_alloc_block();
 	while (block == NULL) {
-		priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
 		g_current_process->state = PROCESS_STATE_BLOCKED;
+		priority_queue_insert(g_blocked_process_priority_queue, g_current_process);
 
 		// Block until a memory block becomes available
 		k_release_processor();
@@ -169,11 +169,6 @@ int k_release_memory_block(void* p_mem_blk) {
 
 	blocked_process->state = PROCESS_STATE_READY;
 	priority_queue_insert(g_ready_process_priority_queue, blocked_process);
-	// Lower numbers = higher priorities
-	if (blocked_process->priority < g_current_process->priority) {
-		LOG("k_release_memory_block: popped priority is higher than current. Preempting the process");
-		return k_release_processor();
-	}
 
-	return RTX_OK;
+	return process_prempt_if_necessary();
 }

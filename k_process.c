@@ -27,6 +27,9 @@
 PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 
+// User process initial xPSR value
+#define INITIAL_xPSR 0x01000000
+
 void null_process()
 {
 	while (1) {
@@ -167,6 +170,15 @@ int process_prempt_if_necessary(void)
 	return k_release_processor();
 }
 
+PCB* process_find(int pid) {
+	for (unsigned int i = 0; i < g_pcb_counter; i++) {
+		if (s_pcb_allocations_start[i].pid == pid) {
+			return &s_pcb_allocations_start[i];
+		}
+	}
+	return NULL;
+}
+
 /**
  * @brief release_processor().
  * @return RTX_ERR on error and zero on success
@@ -217,13 +229,41 @@ int k_set_process_priority(int id, int priority)
 	return RTX_ERR;
 }
 
-int k_get_process_priority(int id)
+int k_get_process_priority(int pid)
 {
-	for (unsigned int i = 0; i < g_pcb_counter; i++) {
-		if (s_pcb_allocations_start[i].pid == id) {
-			return s_pcb_allocations_start[i].priority;
-		}
+	PCB* proc = process_find(pid);
+	if (proc != NULL) {
+		return proc->priority;
+	}
+	return RTX_ERR;
+}
+
+int k_send_message(int dest_pid, void* msg)
+{
+	PCB* dest = process_find(dest_pid);
+	if (!dest) {
+		LOG("Destination process %d not found!", dest_pid);
+		return RTX_ERR;
 	}
 	
-	return RTX_ERR;
+	//message_queue_add(dest, msg);
+	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
+		return RTX_OK;
+	}
+	
+	dest->state = PROCESS_STATE_READY;
+	priority_queue_insert(g_ready_process_priority_queue, dest);
+	
+	// Lower numbers = higher priorities
+	if (dest->priority < g_current_process->priority) {
+		LOG("k_send_message: destination process is higher priority than current. Prempting.");
+		return k_release_processor();
+	}
+	
+	return RTX_OK;
+}
+
+void* k_receive_message(int* sender_pid)
+{
+	return NULL;
 }

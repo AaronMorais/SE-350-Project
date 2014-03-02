@@ -2,13 +2,10 @@
 
 #include "k_rtx.h"
 
-// User process initial xPSR value
-#define INITIAL_xPSR 0x01000000
-
 extern PCB* g_current_process;
 extern PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void process_init(void);
 int process_create(PROC_INIT* initial_state);
-PCB* scheduler(void);
+int process_prempt_if_necessary(void);
 int k_release_processor(void);

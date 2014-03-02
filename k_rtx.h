@@ -3,10 +3,11 @@
 #include "rtx_shared.h"
 
 typedef enum {
-	PROCESS_STATE_NEW     = 0,
-	PROCESS_STATE_READY   = 1,
-	PROCESS_STATE_RUNNING  = 2,
-	PROCESS_STATE_BLOCKED = 3
+	PROCESS_STATE_NEW                = 0,
+	PROCESS_STATE_READY              = 1,
+	PROCESS_STATE_RUNNING            = 2,
+	PROCESS_STATE_BLOCKED            = 3,
+	PROCESS_STATE_BLOCKED_ON_MESSAGE = 4,
 } ProcessState;
 
 typedef struct PCB {
