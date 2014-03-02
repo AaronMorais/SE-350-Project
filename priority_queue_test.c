@@ -46,7 +46,7 @@ static void length(int expected_length) {
 	}
 }
 
-int test_basic() {
+void test_basic() {
 	PCB proc_a = {0};
 	proc_a.priority = PROCESS_PRIORITY_MEDIUM;
 	PCB proc_b = {0};
