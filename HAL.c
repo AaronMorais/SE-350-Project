@@ -8,8 +8,9 @@
 /* pop off exception stack frame from the stack */
 __asm void __rte(void)
 {
-  PRESERVE8            ; 8 bytes alignement of the stack
+  PRESERVE8             ; 8 bytes alignement of the stack
   MOV  LR, #0xFFFFFFF9  ; set EXC_RETURN value, Thread mode, MSP
+  CPSIE I
   BX   LR
 }
 
@@ -17,6 +18,7 @@ __asm void __rte(void)
 __asm void SVC_Handler (void) 
 {
   PRESERVE8            ; 8 bytes alignement of the stack
+  CPSID I              ; Disable interrupts in system calls!
   MRS  R0, MSP         ; Read MSP
 	
   
@@ -35,16 +37,19 @@ __asm void SVC_Handler (void)
                        ; NOTE R0 contains the sp before this instruction
 
   PUSH {R4-R11, LR}    ; Save other registers for preemption caused by i-procs
+
   BLX  R12             ; Call SVC C Function, 
                        ; R12 contains the corresponding 
                        ; C kernel functions entry point
                        ; R0-R3 contains the kernel function input parameter (See AAPCS)
+
   POP {R4-R11, LR}     ; Restore other registers for preemption caused by i-procs
   MRS  R12, MSP        ; Read MSP
   STR  R0, [R12]       ; store C kernel function return value in R0
                        ; to R0 on the exception stack frame  
-SVC_EXIT  
+SVC_EXIT
 	
-  MVN  LR, #:NOT:0xFFFFFFF9  ; set EXC_RETURN value, Thread mode, MSP
+  MVN  LR, #:NOT:0xFFFFFFF9 ; set EXC_RETURN value, Thread mode, MSP
+  CPSIE I                   ; Enable interrupts again!
   BX   LR
 }
