@@ -18,6 +18,7 @@
 #include "uart_polling.h"
 #include "k_process.h"
 #include "k_memory.h"
+#include "heap.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -238,6 +239,8 @@ int k_get_process_priority(int pid)
 	return RTX_ERR;
 }
 
+extern void heap_queue_push(HeapBlock** queue, HeapBlock* block);
+extern HeapBlock* heap_queue_pop(HeapBlock** queue);
 int k_send_message(int dest_pid, void* msg)
 {
 	PCB* dest = process_find(dest_pid);
@@ -246,7 +249,9 @@ int k_send_message(int dest_pid, void* msg)
 		return RTX_ERR;
 	}
 	
-	//message_queue_add(dest, msg);
+	HeapBlock* block = heap_block_from_user_block(msg);
+	block->header.source_pid = g_current_process->pid;
+	heap_queue_push(dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
 		return RTX_OK;
 	}
@@ -254,16 +259,24 @@ int k_send_message(int dest_pid, void* msg)
 	dest->state = PROCESS_STATE_READY;
 	priority_queue_insert(g_ready_process_priority_queue, dest);
 	
-	// Lower numbers = higher priorities
-	if (dest->priority < g_current_process->priority) {
-		LOG("k_send_message: destination process is higher priority than current. Prempting.");
-		return k_release_processor();
-	}
-	
-	return RTX_OK;
+	return process_prempt_if_necessary();
 }
 
 void* k_receive_message(int* sender_pid)
 {
-	return NULL;
+	HeapBlock* block = heap_queue_pop(g_current_process->message_queue);
+	
+	while (!block) {
+		g_current_process->state = PROCESS_STATE_BLOCKED_ON_MESSAGE;
+		k_release_processor();
+		block = heap_queue_pop(g_current_process->message_queue);
+		if (block == NULL) {
+			LOG("Warning: Blocked on message process scheduled to run when no messages in queue!");
+		}
+	}
+	
+	if (sender_pid) {
+		*sender_pid = block->header.source_pid;
+	}
+	return user_block_from_heap_block(block);
 }
