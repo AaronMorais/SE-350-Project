@@ -7,7 +7,7 @@
 
 #define NULL 0
 
-#define NUM_TEST_PROCS 6
+#define NUM_TEST_PROCS 8
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -25,6 +25,11 @@ typedef enum {
 
   PROCESS_PRIORITY_NUM          = 5
 } ProcessPriority;
+
+struct msgbuf {
+  int mtype; /* user defined message type */
+  char mtext[1]; /* body of the message */
+};
 
 typedef unsigned char U8;
 typedef unsigned int U32;

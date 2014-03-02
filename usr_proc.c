@@ -140,6 +140,32 @@ static void proc5(void)
 static void proc6(void)
 {
 	run_all_tests();
+	set_process_priority(7, PROCESS_PRIORITY_HIGH);
+}
+
+static void strcpy(char dest[], const char source[])
+{
+	int i = 0;
+	while ((dest[i] = source[i]) != '\0') {
+		i++;
+	}
+}
+
+static void proc7(void)
+{
+	set_process_priority(8, PROCESS_PRIORITY_HIGH);
+	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+	message_envelope->mtype = 1;
+	char* text = "hi";
+	strcpy(message_envelope->mtext, text);
+	send_message(8, (void*)message_envelope);
+	release_processor();
+}
+
+static void proc8(void)
+{
+	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
+	uart0_put_char(message_envelope->mtext[0]);
 }
 
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -162,8 +188,16 @@ void set_test_procs()
 		case 2: test_proc.entry_point = &proc3; break;
 		case 3: test_proc.entry_point = &proc4; break;
 		case 4: test_proc.entry_point = &proc5; break;
-		case 5: 
-			test_proc.entry_point = &proc6; 
+		case 5:
+			test_proc.entry_point = &proc6;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 6:
+			test_proc.entry_point = &proc7;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 7:
+			test_proc.entry_point = &proc8;
 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
 			break;
 		}
