@@ -6,12 +6,17 @@
 
 typedef unsigned char byte;
 
+struct HeapBlock;
+
+// Used by the message passing queue. Horrible hacks.
 typedef struct HeapBlockHeader {
-	int foobar;
+	int source_pid;
+	struct HeapBlock* p_next;
 } HeapBlockHeader;
 
 typedef struct HeapBlock {
 	HeapBlockHeader header;
+	// data is what we return to userland.
 	byte            data[HEAP_BLOCK_SIZE];
 } HeapBlock;
 
@@ -24,3 +29,7 @@ typedef enum {
 void heap_init(byte* start_address, byte* end_address);
 HeapBlock* heap_alloc_block(void);
 HeapStatus heap_free_block(HeapBlock* memory_block);
+// Get a heap block from a user block pointer.
+// TODO: Unit tests for this.
+HeapBlock* heap_block_from_user_block(void* user_block);
+void* user_block_from_heap_block(HeapBlock* heap_block);

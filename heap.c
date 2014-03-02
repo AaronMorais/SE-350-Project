@@ -85,3 +85,11 @@ HeapBlock* heap_alloc_block(void) {
 	s_free_space_bitmap[first_free_block] = BLOCK_USED;
 	return &s_heap_start[first_free_block];
 }
+
+HeapBlock* heap_block_from_user_block(void* user_block) {
+	return (HeapBlock*)((U8*)user_block - sizeof(HeapBlockHeader));
+}
+
+void* user_block_from_heap_block(HeapBlock* heap_block) {
+	return (void*) heap_block->data;
+}
