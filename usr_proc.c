@@ -62,6 +62,8 @@ static void proc2(void)
 		if (times_proc2_ran == 3) {
 			set_process_priority(2, PROCESS_PRIORITY_MEDIUM);
 			after_set_priority_before_release = 1;
+		}
+		if (times_proc2_ran >= 3) {
 			release_processor();
 		}
 	}
@@ -186,7 +188,7 @@ static void proc9(void)
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
 	printf("proc9: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
-		release_processor()
+		release_processor();
 	}
 }
 static void proc10(void)
@@ -194,10 +196,10 @@ static void proc10(void)
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 	message_envelope->mtype = 0x22222;
 	strcpy(message_envelope->mtext, test_phrase_two);
-	delayed_send(9, (void*)message_envelope, 10 * 1000);
+	delayed_send(9, (void*)message_envelope, 50);
 	printf("proc10: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
-		release_processor()
+		release_processor();
 	}
 }
 
@@ -207,7 +209,7 @@ void set_test_procs()
 	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1);
-		test_proc.priority = PROCESS_PRIORITY_MEDIUM;
+		test_proc.priority = PROCESS_PRIORITY_LOWEST;
 		test_proc.stack_size = 0x200;
 		switch (i) {
 		case 0: 
@@ -235,11 +237,11 @@ void set_test_procs()
 			break;
 		case 8:
 			test_proc.entry_point = &proc9;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = PROCESS_PRIORITY_HIGH;
 			break;
 		case 9:
 			test_proc.entry_point = &proc10;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = PROCESS_PRIORITY_HIGH;
 			break;
 		}
 		g_test_procs[i] = test_proc;

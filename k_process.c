@@ -101,6 +101,9 @@ static PCB* scheduler(void)
 {
 	PCB* next_process = priority_queue_pop(g_ready_process_priority_queue);
 
+	if (next_process->pid == 9) {
+		LOG("Unth");
+	}
 	if (next_process == NULL) {
 		LOG("Warning: No processes on ready queue.\n");
 	} else {
