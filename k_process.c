@@ -146,7 +146,7 @@ static int switch_to_process(PCB* new_proc)
 		extern void __rte(void);
 		// Note: This actually causes us to start executing the procees
 		// with crazy assembly magic (See HAL.c)!
-			LOG("About to __rte");
+		LOG("About to __rte");
 		__rte();
 	}
 
