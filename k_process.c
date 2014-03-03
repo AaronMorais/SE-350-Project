@@ -29,7 +29,7 @@
 // Currently running process
 PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
-HeapBlockHeader* g_delayed_msg_list = NULL;
+HeapBlock* g_delayed_msg_list = NULL;
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
 
@@ -284,10 +284,10 @@ void* k_receive_message(int* sender_pid)
 int k_delayed_send(int dest_pid, void *message_envelope, int delay)
 {
 	HeapBlock* full_env = heap_block_from_user_block(message_envelope);
-	full_env->send_time = g_timer_count + delay;
-	full_env->dest_pid = dest_pid;
-	full_env->source_pid = g_current_process->pid;
-  HeapQueueStatus status = sorted_heap_queue_push(g_delayed_msg_list, full_env);
+	full_env->header.send_time = g_timer_count + delay;
+	full_env->header.dest_pid = dest_pid;
+	full_env->header.source_pid = g_current_process->pid;
+  HeapQueueStatus status = sorted_heap_queue_push(&g_delayed_msg_list, full_env);
 
   if (status == QUEUE_STATUS_OK) {
   	return RTX_OK;

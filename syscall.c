@@ -58,9 +58,9 @@ void* receive_message(int* sender_pid)
 	return _receive_message((U32)k_receive_message, sender_pid);
 }
 
-int delayed_send(int process_id, void *message_envelope, int delay)
+int delayed_send(int process_id, void* message_envelope, int delay)
 {
 	extern int k_delayed_send(int, void*, int);
-	extern int _delay_send(int process_id, void* message_envelope, int delay) SVC;
-	return _delay_send((U32)k_delayed_send, process_id, message_envelope, delay);
+	extern int _delayed_send(U32 p_func, int process_id, void* message_envelope, int delay) SVC;
+	return _delayed_send((U32)k_delayed_send, process_id, message_envelope, delay);
 }
