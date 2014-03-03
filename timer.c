@@ -8,6 +8,7 @@
 
 #include <LPC17xx.h>
 #include "timer.h"
+#include "k_process.h"
 
 #define BIT(X) (1<<X)
 
@@ -111,8 +112,18 @@ __asm void TIMER0_IRQHandler(void)
  */
 void c_TIMER0_IRQHandler(void)
 {
-  /* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM */
+
+  /* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM
+     resets interrupt
+  */
+  g_timer_count++;
+
+  HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
+  if (g_timer_count >= top->header.send_time) {
+    top = sorted_heap_queue_pop(&g_delayed_msg_list);
+    k_send_message(top->header.dest_pid, top->data);
+  }
+
   LPC_TIM0->IR = BIT(0);
 
-  g_timer_count++ ;
 }
