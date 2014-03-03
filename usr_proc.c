@@ -150,15 +150,16 @@ static void strcpy(char* dst, const char* src)
 	}
 }
 
-static const char* test_phrase = "The quick brown fox jumped over the lazy dog";
+static const char* test_phrase_one = "The quick brown fox jumped over the lazy dog";
+static const char* test_phrase_two = "The quick brown fox jumped over the lazy dog";
 static void proc7(void)
 {
 	set_process_priority(8, PROCESS_PRIORITY_HIGH);
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 	message_envelope->mtype = 0xAAAAAAAA;
-	strcpy(message_envelope->mtext, test_phrase);
+	strcpy(message_envelope->mtext, test_phrase_one);
 	send_message(8, (void*)message_envelope);
-	
+
 	while (1) {
 		release_processor();
 		printf("proc7: %x %s\n", message_envelope->mtype, message_envelope->mtext);
@@ -173,6 +174,30 @@ static void proc8(void)
 	while (1) {
 		release_processor();
 		printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+		set_process_priority(7, PROCESS_PRIORITY_LOWEST);
+		set_process_priority(9, PROCESS_PRIORITY_HIGH);
+	}
+}
+
+static void proc9(void)
+{
+	set_process_priority(8, PROCESS_PRIORITY_LOWEST);
+	set_process_priority(10, PROCESS_PRIORITY_HIGH);
+	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
+	printf("proc9: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	while (1) {
+		release_processor()
+	}
+}
+static void proc10(void)
+{
+	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+	message_envelope->mtype = 0x22222;
+	strcpy(message_envelope->mtext, test_phrase_two);
+	delayed_send(9, (void*)message_envelope, 10 * 1000);
+	printf("proc10: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	while (1) {
+		release_processor()
 	}
 }
 
@@ -206,6 +231,14 @@ void set_test_procs()
 			break;
 		case 7:
 			test_proc.entry_point = &proc8;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 8:
+			test_proc.entry_point = &proc9;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 9:
+			test_proc.entry_point = &proc10;
 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
 			break;
 		}

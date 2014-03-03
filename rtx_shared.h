@@ -7,7 +7,7 @@
 
 #define NULL 0
 
-#define NUM_TEST_PROCS 8
+#define NUM_TEST_PROCS 10
 
 #ifdef DEBUG_0
 #include "printf.h"
