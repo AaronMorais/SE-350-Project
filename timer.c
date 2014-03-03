@@ -12,6 +12,7 @@
 
 #define BIT(X) (1<<X)
 
+HeapBlock* g_delayed_msg_list = NULL;
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
 
 /**
@@ -125,5 +126,4 @@ void c_TIMER0_IRQHandler(void)
   }
 
   LPC_TIM0->IR = BIT(0);
-
 }
