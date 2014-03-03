@@ -1,16 +1,16 @@
 /**
- * @file:   k_process.c  
+ * @file:   k_process.c
  * @brief:  process management C file
  * @author: Yiqing Huang
  * @author: Thomas Reidemeister
  * @date:   2014/01/17
  * NOTE: The example code shows one way of implementing context switching.
  *       The code only has minimal sanity check. There is no stack overflow check.
- *       The implementation assumes only two simple user processes and NO HARDWARE INTERRUPTS. 
- *       The purpose is to show how context switch could be done under stated assumptions. 
+ *       The implementation assumes only two simple user processes and NO HARDWARE INTERRUPTS.
+ *       The purpose is to show how context switch could be done under stated assumptions.
  *       These assumptions are not true in the required RTX Project!!!
  *       If you decide to use this piece of code, you need to understand the assumptions and
- *       the limitations. 
+ *       the limitations.
  */
 
 #include <LPC17xx.h>
@@ -29,7 +29,6 @@
 // Currently running process
 PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
-HeapBlock* g_delayed_msg_list = NULL;
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
 
@@ -46,7 +45,7 @@ void process_init()
 	// Test process initial set up
 	extern void set_test_procs(void);
 	set_test_procs();
-	
+
 	// Set up NULL process
 	PROC_INIT null_state;
 	null_state.pid = (U32)(0);
@@ -54,7 +53,7 @@ void process_init()
 	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
 	process_create(&null_state);
-	
+
 	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		process_create(&g_test_procs[i]);
@@ -121,9 +120,9 @@ static int switch_to_process(PCB* new_proc)
 		LOG("NULL passed to switch_to_process!");
 		return RTX_ERR;
 	}
-	
+
 	if (new_proc == g_current_process) return RTX_OK;
- 	
+
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
@@ -192,14 +191,14 @@ int k_release_processor(void)
 	if (g_current_process->state == PROCESS_STATE_RUNNING) {
 		priority_queue_insert(g_ready_process_priority_queue, g_current_process);
 	}
-	
+
 	PCB *new_proc = scheduler();
-	
+
 	if (new_proc == NULL) {
 		LOG("No process to switch to.");
 		return RTX_ERR;
 	}
-	
+
 	return switch_to_process(new_proc);
 }
 
@@ -248,24 +247,24 @@ int k_send_message(int dest_pid, void* msg)
 		LOG("Destination process %d not found!", dest_pid);
 		return RTX_ERR;
 	}
-	
+
 	HeapBlock* block = heap_block_from_user_block(msg);
 	block->header.source_pid = g_current_process->pid;
 	heap_queue_push(&dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
 		return RTX_OK;
 	}
-	
+
 	dest->state = PROCESS_STATE_READY;
 	priority_queue_insert(g_ready_process_priority_queue, dest);
-	
+
 	return process_prempt_if_necessary();
 }
 
 void* k_receive_message(int* sender_pid)
 {
 	HeapBlock* block = heap_queue_pop(&g_current_process->message_queue);
-	
+
 	while (!block) {
 		g_current_process->state = PROCESS_STATE_BLOCKED_ON_MESSAGE;
 		k_release_processor();
