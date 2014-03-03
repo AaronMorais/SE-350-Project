@@ -20,6 +20,7 @@
 #include "k_memory.h"
 #include "heap.h"
 #include "heap_queue.h"
+#include "timer.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -28,14 +29,14 @@
 // Currently running process
 PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
-
+HeapBlockHeader* g_delayed_msg_list = NULL;
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
 
-void null_process()
+static void null_process()
 {
 	while (1) {
-		k_release_processor();	
+		k_release_processor();
 		LOG("Running null process");
 	}
 }
@@ -273,9 +274,24 @@ void* k_receive_message(int* sender_pid)
 			LOG("Warning: Blocked on message process scheduled to run when no messages in queue!");
 		}
 	}
-	
+
 	if (sender_pid) {
 		*sender_pid = block->header.source_pid;
 	}
 	return user_block_from_heap_block(block);
+}
+
+int k_delayed_send(int dest_pid, void *message_envelope, int delay)
+{
+	HeapBlock* full_env = heap_block_from_user_block(message_envelope);
+	full_env->send_time = g_timer_count + delay;
+	full_env->dest_pid = dest_pid;
+	full_env->source_pid = g_current_process->pid;
+  HeapQueueStatus status = sorted_heap_queue_push(g_delayed_msg_list, full_env);
+
+  if (status == QUEUE_STATUS_OK) {
+  	return RTX_OK;
+  } else {
+  	return RTX_ERR;
+  }
 }

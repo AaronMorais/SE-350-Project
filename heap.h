@@ -8,6 +8,8 @@ typedef unsigned char byte;
 
 typedef struct HeapBlockHeader {
 	int source_pid;
+  int dest_pid;
+  unsigned int send_time;
   struct HeapBlock* p_next;
 } HeapBlockHeader;
 
