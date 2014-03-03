@@ -103,9 +103,11 @@ uint32_t timer_init(uint8_t n_timer)
 __asm void TIMER0_IRQHandler(void)
 {
   PRESERVE8
+	CPSID I
   IMPORT c_TIMER0_IRQHandler
   PUSH{r4-r11, lr}
   BL c_TIMER0_IRQHandler
+	CPSIE I
   POP{r4-r11, pc}
 }
 /**
@@ -116,14 +118,14 @@ void c_TIMER0_IRQHandler(void)
 
   /* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM
      resets interrupt
-  */
+  */  
+	LPC_TIM0->IR = BIT(0);
+	
   g_timer_count++;
-
+	
   HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
   if (g_timer_count >= top->header.send_time) {
     top = sorted_heap_queue_pop(&g_delayed_msg_list);
     k_send_message(top->header.dest_pid, top->data);
   }
-
-  LPC_TIM0->IR = BIT(0);
 }

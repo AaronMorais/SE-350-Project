@@ -133,7 +133,7 @@ static int switch_to_process(PCB* new_proc)
 	}
 
 	LOG("before g_current_process if");
-	if (g_current_process && g_current_process->state != PROCESS_STATE_NEW) {
+	if (g_current_process && g_current_process->state == PROCESS_STATE_RUNNING) {
 		g_current_process->state = PROCESS_STATE_READY;
 		g_current_process->sp = (U32*) __get_MSP();
 	}
