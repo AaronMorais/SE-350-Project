@@ -209,36 +209,36 @@ static void proc10(void)
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 void set_test_procs()
 {
-	int ignore_num = 8;
+	int ignore_num = 0;
 	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1+ignore_num);
 		test_proc.priority = PROCESS_PRIORITY_LOWEST;
 		test_proc.stack_size = 0x200;
 		switch (i+ignore_num) {
-// 		case 0:
-// 			test_proc.entry_point = &proc1;
-// 			test_proc.priority = PROCESS_PRIORITY_MEDIUM;
-// 			break;
-// 		case 1:
-// 			test_proc.entry_point = &proc2;
-// 			test_proc.priority = PROCESS_PRIORITY_LOW;
-// 			break;
-// 		case 2: test_proc.entry_point = &proc3; break;
-// 		case 3: test_proc.entry_point = &proc4; break;
-// 		case 4: test_proc.entry_point = &proc5; break;
-// 		case 5:
-// 			test_proc.entry_point = &proc6;
-// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-// 			break;
-// 		case 6:
-// 			test_proc.entry_point = &proc7;
-// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-// 			break;
-// 		case 7:
-// 			test_proc.entry_point = &proc8;
-// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-// 			break;
+		case 0:
+			test_proc.entry_point = &proc1;
+			test_proc.priority = PROCESS_PRIORITY_MEDIUM;
+			break;
+		case 1:
+			test_proc.entry_point = &proc2;
+			test_proc.priority = PROCESS_PRIORITY_LOW;
+			break;
+		case 2: test_proc.entry_point = &proc3; break;
+		case 3: test_proc.entry_point = &proc4; break;
+		case 4: test_proc.entry_point = &proc5; break;
+		case 5:
+			test_proc.entry_point = &proc6;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 6:
+			test_proc.entry_point = &proc7;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
+		case 7:
+			test_proc.entry_point = &proc8;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
 		case 8:
 			test_proc.entry_point = &proc9;
 			test_proc.priority = PROCESS_PRIORITY_HIGH;
