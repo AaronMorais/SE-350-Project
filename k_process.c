@@ -154,17 +154,13 @@ static int switch_to_process(PCB* new_proc)
 		__rte();
 	}
 
-	LOG("About to return");
-	if (g_current_process->pid == 9) {
-		LOG("Testing.");
-	}
-
 	// Note: This return returns to the switched-to processes call stack,
 	// not the calling processes call stack (although, when the original
 	// process gets scheduled again, this will return to that process's
 	// stack again). This gives us an illusion of processes, that most
 	// code (even kernel code) doesn't have to worry about, but can be
 	// a bit confusing when reading this function.
+	LOG("About to return");
 	return RTX_OK;
 }
 

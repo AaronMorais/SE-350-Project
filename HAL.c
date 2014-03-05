@@ -38,18 +38,12 @@ __asm void SVC_Handler (void)
                        ; NOTE R0 contains the sp before this instruction
 
   PUSH {R4-R11, LR}    ; Save other registers for preemption caused by i-procs
-  MOV R11, #0x55555555
-  PUSH {R11}
 
   BLX  R12             ; Call SVC C Function, 
                        ; R12 contains the corresponding 
                        ; C kernel functions entry point
                        ; R0-R3 contains the kernel function input parameter (See AAPCS)
 
-  POP {R11}
-  MOV R11, #0x00000000
-  PUSH {R11}
-  POP {R11}
   POP {R4-R11, LR}     ; Restore other registers for preemption caused by i-procs
   MRS  R12, MSP        ; Read MSP
   STR  R0, [R12]       ; store C kernel function return value in R0
