@@ -73,6 +73,7 @@ int process_create(PROC_INIT* initial_state)
 	pcb->state = PROCESS_STATE_NEW;
 	pcb->priority = initial_state->priority;
 	pcb->p_next = NULL;
+	pcb->message_queue = NULL;
 
 	// initilize exception stack frame (i.e. initial context)
 	U32* sp = memory_alloc_stack(initial_state->stack_size);
@@ -80,15 +81,22 @@ int process_create(PROC_INIT* initial_state)
 		return RTX_ERR;
 	}
 
+	// http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0553a/Babefdjc.html
 	// user process initial xPSR
 	*(--sp) = INITIAL_xPSR;
 	// PC contains the entry point of the process
 	*(--sp) = (U32)initial_state->entry_point;
+	// Our processes never exit. Set LR to 0x00000000
+	// so accidental returns end up in the
+	// HardFault_Handler.
+	*(--sp) = 0x00000000;
 	// R0-R3, R12 are cleared with 0
-	for (int j = 0; j < 6; j++) {
+	for (int j = 0; j < 5; j++) {
 		*(--sp) = 0x0;
 	}
 	pcb->sp = sp;
+
+	LOG("Created process! SP: %x", pcb->sp);
 
 	return priority_queue_insert(g_ready_process_priority_queue, pcb);
 }
@@ -124,7 +132,10 @@ static int switch_to_process(PCB* new_proc)
 		return RTX_ERR;
 	}
 
-	if (new_proc == g_current_process) return RTX_OK;
+	if (new_proc == g_current_process) {
+		LOG("Proc is same, doing nothing.");
+		return RTX_OK;
+	}
 
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
@@ -153,6 +164,9 @@ static int switch_to_process(PCB* new_proc)
 	}
 
 	LOG("About to return");
+	if (g_current_process->pid == 9) {
+		LOG("Testing.");
+	}
 	return RTX_OK;
 }
 
@@ -202,7 +216,9 @@ int k_release_processor(void)
 		return RTX_ERR;
 	}
 
-	return switch_to_process(new_proc);
+	int rtx_status = switch_to_process(new_proc);
+	LOG("About to return from k_release_processor().");
+	return rtx_status;
 }
 
 int k_set_process_priority(int id, int priority)

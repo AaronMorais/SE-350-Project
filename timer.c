@@ -105,10 +105,16 @@ __asm void TIMER0_IRQHandler(void)
   PRESERVE8
 	CPSID I
   IMPORT c_TIMER0_IRQHandler
-  PUSH{r4-r11, lr}
+  PUSH {r4-r11, lr}
+  MOV R11, #0xAAAAAAAA
+  PUSH {r11}
   BL c_TIMER0_IRQHandler
 	CPSIE I
-  POP{r4-r11, pc}
+	POP {r11}
+	MOV r11, #0x00000000
+	PUSH {r11}
+	POP {r11}
+  POP {r4-r11, pc}
 }
 /**
  * @brief: c TIMER0 IRQ Handler

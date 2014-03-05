@@ -199,9 +199,10 @@ static void proc10(void)
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 	message_envelope->mtype = 0x22222;
 	strcpy(message_envelope->mtext, test_phrase_two);
-	delayed_send(9, (void*)message_envelope, 50);
+	delayed_send(9, (void*)message_envelope, 7);
 	printf("proc10: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
+		for (volatile int i = 0; i < 10000; i++) {}
 		release_processor();
 	}
 }
@@ -209,35 +210,36 @@ static void proc10(void)
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 void set_test_procs()
 {
+	int ignore_num = 8;
 	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		test_proc.pid = (U32)(i+1);
+		test_proc.pid = (U32)(i+1+ignore_num);
 		test_proc.priority = PROCESS_PRIORITY_LOWEST;
 		test_proc.stack_size = 0x200;
-		switch (i) {
-		case 0: 
-			test_proc.entry_point = &proc1; 
-			test_proc.priority = PROCESS_PRIORITY_MEDIUM;
-			break;
-		case 1: 
-			test_proc.entry_point = &proc2; 
-			test_proc.priority = PROCESS_PRIORITY_LOW; 
-			break;
-		case 2: test_proc.entry_point = &proc3; break;
-		case 3: test_proc.entry_point = &proc4; break;
-		case 4: test_proc.entry_point = &proc5; break;
-		case 5:
-			test_proc.entry_point = &proc6;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-			break;
-		case 6:
-			test_proc.entry_point = &proc7;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-			break;
-		case 7:
-			test_proc.entry_point = &proc8;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
-			break;
+		switch (i+ignore_num) {
+// 		case 0:
+// 			test_proc.entry_point = &proc1;
+// 			test_proc.priority = PROCESS_PRIORITY_MEDIUM;
+// 			break;
+// 		case 1:
+// 			test_proc.entry_point = &proc2;
+// 			test_proc.priority = PROCESS_PRIORITY_LOW;
+// 			break;
+// 		case 2: test_proc.entry_point = &proc3; break;
+// 		case 3: test_proc.entry_point = &proc4; break;
+// 		case 4: test_proc.entry_point = &proc5; break;
+// 		case 5:
+// 			test_proc.entry_point = &proc6;
+// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+// 			break;
+// 		case 6:
+// 			test_proc.entry_point = &proc7;
+// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+// 			break;
+// 		case 7:
+// 			test_proc.entry_point = &proc8;
+// 			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+// 			break;
 		case 8:
 			test_proc.entry_point = &proc9;
 			test_proc.priority = PROCESS_PRIORITY_HIGH;
@@ -246,6 +248,8 @@ void set_test_procs()
 			test_proc.entry_point = &proc10;
 			test_proc.priority = PROCESS_PRIORITY_HIGH;
 			break;
+		default:
+			continue;
 		}
 		g_test_procs[i] = test_proc;
 	}
