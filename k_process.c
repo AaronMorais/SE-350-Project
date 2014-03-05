@@ -121,9 +121,6 @@ static PCB* scheduler(void)
 	return next_process;
 }
 
-// WARNING: This currently uses __get_MSP() and __set_MSP(), which
-// means the user processes run in privileged mode (not really ideal...),
-// and it will need to change to support interrupts.
 static int switch_to_process(PCB* new_proc)
 {
 	LOG("About to proccess_switch");
@@ -146,8 +143,8 @@ static int switch_to_process(PCB* new_proc)
 	LOG("before g_current_process if");
 	if (g_current_process && g_current_process->state == PROCESS_STATE_RUNNING) {
 		g_current_process->state = PROCESS_STATE_READY;
-		g_current_process->sp = (U32*) __get_MSP();
 	}
+	g_current_process->sp = (U32*) __get_MSP();
 
 	new_proc->state = PROCESS_STATE_RUNNING;
 	__set_MSP((U32) new_proc->sp);
@@ -167,6 +164,13 @@ static int switch_to_process(PCB* new_proc)
 	if (g_current_process->pid == 9) {
 		LOG("Testing.");
 	}
+	
+	// Note: This return returns to the switched-to processes call stack,
+	// not the calling processes call stack (although, when the original
+	// process gets scheduled again, this will return to that process's
+	// stack again). This gives us an illusion of processes, that most
+	// code (even kernel code) doesn't have to worry about, but can be
+	// a bit confusing when reading this function.
 	return RTX_OK;
 }
 
