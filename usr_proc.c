@@ -202,7 +202,6 @@ static void proc10(void)
 	delayed_send(9, (void*)message_envelope, 7);
 	printf("proc10: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
-		for (volatile int i = 0; i < 10000; i++) {}
 		release_processor();
 	}
 }

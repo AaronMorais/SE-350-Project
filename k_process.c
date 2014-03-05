@@ -129,11 +129,6 @@ static int switch_to_process(PCB* new_proc)
 		return RTX_ERR;
 	}
 
-	if (new_proc == g_current_process) {
-		LOG("Proc is same, doing nothing.");
-		return RTX_OK;
-	}
-
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
@@ -141,10 +136,9 @@ static int switch_to_process(PCB* new_proc)
 	}
 
 	LOG("before g_current_process if");
-	if (g_current_process && g_current_process->state == PROCESS_STATE_RUNNING) {
-		g_current_process->state = PROCESS_STATE_READY;
+	if (g_current_process != NULL) {
+		g_current_process->sp = (U32*) __get_MSP();
 	}
-	g_current_process->sp = (U32*) __get_MSP();
 
 	new_proc->state = PROCESS_STATE_RUNNING;
 	__set_MSP((U32) new_proc->sp);
@@ -164,7 +158,7 @@ static int switch_to_process(PCB* new_proc)
 	if (g_current_process->pid == 9) {
 		LOG("Testing.");
 	}
-	
+
 	// Note: This return returns to the switched-to processes call stack,
 	// not the calling processes call stack (although, when the original
 	// process gets scheduled again, this will return to that process's
@@ -189,7 +183,7 @@ int process_prempt_if_necessary(void)
 		return RTX_OK;
 	}
 
-	LOG("Premepting %d", g_current_process->priority);
+	LOG("Premepting %d", g_current_process->pid);
 	return k_release_processor();
 }
 
@@ -210,6 +204,7 @@ PCB* process_find(int pid) {
 int k_release_processor(void)
 {
 	if (g_current_process->state == PROCESS_STATE_RUNNING) {
+		g_current_process->state = PROCESS_STATE_READY;
 		priority_queue_insert(g_ready_process_priority_queue, g_current_process);
 	}
 
@@ -235,6 +230,10 @@ int k_set_process_priority(int id, int priority)
 		g_current_process->priority = priority;
 		return process_prempt_if_necessary();
 	}
+
+	// TODO: We need to use process_find() here, since processes
+	// that are BLOCKED_ON_MESSAGE won't be in either of these
+	// queues.
 	PCB** queue = g_ready_process_priority_queue;
 	PCB* pcb = priority_queue_find(queue, id);
 	if (pcb == NULL) {
@@ -272,6 +271,7 @@ int k_send_message(int dest_pid, void* msg)
 	}
 
 	HeapBlock* block = heap_block_from_user_block(msg);
+	// TODO: This is wrong when called via delayed_send.
 	block->header.source_pid = g_current_process->pid;
 	heap_queue_push(&dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {

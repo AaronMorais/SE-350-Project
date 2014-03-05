@@ -130,8 +130,8 @@ void c_TIMER0_IRQHandler(void)
 	g_timer_count++;
 
 	HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
-	if (g_timer_count >= top->header.send_time) {
+	if (top && (g_timer_count >= top->header.send_time)) {
 		top = sorted_heap_queue_pop(&g_delayed_msg_list);
-		k_send_message(top->header.dest_pid, top->data);
+		k_send_message(top->header.dest_pid, user_block_from_heap_block(top));
 	}
 }
