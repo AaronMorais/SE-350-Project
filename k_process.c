@@ -73,6 +73,7 @@ int process_create(PROC_INIT* initial_state)
 	pcb->state = PROCESS_STATE_NEW;
 	pcb->priority = initial_state->priority;
 	pcb->p_next = NULL;
+	pcb->message_queue = NULL;
 
 	// initilize exception stack frame (i.e. initial context)
 	U32* sp = memory_alloc_stack(initial_state->stack_size);
@@ -80,15 +81,22 @@ int process_create(PROC_INIT* initial_state)
 		return RTX_ERR;
 	}
 
+	// http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0553a/Babefdjc.html
 	// user process initial xPSR
 	*(--sp) = INITIAL_xPSR;
 	// PC contains the entry point of the process
 	*(--sp) = (U32)initial_state->entry_point;
+	// Our processes never exit. Set LR to 0x00000000
+	// so accidental returns end up in the
+	// HardFault_Handler.
+	*(--sp) = 0x00000000;
 	// R0-R3, R12 are cleared with 0
-	for (int j = 0; j < 6; j++) {
+	for (int j = 0; j < 5; j++) {
 		*(--sp) = 0x0;
 	}
 	pcb->sp = sp;
+
+	LOG("Created process! SP: %x", pcb->sp);
 
 	return priority_queue_insert(g_ready_process_priority_queue, pcb);
 }
@@ -113,9 +121,6 @@ static PCB* scheduler(void)
 	return next_process;
 }
 
-// WARNING: This currently uses __get_MSP() and __set_MSP(), which
-// means the user processes run in privileged mode (not really ideal...),
-// and it will need to change to support interrupts.
 static int switch_to_process(PCB* new_proc)
 {
 	LOG("About to proccess_switch");
@@ -124,8 +129,6 @@ static int switch_to_process(PCB* new_proc)
 		return RTX_ERR;
 	}
 
-	if (new_proc == g_current_process) return RTX_OK;
-
 	ProcessState state = new_proc->state;
 	if (state != PROCESS_STATE_READY && state != PROCESS_STATE_NEW) {
 		LOG("Invalid process state!");
@@ -133,8 +136,7 @@ static int switch_to_process(PCB* new_proc)
 	}
 
 	LOG("before g_current_process if");
-	if (g_current_process && g_current_process->state == PROCESS_STATE_RUNNING) {
-		g_current_process->state = PROCESS_STATE_READY;
+	if (g_current_process != NULL) {
 		g_current_process->sp = (U32*) __get_MSP();
 	}
 
@@ -152,6 +154,12 @@ static int switch_to_process(PCB* new_proc)
 		__rte();
 	}
 
+	// Note: This return returns to the switched-to processes call stack,
+	// not the calling processes call stack (although, when the original
+	// process gets scheduled again, this will return to that process's
+	// stack again). This gives us an illusion of processes, that most
+	// code (even kernel code) doesn't have to worry about, but can be
+	// a bit confusing when reading this function.
 	LOG("About to return");
 	return RTX_OK;
 }
@@ -171,7 +179,7 @@ int process_prempt_if_necessary(void)
 		return RTX_OK;
 	}
 
-	LOG("Premepting %d", g_current_process->priority);
+	LOG("Premepting %d", g_current_process->pid);
 	return k_release_processor();
 }
 
@@ -192,6 +200,7 @@ PCB* process_find(int pid) {
 int k_release_processor(void)
 {
 	if (g_current_process->state == PROCESS_STATE_RUNNING) {
+		g_current_process->state = PROCESS_STATE_READY;
 		priority_queue_insert(g_ready_process_priority_queue, g_current_process);
 	}
 
@@ -202,7 +211,9 @@ int k_release_processor(void)
 		return RTX_ERR;
 	}
 
-	return switch_to_process(new_proc);
+	int rtx_status = switch_to_process(new_proc);
+	LOG("About to return from k_release_processor().");
+	return rtx_status;
 }
 
 int k_set_process_priority(int id, int priority)
@@ -215,6 +226,10 @@ int k_set_process_priority(int id, int priority)
 		g_current_process->priority = priority;
 		return process_prempt_if_necessary();
 	}
+
+	// TODO: We need to use process_find() here, since processes
+	// that are BLOCKED_ON_MESSAGE won't be in either of these
+	// queues.
 	PCB** queue = g_ready_process_priority_queue;
 	PCB* pcb = priority_queue_find(queue, id);
 	if (pcb == NULL) {
@@ -252,6 +267,7 @@ int k_send_message(int dest_pid, void* msg)
 	}
 
 	HeapBlock* block = heap_block_from_user_block(msg);
+	// TODO: This is wrong when called via delayed_send.
 	block->header.source_pid = g_current_process->pid;
 	heap_queue_push(&dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {

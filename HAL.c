@@ -20,7 +20,7 @@ __asm void SVC_Handler (void)
   PRESERVE8            ; 8 bytes alignement of the stack
   CPSID I              ; Disable interrupts in system calls!
   MRS  R0, MSP         ; Read MSP
-	
+
   
   LDR  R1, [R0, #24]   ; Read Saved PC from SP
                        ; Loads R1 from a word 24 bytes above the address in R0
@@ -30,6 +30,7 @@ __asm void SVC_Handler (void)
   LDRH R1, [R1, #-2]   ; Load halfword because SVC number is encoded there
   BICS R1, R1, #0xFF00 ; Extract SVC Number and save it in R1.  
                        ; R1 <= R1 & ~(0xFF00), update flags
+                       ; TODO: Should be ANDS R1, R1, #0xFF? (equivelent)
                    
   BNE  SVC_EXIT        ; if SVC Number !=0, exit
  
@@ -48,8 +49,8 @@ __asm void SVC_Handler (void)
   STR  R0, [R12]       ; store C kernel function return value in R0
                        ; to R0 on the exception stack frame  
 SVC_EXIT
-	
-  MVN  LR, #:NOT:0xFFFFFFF9 ; set EXC_RETURN value, Thread mode, MSP
+
+  MOV  LR, #0xFFFFFFF9 ; set EXC_RETURN value, Thread mode, MSP
   CPSIE I                   ; Enable interrupts again!
   BX   LR
 }

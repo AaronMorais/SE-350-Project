@@ -28,7 +28,7 @@ int main()
 	init_printf(NULL, putc);
 #endif
 	/* start the RTX and built-in processes */
-	rtx_init();  
+	rtx_init();
   
 	/* We should never reach here!!! */
 	return RTX_ERR;  
