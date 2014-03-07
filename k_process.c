@@ -21,6 +21,7 @@
 #include "heap.h"
 #include "heap_queue.h"
 #include "timer.h"
+#include "system_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -53,6 +54,22 @@ void process_init()
 	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
 	process_create(&null_state);
+
+	// Set up UART i_process
+	PROC_INIT uart_state;
+	uart_state.pid = (U32)UART_PROCESS_ID;
+	uart_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
+	uart_state.stack_size = 0x200;
+	uart_state.entry_point = &uart_process;
+	process_create(&uart_state);
+
+	// Set up CRT process
+	PROC_INIT crt_state;
+	crt_state.pid = (U32)CRT_I_PROCESS_ID;
+	crt_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
+	crt_state.stack_size = 0x200;
+	crt_state.entry_point = &crt_process;
+	process_create(&crt_state);
 
 	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
