@@ -185,10 +185,7 @@ static void proc9(void)
 {
 	set_process_priority(8, PROCESS_PRIORITY_LOWEST);
 	set_process_priority(10, PROCESS_PRIORITY_HIGH);
-	struct msgbuf* message_envelope = NULL;
-	while (!message_envelope) {
-		message_envelope = (struct msgbuf*)receive_message(NULL);
-	}
+	struct msgbuf* message_envelope = message_envelope = (struct msgbuf*)receive_message(NULL);
 	printf("proc9: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
