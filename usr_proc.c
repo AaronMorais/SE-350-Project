@@ -24,7 +24,7 @@ static int times_proc1_ran = 0;
 static int times_proc2_ran = 0;
 static int times_proc3_ran = 0;
 
-/* 
+/*
  * ##### Proc1 and proc2 test the set process priority functionality. #####
  * Proc1 starts at MEDIUM priority and proc2 starts at LOW priority while everything else is LOW
  * Proc1 then changes priority of proc2 to be HIGH triggering preemption on proc1 and running proc2
@@ -32,7 +32,7 @@ static int times_proc3_ran = 0;
  */
 
 // Starts as priority Medium
-// Sets process 2 to be higher priority so it should preempt 
+// Sets process 2 to be higher priority so it should preempt
 // and process 2 should start running
 static void proc1(void)
 {
@@ -54,11 +54,11 @@ static void proc2(void)
 			test_results[SET_PRIORITY_TEST] = 1;
 		}
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
-		
-		
+
+
 //#### Testing release processor
 //#### waits until proc2 runs three times, sets its priority to be the same level as the other processes
-//#### proc3 should run after releasing processor		
+//#### proc3 should run after releasing processor
 		if (times_proc2_ran == 3) {
 			set_process_priority(2, PROCESS_PRIORITY_MEDIUM);
 			after_set_priority_before_release = 1;
@@ -92,22 +92,22 @@ static void proc4(void)
 	void* mem_block_2 = NULL;
 	void* mem_block = request_memory_block();
 	mem_block_2 = request_memory_block();
-	
+
 	if (mem_block_2 != NULL) {
 		test_results[REQUEST_MEMORY_TEST] = 1;
 	}
-	
-	// Setting proc5 to have higher priority so it should 
+
+	// Setting proc5 to have higher priority so it should
 	// preempt and start running
-	set_process_priority(5, PROCESS_PRIORITY_HIGH); 
-	
+	set_process_priority(5, PROCESS_PRIORITY_HIGH);
+
 	// Coming back from proc5 after proc5 blocked
-	// Proc4 should preempty and go to proc5 since 
+	// Proc4 should preempty and go to proc5 since
 	// since it is no longer blocked and has a memory block
 	s_requested_all_blocks = 1;
 	test_results[REQUEST_MEMORY_BLOCKED_TEST] = 1;
 	release_memory_block(mem_block);
-	
+
 	// Proc 5 receives the memory block and uses it
 	// Then it sets its priority to be lowest, in which
 	// the function comes here, and we set ourself to be
@@ -119,23 +119,23 @@ static void proc4(void)
 static void proc5(void)
 {
 	void* want_all_blocks;
-	
+
 	while( !s_requested_all_blocks ) {
 		want_all_blocks = request_memory_block();
 	}
-	
-	// want_all_blocks unblocks after proc4 
-	// releases a block of memory and sets the 
+
+	// want_all_blocks unblocks after proc4
+	// releases a block of memory and sets the
 	// s_request_all_blocks to be true
 	test_results[RELEASE_MEMORY_UNBLOCKED_TEST] = 1;
 	int* num_ptr = (int*)want_all_blocks;
 	*num_ptr = 5;
-	
+
 	int status = release_memory_block(num_ptr);
 	if (status == RTX_OK) {
 		test_results[RELEASE_MEMORY_TEST] = 1;
 	}
-	
+
 	set_process_priority(5, PROCESS_PRIORITY_LOWEST);
 }
 
@@ -171,7 +171,7 @@ static void proc7(void)
 static void proc8(void)
 {
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
-	
+
 	printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
@@ -185,7 +185,7 @@ static void proc9(void)
 {
 	set_process_priority(8, PROCESS_PRIORITY_LOWEST);
 	set_process_priority(10, PROCESS_PRIORITY_HIGH);
-	struct msgbuf* message_envelope = message_envelope = (struct msgbuf*)receive_message(NULL);
+	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
 	printf("proc9: %x %s\n", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
