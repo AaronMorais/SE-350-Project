@@ -1,0 +1,10 @@
+crt_process normal, kcd_process normal:
+  process_create(null), process_create(crt_process), process_create(kcd_process), process_create(user_procs)
+  CRT_PROCESS ID = 11
+  KCD_PROCESS ID = 12
+    result: creates all the processes, runs 11, 11 gets blocked, switches to 12, when process 12 tries to run, it hardfaults on __rte(). Stack pointer values seem to be pointing to the right values but the values in the stack is getting overriden when it goes into the __rte() function
+
+  process_create(null), process_create(crt_process), process_create(user_procs)
+  CRT_PROCESS ID = 11
+  KCD_PROCESS ID = 12
+    result: runs 11, 11 gets blocked, switches to 9. During the switch to 9, the values on the stack pointer of the current process (process 11) gets overriden by logging. Stack pointer then sets to (__set_MSP) the correct value for stack pointer of 9. Hardfaults again in __rte() for the switching to process 9 one.
