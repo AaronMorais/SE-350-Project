@@ -11,6 +11,9 @@
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
+#include "rtx_shared.h"
+#include "k_process.h"
+#include "k_memory.h"
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
@@ -184,15 +187,10 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
-		g_char_in = pUart->RBR;
-#ifdef DEBUG_0
-		uart1_put_string("Reading a char = ");
-		uart1_put_char(g_char_in);
-		uart1_put_string("\n\r");
-#endif // DEBUG_0
-		
-		g_buffer[12] = g_char_in; // nasty hack
-		g_send_char = 1;
+		struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
+		message_envelope->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
+		message_envelope->mtext[0] = pUart->RBR;
+		k_send_message(KCD_PROCESS_ID, message_envelope);
 		
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 		pUart->IER = IER_RLS | IER_RBR;

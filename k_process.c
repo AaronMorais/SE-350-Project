@@ -21,7 +21,10 @@
 #include "heap.h"
 #include "heap_queue.h"
 #include "timer.h"
-#include "system_proc.h"
+
+#include "uart.h"
+#include <LPC17xx.h>
+
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -41,6 +44,41 @@ static void null_process()
 	}
 }
 
+static void kcd_process() {
+	while (1) {
+		struct msgbuf* message_envelope = k_receive_message(NULL);
+      if(message_envelope != NULL &&
+         message_envelope->mtype == MESSAGE_TYPE_KCD_KEYPRESS_EVENT) {
+					 k_send_message(CRT_PROCESS_ID, message_envelope);
+      } else {
+        printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
+      }
+	}
+}
+static void uart_process(struct msgbuf* message_envelope) {
+  //while(1) {
+      LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
+      // write to buffer
+			g_buffer[12] = (uint8_t)message_envelope->mtext[0];
+      while(g_send_char == 1) {
+        pUart->IER = IER_THRE | IER_RLS | IER_RBR;
+      }
+  //}
+}
+
+static void crt_process() {
+  while(1) {
+      struct msgbuf* message_envelope = k_receive_message(NULL);
+      if(message_envelope != NULL &&
+         message_envelope->mtype == MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
+          uart_process(message_envelope);
+					k_release_memory_block( heap_block_from_user_block );
+      } else {
+        printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
+      }
+  }
+}
+
 void process_init()
 {
 	// Test process initial set up
@@ -54,28 +92,30 @@ void process_init()
 	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
 	process_create(&null_state);
-
-	// Set up UART i_process
-	PROC_INIT uart_state;
-	uart_state.pid = (U32)UART_PROCESS_ID;
-	uart_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	uart_state.stack_size = 0x200;
-	uart_state.entry_point = &uart_process;
-	process_create(&uart_state);
-
+	
 	// Set up CRT process
 	PROC_INIT crt_state;
-	crt_state.pid = (U32)CRT_I_PROCESS_ID;
+	crt_state.pid = (U32)CRT_PROCESS_ID;
 	crt_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
 	crt_state.stack_size = 0x200;
 	crt_state.entry_point = &crt_process;
 	process_create(&crt_state);
+	
+	// Set up KCD process
+	PROC_INIT kcd_state;
+	kcd_state.pid = (U32)KCD_PROCESS_ID;
+	kcd_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
+	kcd_state.stack_size = 0x200;
+	kcd_state.entry_point = &kcd_process;
+	process_create(&kcd_state);
 
 	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		process_create(&g_test_procs[i]);
 	}
 }
+
+
 
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.

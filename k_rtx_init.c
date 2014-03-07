@@ -25,6 +25,7 @@ void k_rtx_init(void)
 	memory_init_heap();
 	timer_init(0);
 	__enable_irq();
+	
 	// Start the first process
 	k_release_processor();
 }

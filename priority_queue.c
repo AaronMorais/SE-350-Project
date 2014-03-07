@@ -39,7 +39,7 @@ PCB* priority_queue_pop(PCB** queue)
 
 PCB* priority_queue_top(PCB** queue)
 {
-	for (ProcessPriority priority = PROCESS_PRIORITY_HIGH; priority < PROCESS_PRIORITY_NUM; priority++) {
+	for (ProcessPriority priority = PROCESS_PRIORITY_SYSTEM_PROCESS; priority < PROCESS_PRIORITY_NUM; priority++) {
 		PCB* priority_list = queue[priority];
 		if (priority_list != NULL) {
 			return priority_list;
@@ -50,7 +50,7 @@ PCB* priority_queue_top(PCB** queue)
 
 PriorityStatus priority_queue_remove(PCB** queue, PCB* pcb)
 {
-	for (ProcessPriority priority = PROCESS_PRIORITY_HIGH; priority < PROCESS_PRIORITY_NUM; priority++) {
+	for (ProcessPriority priority = PROCESS_PRIORITY_SYSTEM_PROCESS; priority < PROCESS_PRIORITY_NUM; priority++) {
 		PCB* node = queue[priority];
 		PCB* prev = NULL;
 		while (node != NULL) {
@@ -72,7 +72,7 @@ PriorityStatus priority_queue_remove(PCB** queue, PCB* pcb)
 
 PCB* priority_queue_find(PCB** queue, int id)
 {
-	for (ProcessPriority priority = PROCESS_PRIORITY_HIGH; priority < PROCESS_PRIORITY_NUM; priority++) {
+	for (ProcessPriority priority = PROCESS_PRIORITY_SYSTEM_PROCESS; priority < PROCESS_PRIORITY_NUM; priority++) {
 		PCB* node = queue[priority];
 		while (node != NULL) {
 			if (node->pid == id) {
@@ -98,7 +98,7 @@ PriorityStatus priority_queue_reprioritize(PCB** queue, PCB* pcb, ProcessPriorit
 int priority_queue_length(PCB** queue)
 {
 	int len = 0;
-	for (ProcessPriority priority = PROCESS_PRIORITY_HIGH; priority < PROCESS_PRIORITY_NUM; priority++) {
+	for (ProcessPriority priority = PROCESS_PRIORITY_SYSTEM_PROCESS; priority < PROCESS_PRIORITY_NUM; priority++) {
 		PCB* node = queue[priority];
 		while (node != NULL) {
 			len++;

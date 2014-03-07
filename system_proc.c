@@ -5,26 +5,10 @@ This process responds to only one message type: a CRT display request. The messa
 
 */
 #include "system_proc.h"
+#include "k_process.h"
+#include "k_memory.h"
+#include "heap.h"
+#include "uart.h"
+#include <LPC17xx.h>
 
-void crt_process() {
 
-  while(1) {
-      struct msgbuf* message_envelope = k_receive_message(NULL);
-      if(message_envelope != NULL &&
-         message_envelope->mtype == MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
-          uart_process(message_envelope);
-      } else {
-        printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
-      }
-  }
-}
-
-void uart_process(struct msgbuf* message_envelope) {
-  while(1) {
-      LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-      // write to buffer
-      while(g_send_char == 1) {
-        pUart->IER = IER_THRE | IER_RLS | IER_RBR;
-      }
-  }
-}

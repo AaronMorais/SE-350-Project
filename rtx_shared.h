@@ -10,10 +10,8 @@
 #define NUM_TEST_PROCS 10
 
 typedef enum {
-  TIMER_I_PROCESS_ID = NUM_TEST_PROCS + 1
-  UART_PROCESS_ID    = NUM_TEST_PROCS + 2,
-  CRT_PROCESS_ID     = NUM_TEST_PROCS + 3,
-  KCD_PROCESS_ID     = NUM_TEST_PROCS + 4
+  CRT_PROCESS_ID     = NUM_TEST_PROCS + 1,
+  KCD_PROCESS_ID     = NUM_TEST_PROCS + 2
 } SystemProcPid;
 
 #ifdef DEBUG_0
@@ -35,9 +33,11 @@ typedef enum {
 } ProcessPriority;
 
 typedef enum {
-  MESSAGE_TYPE_CRT_DISPLAY_REQUEST   = 0,
-
-  MESSAGE_TYPE_NUM = 1
+  MESSAGE_TYPE_KCD_KEYPRESS_EVENT		 			= 0,
+	MESSAGE_TYPE_KCD_COMMAND_REGISTRATION		= 1,
+	MESSAGE_TYPE_CRT_DISPLAY_REQUEST   			= 2,
+	
+  MESSAGE_TYPE_NUM = 3
 } MessageType;
 
 struct msgbuf {
