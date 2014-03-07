@@ -14,6 +14,7 @@
 #include "rtx_shared.h"
 #include "k_process.h"
 #include "k_memory.h"
+#include "sys_proc.h"
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
@@ -190,7 +191,7 @@ void c_UART0_IRQHandler(void)
 		struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
 		message_envelope->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
 		message_envelope->mtext[0] = pUart->RBR;
-		k_send_message(KCD_PROCESS_ID, message_envelope);
+		k_send_message(PROCESS_ID_KCD, message_envelope);
 		
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 		pUart->IER = IER_RLS | IER_RBR;

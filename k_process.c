@@ -21,10 +21,7 @@
 #include "heap.h"
 #include "heap_queue.h"
 #include "timer.h"
-
-#include "uart.h"
-#include <LPC17xx.h>
-
+#include "sys_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -36,78 +33,14 @@ PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
 
-static void null_process()
-{
-	while (1) {
-		k_release_processor();
-		LOG("Running null process");
-	}
-}
-
-static void kcd_process() {
-	while (1) {
-		struct msgbuf* message_envelope = k_receive_message(NULL);
-      if(message_envelope != NULL &&
-         message_envelope->mtype == MESSAGE_TYPE_KCD_KEYPRESS_EVENT) {
-					 k_send_message(CRT_PROCESS_ID, message_envelope);
-      } else {
-        printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
-      }
-	}
-}
-static void uart_process(struct msgbuf* message_envelope) {
-  //while(1) {
-      LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-      // write to buffer
-			g_buffer[12] = (uint8_t)message_envelope->mtext[0];
-      while(g_send_char == 1) {
-        pUart->IER = IER_THRE | IER_RLS | IER_RBR;
-      }
-  //}
-}
-
-static void crt_process() {
-  while(1) {
-      struct msgbuf* message_envelope = k_receive_message(NULL);
-      if(message_envelope != NULL &&
-         message_envelope->mtype == MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
-          uart_process(message_envelope);
-					k_release_memory_block( heap_block_from_user_block );
-      } else {
-        printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
-      }
-  }
-}
 
 void process_init()
 {
+	sys_proc_init();
+	
 	// Test process initial set up
 	extern void set_test_procs(void);
 	set_test_procs();
-
-	// Set up NULL process
-	PROC_INIT null_state;
-	null_state.pid = (U32)(0);
-	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
-	null_state.stack_size = 0x200;
-	null_state.entry_point = &null_process;
-	process_create(&null_state);
-	
-	// Set up CRT process
-	PROC_INIT crt_state;
-	crt_state.pid = (U32)CRT_PROCESS_ID;
-	crt_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	crt_state.stack_size = 0x200;
-	crt_state.entry_point = &crt_process;
-	process_create(&crt_state);
-	
-	// Set up KCD process
-	PROC_INIT kcd_state;
-	kcd_state.pid = (U32)KCD_PROCESS_ID;
-	kcd_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	kcd_state.stack_size = 0x200;
-	kcd_state.entry_point = &kcd_process;
-	process_create(&kcd_state);
 
 	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
@@ -358,6 +291,8 @@ void* k_receive_message(int* sender_pid)
 
 int k_delayed_send(int dest_pid, void *message_envelope, int delay)
 {
+	// TODO: It would be a bit nicer to have this code (at least part
+	// of it) in timer.c so we don't need the global variables.
 	HeapBlock* full_env = heap_block_from_user_block(message_envelope);
 	full_env->header.send_time = g_timer_count + delay;
 	full_env->header.dest_pid = dest_pid;

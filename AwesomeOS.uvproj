@@ -125,7 +125,7 @@
             <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
             <RestoreFunctions>1</RestoreFunctions>
             <RestoreToolbox>1</RestoreToolbox>
-            <LimitSpeedToRealTime>1</LimitSpeedToRealTime>
+            <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
           </Simulator>
           <Target>
             <UseTarget>0</UseTarget>
@@ -480,6 +480,11 @@
               <FileName>system_proc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\system_proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>sys_proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\sys_proc.c</FilePath>
             </File>
           </Files>
         </Group>
