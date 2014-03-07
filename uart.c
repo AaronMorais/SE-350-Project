@@ -20,7 +20,6 @@ uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
 volatile uint8_t g_send_char = 0;
 uint8_t g_char_in;
-uint8_t g_char_out;
 
 /**
  * @brief: initialize the n_uart
@@ -191,6 +190,7 @@ void c_UART0_IRQHandler(void)
 		struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
 		message_envelope->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
 		message_envelope->mtext[0] = pUart->RBR;
+		g_send_char = 1;
 		k_send_message(PROCESS_ID_KCD, message_envelope);
 		
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
@@ -200,7 +200,7 @@ void c_UART0_IRQHandler(void)
 
 		if (*gp_buffer != '\0' ) {
 			while (*gp_buffer != '\0' ) {
-				g_char_out = *gp_buffer;
+				uint8_t g_char_out = *gp_buffer;
 #ifdef DEBUG_0
 				uart1_put_string("Writing a char = ");
 				uart1_put_char(g_char_out);
