@@ -136,8 +136,8 @@ int uart_irq_init(int n_uart) {
 	/* disable the Divisior Latch Access Bit DLAB=0 */
 	pUart->LCR &= ~(BIT(7)); 
 	
-	//pUart->IER = IER_RBR | IER_THRE | IER_RLS; 
-	pUart->IER = IER_RBR | IER_RLS;
+	pUart->IER = IER_RBR | IER_THRE | IER_RLS; 
+	//pUart->IER = IER_RBR | IER_RLS;
 
 	/* Step 6b: enable the UART interrupt from the system level */
 	
@@ -149,7 +149,8 @@ int uart_irq_init(int n_uart) {
 		return 1; /* not supported yet */
 	}
 	pUart->THR = '\0';
-	pUart->IER = IER_RLS | IER_RBR;
+	g_send_char = 1;
+	gp_buffer = (uint8_t*)"hello";
 	return 0;
 }
 
@@ -187,40 +188,34 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
+		// TODO: Should make/use non-blocking version
 		struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
 		message_envelope->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
 		message_envelope->mtext[0] = pUart->RBR;
-		g_send_char = 1;
+		//g_send_char = 1;
 		k_send_message(PROCESS_ID_KCD, message_envelope);
 		
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 		pUart->IER = IER_RLS | IER_RBR;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
-
-		if (*gp_buffer != '\0' ) {
-			while (*gp_buffer != '\0' ) {
-				uint8_t g_char_out = *gp_buffer;
-#ifdef DEBUG_0
-				uart1_put_string("Writing a char = ");
-				uart1_put_char(g_char_out);
-				uart1_put_string("\n\r");
-			
-			// you could use the printf instead
-#endif // DEBUG_0			
-				pUart->THR = g_char_out;
-				gp_buffer++;
-			}
-		} else {
-#ifdef DEBUG_0
+		if (*gp_buffer == '\0' ) {
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-#endif // DEBUG_0
-			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
+			pUart->IER &= ~IER_THRE;
 			pUart->THR = '\0';
 			g_send_char = 0;
-			gp_buffer = g_buffer;		
+			gp_buffer = g_buffer;
+			k_set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_SYSTEM_PROCESS);
+			return;
 		}
-	      
+		uint8_t g_char_out = *gp_buffer;
+		
+		uart1_put_string("Writing a char = ");
+		uart1_put_char(g_char_out);
+		uart1_put_string("\n\r");
+		
+		pUart->THR = g_char_out;
+		gp_buffer++;
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
 			uart1_put_string("Should not get here!\n\r");

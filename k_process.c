@@ -248,25 +248,37 @@ int k_get_process_priority(int pid)
 	return RTX_ERR;
 }
 
-int k_send_message(int dest_pid, void* msg)
-{
+int process_send_message(int dest_pid, HeapBlock* block) {
 	PCB* dest = process_find(dest_pid);
 	if (!dest) {
 		LOG("Destination process %d not found!", dest_pid);
 		return RTX_ERR;
 	}
-
-	HeapBlock* block = heap_block_from_user_block(msg);
-	// TODO: This is wrong when called via delayed_send.
-	block->header.source_pid = g_current_process->pid;
 	heap_queue_push(&dest->message_queue, block);
 	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
 		return RTX_OK;
 	}
 
 	dest->state = PROCESS_STATE_READY;
-	priority_queue_insert(g_ready_process_priority_queue, dest);
+	int result = priority_queue_insert(g_ready_process_priority_queue, dest);
+	if (result != PRIORITY_STATUS_OK) {
+		LOG("Shit hit the fan. Priority queue insert issue.");
+		return RTX_ERR;
+	}
+	return RTX_OK;
+}
 
+int k_send_message_no_preempt(int dest_pid, void* msg) 
+{
+	HeapBlock* block = heap_block_from_user_block(msg);
+	block->header.source_pid = g_current_process->pid;
+	return process_send_message(dest_pid, block);
+}
+
+int k_send_message(int dest_pid, void* msg)
+{
+	int result = k_send_message_no_preempt(dest_pid, msg);
+	if (result != RTX_OK) return RTX_ERR;
 	return process_prempt_if_necessary();
 }
 
@@ -299,9 +311,8 @@ int k_delayed_send(int dest_pid, void *message_envelope, int delay)
 	full_env->header.source_pid = g_current_process->pid;
   HeapQueueStatus status = sorted_heap_queue_push(&g_delayed_msg_list, full_env);
 
-  if (status == QUEUE_STATUS_OK) {
-  	return RTX_OK;
-  } else {
+  if (status != QUEUE_STATUS_OK) {
   	return RTX_ERR;
   }
+	return RTX_OK;
 }

@@ -44,36 +44,41 @@ static void null_process(){
 
 static void kcd_process() {
 	while (1) {
-		struct msgbuf* message = NULL;
-		message = receive_message(NULL);
+		struct msgbuf* message = receive_message(NULL);
 		if (message == NULL || message->mtype != MESSAGE_TYPE_KCD_KEYPRESS_EVENT) {
-			printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
+			LOG("ERROR: KCD_Proc received a message that was not of type KCD_KEYPRESS_EVENT");
 			continue;
 		}
+		message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
 		send_message(PROCESS_ID_CRT, message);
 	}
 }
 
-// TODO: Fix this.
-static void uart_process(struct msgbuf* message_envelope) {
-	//while(1) {
-			LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-			// write to buffer
-			g_buffer[12] = (uint8_t)message_envelope->mtext[0];
-			while(g_send_char == 1) {
-				pUart->IER = IER_THRE | IER_RLS | IER_RBR;
-			}
-	//}
+static void uart_schedule_write(char* str) {
+	if (g_send_char == 1) {
+		LOG("Warning: UART write scheduled when UART busy! Ignoring...");
+		return;
+	}
+	g_send_char = 1;
+	extern uint8_t *gp_buffer;
+	// TODO: Buffer size
+	gp_buffer = (uint8_t*)str;
+	
+	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
+	pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+	LOG("-----Setting interrupt");
 }
 
 static void crt_process() {
 	while (1) {
 		struct msgbuf* message = receive_message(NULL);
 		if (message == NULL || message->mtype != MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
-			printf("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
+			LOG("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
 			continue;
 		}
-		uart_process(message);
+		LOG("=======Crt process running...");
+		uart_schedule_write(message->mtext);
+		set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
 		release_memory_block(message);
 	}
 }
