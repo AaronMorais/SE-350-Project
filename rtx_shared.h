@@ -31,12 +31,13 @@ typedef enum {
   MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
 	MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
 	MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
-	
+
 	MESSAGE_TYPE_NUM                      = 3
 } MessageType;
 
 struct msgbuf {
-	MessageType mtype:32; /* user defined message type */
+	// TODO: for all of our processes, set the type
+	MessageType mtype; /* user defined message type */
 	char mtext[1]; /* body of the message */
 };
 
