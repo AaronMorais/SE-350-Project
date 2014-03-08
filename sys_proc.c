@@ -4,12 +4,13 @@
 #include "k_rtx.h"
 #include "k_process.h"
 #include "uart.h"
+#include "heap.h"
 
 static void null_process(void);
 static void crt_process(void);
 static void kcd_process(void);
 
-RegisteredCommand g_registered_commands[NUM_COMMANDS];
+struct RegisteredCommand g_registered_commands[NUM_COMMANDS];
 char g_command_buffer[COMMAND_CHAR_NUM] = {COMMAND_NULL};
 int g_cur_command_buffer_index = 0;
 
@@ -54,8 +55,16 @@ static void init_kcd_process() {
 	}
 }
 
+// TODO move this to a shared space one day.. but not today
+static void strcpy(char* dst, const char* src)
+{
+	while (*src) {
+		*dst++ = *src++;
+	}
+}
+
 static void kcd_process_clear_command_buffer() {
-	for (int i = 0; i < NUM_TEST_PROCS) {
+	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		g_command_buffer[i] = COMMAND_NULL;
 	}
 	g_cur_command_buffer_index = 0;
@@ -122,7 +131,7 @@ static void kcd_process_character_input(struct msgbuf* message) {
 static void kcd_process_command_registration(struct msgbuf* message) {
 	// Message data should be of the format 'C' where C is a capital character
 		int index = message->mtext[0] - ASCII_START;
-		if (index < 0 || > 25) {
+		if (index < 0 || index > 25) {
 			printf( "ERROR: KCD_Proc command is not in range%c", message->mtext[0]);
 			return;
 		}
