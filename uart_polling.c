@@ -132,9 +132,9 @@ int uart_put_string(int n_uart, unsigned char *s)
  */
 void putc(void *p, char c)
 {
-  if ( p != NULL ) {
-    uart0_put_string("putc: first parameter needs to be NULL");
-  } else {
-      uart0_put_char(c);
-  }
+	if (p != NULL) {
+		uart1_put_string("putc: first parameter needs to be NULL");
+		return;
+	}
+	uart1_put_char(c);
 }

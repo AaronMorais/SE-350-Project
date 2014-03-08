@@ -137,8 +137,8 @@ int uart_irq_init(int n_uart) {
 	/* disable the Divisior Latch Access Bit DLAB=0 */
 	pUart->LCR &= ~(BIT(7)); 
 	
-	pUart->IER = IER_RBR | IER_THRE | IER_RLS; 
-	//pUart->IER = IER_RBR | IER_RLS;
+// 	pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+	pUart->IER = IER_RBR | IER_RLS;
 
 	/* Step 6b: enable the UART interrupt from the system level */
 	
@@ -150,9 +150,9 @@ int uart_irq_init(int n_uart) {
 		return 1; /* not supported yet */
 	}
 	LOG("Testing");
-	pUart->THR = '\0';
-	g_send_char = 1;
-	gp_buffer = (uint8_t*)"hello";
+// 	pUart->THR = '\0';
+// 	g_send_char = 1;
+// 	gp_buffer = (uint8_t*)"hello";
 	return 0;
 }
 
@@ -203,7 +203,7 @@ void c_UART0_IRQHandler(void)
 		message->mtext[1] = '\0';
 
 		//g_send_char = 1;
-		pUart->IER = IER_RLS | IER_RBR;
+		//pUart->IER = IER_RLS | IER_RBR;
 
 		k_send_message(PROCESS_ID_KCD, message);
 		return;
@@ -211,7 +211,7 @@ void c_UART0_IRQHandler(void)
 	/* THRE Interrupt, transmit holding register becomes empty */
 		if (*gp_buffer == '\0') {
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-			pUart->IER &= ~IER_THRE;
+			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit
 			pUart->THR = '\0';
 			g_send_char = 0;
 			gp_buffer = g_buffer;

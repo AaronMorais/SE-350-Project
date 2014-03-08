@@ -31,5 +31,5 @@ int main()
 	rtx_init();
   
 	/* We should never reach here!!! */
-	return RTX_ERR;  
+	return RTX_ERR;
 }

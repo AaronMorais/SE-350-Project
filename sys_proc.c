@@ -54,7 +54,7 @@ static void kcd_process() {
 	}
 }
 
-static void uart_schedule_write(char* str) {
+static void uart_write(char* str) {
 	if (g_send_char == 1) {
 		LOG("Warning: UART write scheduled when UART busy! Ignoring...");
 		return;
@@ -63,9 +63,18 @@ static void uart_schedule_write(char* str) {
 	extern uint8_t *gp_buffer;
 	gp_buffer = (uint8_t*)str;
 	
-	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-	pUart->IER = IER_RBR | IER_THRE | IER_RLS;
 	LOG("-----Setting interrupt");
+	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
+	while (1) {
+		if (g_send_char) {
+			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+			pUart->THR = '\0';
+		} else break;
+	}
+	pUart->IER = IER_RBR | IER_RLS;
+	pUart->THR = '\0';
+// 	set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
+	LOG("-----Completed");
 }
 
 static void crt_process() {
@@ -76,8 +85,7 @@ static void crt_process() {
 			continue;
 		}
 		LOG("=======Crt process running...");
-		uart_schedule_write(message->mtext);
-		set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
+		uart_write(message->mtext);
 		release_memory_block(message);
 	}
 }
