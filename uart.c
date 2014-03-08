@@ -14,6 +14,7 @@
 #include "rtx_shared.h"
 #include "k_process.h"
 #include "k_memory.h"
+#include "heap.h"
 #include "sys_proc.h"
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";
@@ -190,14 +191,22 @@ void c_UART0_IRQHandler(void)
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
 		// TODO: Should make/use non-blocking version
-		struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
-		message_envelope->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
-		message_envelope->mtext[0] = pUart->RBR;
+		HeapBlock* block = heap_alloc_block();
+		if (block == NULL) {
+			uart1_put_string("Warning: Out of memory. Could not allocate block to send keyboard input to KCD.");
+			return;
+		}
+		struct msgbuf* message = (struct msgbuf*)user_block_from_heap_block(block);
+		LOG("UART: Alloc'd block %x", message);
+		message->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
+		message->mtext[0] = pUart->RBR;
+		message->mtext[1] = '\0';
+
 		//g_send_char = 1;
-		k_send_message(PROCESS_ID_KCD, message_envelope);
-		
-		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 		pUart->IER = IER_RLS | IER_RBR;
+
+		k_send_message(PROCESS_ID_KCD, message);
+		return;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
 		if (*gp_buffer == '\0') {
