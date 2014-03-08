@@ -208,7 +208,8 @@ int k_release_processor(void)
 
 int k_set_process_priority(int id, int priority)
 {
-	if (priority < PROCESS_PRIORITY_HIGH || priority > PROCESS_PRIORITY_LOWEST) {
+	// TODO: User exposed priorites should be 0-4.
+	if (priority < PROCESS_PRIORITY_SYSTEM_PROCESS || priority > PROCESS_PRIORITY_LOWEST) {
 		LOG("Attempted to set priority to invalid value!");
 		return RTX_ERR;
 	}

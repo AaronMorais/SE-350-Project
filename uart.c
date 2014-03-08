@@ -148,6 +148,7 @@ int uart_irq_init(int n_uart) {
 	} else {
 		return 1; /* not supported yet */
 	}
+	LOG("Testing");
 	pUart->THR = '\0';
 	g_send_char = 1;
 	gp_buffer = (uint8_t*)"hello";
