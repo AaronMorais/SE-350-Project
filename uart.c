@@ -200,7 +200,7 @@ void c_UART0_IRQHandler(void)
 		pUart->IER = IER_RLS | IER_RBR;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
-		if (*gp_buffer == '\0' ) {
+		if (*gp_buffer == '\0') {
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
 			pUart->IER &= ~IER_THRE;
 			pUart->THR = '\0';
@@ -219,7 +219,7 @@ void c_UART0_IRQHandler(void)
 		gp_buffer++;
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
-			uart1_put_string("Should not get here!\n\r");
+			printf("Should not get here! %x\n\r", pUart->LSR);
 #endif // DEBUG_0
 		return;
 	}	

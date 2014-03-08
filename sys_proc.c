@@ -61,7 +61,6 @@ static void uart_schedule_write(char* str) {
 	}
 	g_send_char = 1;
 	extern uint8_t *gp_buffer;
-	// TODO: Buffer size
 	gp_buffer = (uint8_t*)str;
 	
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
