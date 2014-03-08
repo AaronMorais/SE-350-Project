@@ -65,15 +65,15 @@ static void uart_write(char* str) {
 	
 	LOG("-----Setting interrupt");
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-	while (1) {
-		if (g_send_char) {
+// 	while (1) {
+// 		if (g_send_char) {
 			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
 			pUart->THR = '\0';
-		} else break;
-	}
+// 		} else break;
+// 	}
+	set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
 	pUart->IER = IER_RBR | IER_RLS;
-	pUart->THR = '\0';
-// 	set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
+// 	pUart->THR = '\0';
 	LOG("-----Completed");
 }
 
