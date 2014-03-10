@@ -190,16 +190,17 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
-		// TODO: Should make/use non-blocking version
+		g_char_in = pUart->RBR;
+
 		HeapBlock* block = heap_alloc_block();
 		if (block == NULL) {
 			uart1_put_string("Warning: Out of memory. Could not allocate block to send keyboard input to KCD.");
 			return;
 		}
 		struct msgbuf* message = (struct msgbuf*)user_block_from_heap_block(block);
-		LOG("UART: Alloc'd block %x", message);
+		LOG("UART: Alloc'd block %x for char %c", message, g_char_in);
 		message->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
-		message->mtext[0] = pUart->RBR;
+		message->mtext[0] = g_char_in;
 		message->mtext[1] = '\0';
 
 		//g_send_char = 1;
