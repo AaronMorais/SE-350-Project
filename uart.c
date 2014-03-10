@@ -18,7 +18,7 @@
 #include "heap_queue.h"
 #include "sys_proc.h"
 #include "hot_key_helper.h"
-
+#include "syscall.h"
 
 #define DEBUG_HOTKEYS
 
@@ -217,7 +217,7 @@ void c_UART0_IRQHandler(void)
 		message->mtext[0] = g_char_in;
 		message->mtext[1] = '\0';
 		
-		k_send_message(PROCESS_ID_KCD, message);
+		send_message(PROCESS_ID_KCD, message);
 		return;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
@@ -239,6 +239,7 @@ void c_UART0_IRQHandler(void)
 			}
 		}
 
+		
 		uint8_t g_char_out = *s_message_buffer;
 		uart1_put_string("Writing a char = ");
 		uart1_put_char(g_char_out);
