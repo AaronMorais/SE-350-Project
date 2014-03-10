@@ -254,7 +254,7 @@ int k_get_process_priority(int pid)
 	return RTX_ERR;
 }
 
-int process_send_message(int dest_pid, HeapBlock* block) {
+int k_process_send_message(int dest_pid, HeapBlock* block) {
 	PCB* dest = process_find(dest_pid);
 	if (!dest) {
 		LOG("Destination process %d not found!", dest_pid);
@@ -278,7 +278,7 @@ int k_send_message_no_preempt(int dest_pid, void* msg)
 {
 	HeapBlock* block = heap_block_from_user_block(msg);
 	block->header.source_pid = g_current_process->pid;
-	return process_send_message(dest_pid, block);
+	return k_process_send_message(dest_pid, block);
 }
 
 int k_send_message(int dest_pid, void* msg)

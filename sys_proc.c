@@ -49,8 +49,8 @@ void sys_proc_init() {
 	uart_state.stack_size = 0x200;
 	uart_state.entry_point = NULL;
 	process_create(&uart_state);
-
-  // Set up wall clock process
+	
+	// Set up wall_clock process
 	PROC_INIT wall_clock_state;
 	wall_clock_state.pid = (U32)PROCESS_ID_WALL_CLOCK;
 	wall_clock_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
@@ -80,6 +80,14 @@ static void strcpy(char* dst, const char* src)
 	while (*src) {
 		*dst++ = *src++;
 	}
+}
+
+static char *mystrcpy(char *dst, const char *src)
+{
+	char *ptr;
+	ptr = dst;
+	while(*dst++=*src++);
+	return(ptr);
 }
 
 static void kcd_process_clear_command_buffer() {
@@ -142,9 +150,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		// It is in the middle of a buffer wait on newline
 		if (message->mtext[0] == '\b') {
 			backspace();
-		} else if (message->mtext[0] == '\n') {
+		} else if (message->mtext[0] == '\r') {
 			// Newline means command submit without the newline
-			strcpy(message->mtext, g_command_buffer);
+			mystrcpy(message->mtext, g_command_buffer);
 			int command_index = g_command_buffer[1] - ASCII_START;
 			kcd_process_send_message(g_registered_commands[command_index].process_id, message);
 			kcd_process_clear_command_buffer();
@@ -202,6 +210,9 @@ static void crt_process() {
 			LOG("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
 			continue;
 		}
+		if (message->mtext[0] == '\r') {
+			message->mtext[1] = '\n';
+		}
 		LOG("=======Crt process running...");
 		send_message(PROCESS_ID_UART, message);
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
@@ -211,12 +222,23 @@ static void crt_process() {
 }
 
 static void wall_clock_process() {
+	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
+	register_message_envelope->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
+	register_message_envelope->mtext[0] = 'W';
+	send_message(PROCESS_ID_KCD, (void*)register_message_envelope);
+	
 	while(1){
 		static int is_running = 0;
 		static int first = 0;
+		
+	//	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+	//	message_envelope->mtype = MESSAGE_TYPE_WALL_CLOCK;
+	//	delayed_send(PROCESS_ID_WALL_CLOCK, (void*)message_envelope, 1000);
+		
+	//	uart0_put_string("wall clock\n\r");
 		struct msgbuf* message = receive_message(NULL);
-		if (message == NULL || message->mtype != MESSAGE_TYPE_WALL_CLOCK) {
-			LOG("ERROR: Wall_clock_proc received a message that was not of type MESSAGE_TYPE_WALL_CLOCK");
+		if (message == NULL) {
+			LOG("ERROR: Wall_clock_proc received a message that was NULL");
 			continue;
 		}
 		static uint32_t wall_clock_time_offset;
@@ -226,7 +248,7 @@ static void wall_clock_process() {
 		first = 1;
 		static uint32_t wall_clock_time;
 		char type = message->mtext[2];
-		int ATOI_OFFSET = 48;
+		int ATOI_OFFSET = '0';
 		if (type == 'R'){
 			is_running = 1;
 			wall_clock_time = 0;
