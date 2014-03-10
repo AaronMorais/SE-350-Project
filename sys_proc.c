@@ -90,6 +90,11 @@ static void kcd_process_clear_message_block(struct msgbuf* message) {
 	}
 }
 
+static void backspace() {
+	g_cur_command_buffer_index--;
+	g_command_buffer[g_cur_command_buffer_index] = COMMAND_NULL;
+}
+
 static void kcd_process_character_input(struct msgbuf* message) {
 
 	if (g_cur_command_buffer_index == 0) {
@@ -101,7 +106,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		kcd_process_send_message(PROCESS_ID_CRT, message);
 	} else if (g_cur_command_buffer_index == 1) {
 		// If it second character isn't a command, we send a message to CRT to print shit
-		if (g_registered_commands[message->mtext[0] - ASCII_START].process_id == -1) {
+		if(message->mtext[0] == '\b') {
+			backspace();
+		} else if (g_registered_commands[message->mtext[0] - ASCII_START].process_id == -1) {
 			// Modifies the message to be "%" + mtext[0] in the message passed along
 			char second_char = message->mtext[0];
 			message->mtext[0] = g_command_buffer[0];
@@ -114,7 +121,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		kcd_process_send_message(PROCESS_ID_CRT, message);
 	} else {
 		// It is in the middle of a buffer wait on newline
-		if (message->mtext[0] == '\n') {
+		if (message->mtext[0] == '\b') {
+			backspace();
+		} else if (message->mtext[0] == '\n') {
 			// Newline means command submit without the newline
 			strcpy(message->mtext, g_command_buffer);
 			int command_index = g_command_buffer[1] - ASCII_START;
