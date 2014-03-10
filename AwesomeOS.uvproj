@@ -481,6 +481,11 @@
               <FileType>1</FileType>
               <FilePath>.\sys_proc.c</FilePath>
             </File>
+            <File>
+              <FileName>hot_key_helper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\hot_key_helper.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
