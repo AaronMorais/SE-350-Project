@@ -70,9 +70,9 @@ static void kcd_process_clear_command_buffer() {
 	g_cur_command_buffer_index = 0;
 }
 
-static void kcd_process_send_message(int p_id, struct msgbuf* message) {
+static void kcd_process_send_message(int pid, struct msgbuf* message) {
 	message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-	send_message(p_id, (void*)message);
+	send_message(pid, (void*)message);
 }
 
 static void push_to_command_buffer(struct msgbuf* message) {
@@ -132,12 +132,12 @@ static void kcd_process_command_registration(struct msgbuf* message) {
 	// Message data should be of the format 'C' where C is a capital character
 		int index = message->mtext[0] - ASCII_START;
 		if (index < 0 || index > 25) {
-			printf( "ERROR: KCD_Proc command is not in range%c", message->mtext[0]);
+			LOG( "ERROR: KCD_Proc command is not in range%c", message->mtext[0]);
 			return;
 		}
 
 		if (g_registered_commands[index].process_id != -1) {
-			printf( "ERROR: KCD_Proc received multiply registration for charater %c", message->mtext[0]);
+			LOG( "ERROR: KCD_Proc received multiply registration for charater %c\n", message->mtext[0]);
 			return;
 		}
 
@@ -152,7 +152,7 @@ static void kcd_process() {
 		message = receive_message(NULL);
 
 		if (message == NULL) {
-			printf("ERROR: KCD_Proc received a null message");
+			LOG("ERROR: KCD_Proc received a null message\n");
 			return;
 		}
 
@@ -162,7 +162,7 @@ static void kcd_process() {
 			kcd_process_command_registration(message);
 			kcd_process_clear_message_block(message);
 		} else {
-			printf("ERROR: KCD_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
+			LOG("ERROR: KCD_Proc received a message that was not of type MESSAGE_TYPE_KCD");
 		}
 	}
 }
@@ -176,6 +176,7 @@ static void uart_write(char* str) {
 	extern uint8_t *gp_buffer;
 	gp_buffer = (uint8_t*)str;
 
+	set_process_priority_no_preempt(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
 	LOG("-----Setting interrupt");
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
 // 	while (1) {
@@ -183,8 +184,9 @@ static void uart_write(char* str) {
 			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
 			pUart->THR = '\0';
 // 		} else break;
-// 	}
-	set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
+// 	}\
+	
+	release_processor();
 	pUart->IER = IER_RBR | IER_RLS;
 // 	pUart->THR = '\0';
 	LOG("-----Completed");

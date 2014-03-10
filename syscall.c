@@ -30,6 +30,13 @@ int release_memory_block(void* block)
 	return _release_memory_block((U32)k_release_memory_block, block);
 }
 
+int set_process_priority_no_preempt(int process_id, int priority)
+{
+	extern int k_set_process_priority_no_preempt(int, int);
+	extern int _set_process_priority_no_preempt(U32 p_func, int id, int prior) SVC;
+	return _set_process_priority_no_preempt((U32)k_set_process_priority_no_preempt, process_id, priority);
+}
+
 int set_process_priority(int process_id, int priority)
 {
 	extern int k_set_process_priority(int, int);

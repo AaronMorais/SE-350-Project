@@ -86,7 +86,7 @@ int process_create(PROC_INIT* initial_state)
 	}
 	pcb->sp = sp;
 
-	LOG("Created process! SP: %x", pcb->sp);
+	// LOG("Created process! SP: %x", pcb->sp);
 
 	return priority_queue_insert(g_ready_process_priority_queue, pcb);
 }
@@ -97,15 +97,12 @@ int process_create(PROC_INIT* initial_state)
  */
 static PCB* scheduler(void)
 {
-	PCB* next_process = priority_queue_pop(g_ready_process_priority_queue);
+ 	PCB* next_process = priority_queue_pop(g_ready_process_priority_queue);
 
-	if (next_process->pid == 9) {
-		LOG("Unth");
-	}
 	if (next_process == NULL) {
 		LOG("Warning: No processes on ready queue.\n");
 	} else {
-		LOG("next_process id is: %d", next_process->pid);
+		// LOG("next_process id is: %d", next_process->pid);
 	}
 
 	return next_process;
@@ -113,7 +110,7 @@ static PCB* scheduler(void)
 
 static int switch_to_process(PCB* new_proc)
 {
-	LOG("About to proccess_switch");
+	//LOG("About to proccess_switch");
 	if (new_proc == NULL) {
 		LOG("NULL passed to switch_to_process!");
 		return RTX_ERR;
@@ -125,7 +122,7 @@ static int switch_to_process(PCB* new_proc)
 		return RTX_ERR;
 	}
 
-	LOG("before g_current_process if");
+	// LOG("before g_current_process if");
 	if (g_current_process != NULL) {
 		g_current_process->sp = (U32*) __get_MSP();
 	}
@@ -140,7 +137,7 @@ static int switch_to_process(PCB* new_proc)
 		extern void __rte(void);
 		// Note: This actually causes us to start executing the procees
 		// with crazy assembly magic (See HAL.c)!
-		LOG("About to __rte");
+		// LOG("About to __rte");
 		__rte();
 	}
 
@@ -150,7 +147,7 @@ static int switch_to_process(PCB* new_proc)
 	// stack again). This gives us an illusion of processes, that most
 	// code (even kernel code) doesn't have to worry about, but can be
 	// a bit confusing when reading this function.
-	LOG("About to return");
+	// LOG("About to return");
 	return RTX_OK;
 }
 
@@ -169,7 +166,7 @@ int process_prempt_if_necessary(void)
 		return RTX_OK;
 	}
 
-	LOG("Premepting %d", g_current_process->pid);
+	LOG("Premepting %d with %d", g_current_process->pid, top->pid);
 	return k_release_processor();
 }
 
@@ -202,20 +199,19 @@ int k_release_processor(void)
 	}
 
 	int rtx_status = switch_to_process(new_proc);
-	LOG("About to return from k_release_processor().");
+	// LOG("About to return from k_release_processor().");
 	return rtx_status;
 }
 
-int k_set_process_priority(int id, int priority)
+int k_set_process_priority_no_preempt(int id, int priority) 
 {
-	// TODO: User exposed priorites should be 0-4.
 	if (priority < PROCESS_PRIORITY_SYSTEM_PROCESS || priority > PROCESS_PRIORITY_LOWEST) {
 		LOG("Attempted to set priority to invalid value!");
 		return RTX_ERR;
 	}
 	if (id == g_current_process->pid) {
 		g_current_process->priority = priority;
-		return process_prempt_if_necessary();
+		return RTX_OK;
 	}
 
 	// TODO: We need to use process_find() here, since processes
@@ -233,11 +229,20 @@ int k_set_process_priority(int id, int priority)
 	}
 
 	PriorityStatus status = priority_queue_reprioritize(queue, pcb, (ProcessPriority)priority);
-	int preempt_status = process_prempt_if_necessary();
-	if (status == PRIORITY_STATUS_OK && preempt_status == RTX_OK) {
+	if (status == PRIORITY_STATUS_OK) {
 		return RTX_OK;
 	}
 	return RTX_ERR;
+}
+
+int k_set_process_priority(int id, int priority)
+{
+	// TODO: User exposed priorites should be 0-4.
+	int status = k_set_process_priority_no_preempt(id, priority);
+	if (status != RTX_OK) {
+		return status;
+	}
+	return process_prempt_if_necessary();
 }
 
 int k_get_process_priority(int pid)
