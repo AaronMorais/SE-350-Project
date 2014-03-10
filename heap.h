@@ -30,5 +30,6 @@ HeapBlock* heap_alloc_block(void);
 HeapStatus heap_free_block(HeapBlock* memory_block);
 // Get a heap block from a user block pointer.
 // TODO: Unit tests for this.
+void mem_clear(char* ptr, char n);
 HeapBlock* heap_block_from_user_block(void* user_block);
 void* user_block_from_heap_block(HeapBlock* heap_block);

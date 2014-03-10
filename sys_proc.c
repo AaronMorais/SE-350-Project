@@ -257,12 +257,13 @@ static void wall_clock_process() {
 		} else if (type == 'T'){
 			//terminate clock
 			is_running = 0;
+		} else {
+			release_memory_block(message);
 		}
 		if (is_running == 1) {
-			release_memory_block(message);
-			struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-			message_envelope->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-			message
+			// TODO check whether this clears the right ones
+			mem_clear((char*)message, sizeof(*message));
+			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
 			uint32_t display_time = (g_timer_count - wall_clock_time_offset) + wall_clock_time;
 			int h0 = display_time / (60 * 60 * 10);
 			int h1 = display_time / (60 * 60) % 10;
@@ -271,16 +272,17 @@ static void wall_clock_process() {
 			int m1 =  display_time / 60;
 			int s0 = (display_time % 100)/ 10;
 			int s1 = display_time % 10;
-			message_envelope->mtext[0] = h0 + ATOI_OFFSET;
-			message_envelope->mtext[1] = h1 + ATOI_OFFSET;
-			message_envelope->mtext[2] = ':';
-			message_envelope->mtext[3] = m0 + ATOI_OFFSET;
-			message_envelope->mtext[4] = m1 + ATOI_OFFSET;
-			message_envelope->mtext[5] = ':';
-			message_envelope->mtext[6] = s0 + ATOI_OFFSET;
-			message_envelope->mtext[7] = s1 + ATOI_OFFSET;
-			send_message(PROCESS_ID_CRT, (void*)message_envelope);
-			printf("printing time: %s\n", message_envelope->mtext);
+			message->mtext[0] = h0 + ATOI_OFFSET;
+			message->mtext[1] = h1 + ATOI_OFFSET;
+			message->mtext[2] = ':';
+			message->mtext[3] = m0 + ATOI_OFFSET;
+			message->mtext[4] = m1 + ATOI_OFFSET;
+			message->mtext[5] = ':';
+			message->mtext[6] = s0 + ATOI_OFFSET;
+			message->mtext[7] = s1 + ATOI_OFFSET;
+			message->mtext[8] = '\0';
+			send_message(PROCESS_ID_CRT, (void*)message);
+			LOG("printing time: %s\n", message->mtext);
 		}
 	}
 }
