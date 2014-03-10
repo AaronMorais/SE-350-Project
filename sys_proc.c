@@ -211,78 +211,88 @@ static void crt_process() {
 }
 
 static void wall_clock_process() {
-	while(1){
-		static int is_running = 0;
-		static int first = 0;
+	static char CLOCK_RESET     = 'R';
+	static char CLOCK_SET       = 'S';
+	static char CLOCK_TERMINATE = 'T';
+
+	static uint32_t wall_clock_time_offset = 0;
+	static uint32_t wall_clock_time = 0;
+	static int is_running = 0;
+
+	while (1) {
 		struct msgbuf* message = receive_message(NULL);
-		if (message == NULL || message->mtype != MESSAGE_TYPE_WALL_CLOCK) {
-			LOG("ERROR: Wall_clock_proc received a message that was not of type MESSAGE_TYPE_WALL_CLOCK");
+		if (message == NULL) {
+			LOG("ERROR: Wall_clock_proc received a NULL message? wtf.");
 			continue;
 		}
-		static uint32_t wall_clock_time_offset;
-		if (first == 0) {
-			wall_clock_time_offset = g_timer_count;
-		}
-		first = 1;
-		static uint32_t wall_clock_time;
+
 		char type = message->mtext[2];
-		int ATOI_OFFSET = 48;
-		if (type == 'R'){
+		switch (type) {
+		case CLOCK_RESET:
 			is_running = 1;
 			wall_clock_time = 0;
-			//clock reset
-		} else if (type == 'S') {
-			//set clock
-			//h0h1:m0m1:s0s1
-			//TODO check for hh:mm:ss where h or m or s is a character rather than number
+			wall_clock_time_offset = g_timer_count;
+			break;
+
+		case CLOCK_SET:
+			// h0h1:m0m1:s0s1
+			// TODO check for hh:mm:ss where h or m or s is a character rather than number
 			if (message->mtext[12] != '\0' || message->mtext[6] != ':' || message->mtext[9] != ':'){
 				LOG("ERROR: incorrect message structure for wall_clock_proc (%WT)");
-			} else {
-				is_running = 1;
-				int h0 = message->mtext[4] - ATOI_OFFSET;
-				int h1 = message->mtext[5] - ATOI_OFFSET;
-				int m0 = message->mtext[7] - ATOI_OFFSET;
-				int m1 = message->mtext[8] - ATOI_OFFSET;
-				int s0 = message->mtext[10] - ATOI_OFFSET;
-				int s1 = message->mtext[11] - ATOI_OFFSET;
-				wall_clock_time = 0;
-				wall_clock_time += h0 * 600 * 60;
-				wall_clock_time += h1 * 60 * 60;
-				wall_clock_time += m0 * 600;
-				wall_clock_time += m1 * 60;
-				wall_clock_time += s0 * 10;
-				wall_clock_time += s1;
+				continue;
 			}
+			is_running = 1;
 
-		} else if (type == 'T'){
-			//terminate clock
+			int h0 = message->mtext[4] - '0';
+			int h1 = message->mtext[5] - '0';
+			int m0 = message->mtext[7] - '0';
+			int m1 = message->mtext[8] - '0';
+			int s0 = message->mtext[10] - '0';
+			int s1 = message->mtext[11] - '0';
+
+			wall_clock_time
+				= h0 * 60 * 60 * 10;
+				+ h1 * 60 * 60;
+				+ m0 * 60 * 10;
+				+ m1 * 60;
+				+ s0 * 10;
+			  + s1;
+
+			wall_clock_time_offset = g_timer_count;
+			break;
+
+		case CLOCK_TERMINATE:
 			is_running = 0;
-		} else {
+			break;
+
+		default:
 			release_memory_block(message);
+			continue;
 		}
-		if (is_running == 1) {
-			// TODO check whether this clears the right ones
-			mem_clear((char*)message, sizeof(*message));
-			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-			uint32_t display_time = (g_timer_count - wall_clock_time_offset) + wall_clock_time;
-			int h0 = display_time / (60 * 60 * 10);
-			int h1 = display_time / (60 * 60) % 10;
-			display_time %= (60*60);
-			int m0 = display_time / (60 * 10);
-			int m1 =  display_time / 60;
-			int s0 = (display_time % 100)/ 10;
-			int s1 = display_time % 10;
-			message->mtext[0] = h0 + ATOI_OFFSET;
-			message->mtext[1] = h1 + ATOI_OFFSET;
-			message->mtext[2] = ':';
-			message->mtext[3] = m0 + ATOI_OFFSET;
-			message->mtext[4] = m1 + ATOI_OFFSET;
-			message->mtext[5] = ':';
-			message->mtext[6] = s0 + ATOI_OFFSET;
-			message->mtext[7] = s1 + ATOI_OFFSET;
-			message->mtext[8] = '\0';
-			send_message(PROCESS_ID_CRT, (void*)message);
-			LOG("printing time: %s\n", message->mtext);
-		}
+
+		int display_time = (g_timer_count - wall_clock_time_offset) + wall_clock_time*1000;
+		mem_clear((char*)message, sizeof(*message));
+		message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+		wall_clock_print_time(message->mtext, display_time/1000);
+		send_message(PROCESS_ID_CRT, (void*)message);
+		LOG("printing time: %s\n", message->mtext);
 	}
+}
+
+static void wall_clock_print_time(char* buf, int seconds) {
+	int s0 = seconds % 10;
+	int s1 = seconds % 60 / 10;
+	int m0 = seconds / 60 % 10;
+	int m1 = seconds / 60 / 10;
+	int h0 = seconds / 60 / 60 % 10;
+	int h1 = seconds / 60 / 60 / 10;
+	*buf++ = h1 + '0';
+	*buf++ = h0 + '0';
+	*buf++ = ':';
+	*buf++ = m1 + '0';
+	*buf++ = m0 + '0';
+	*buf++ = ':';
+	*buf++ = h1 + '0';
+	*buf++ = h0 + '0';
+	*buf++ = '\0';
 }
