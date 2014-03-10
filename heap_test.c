@@ -6,7 +6,7 @@
 #include "heap.h"
 
 void test_basic() {
-	int arena_size = 128*10;
+	int arena_size = sizeof(HeapBlock)*10;
 	void* arena = malloc(arena_size);
 	heap_init(arena, arena + arena_size);
 
