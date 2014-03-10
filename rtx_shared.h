@@ -23,8 +23,9 @@ typedef enum {
 	PROCESS_PRIORITY_LOW            = 3,
 	PROCESS_PRIORITY_LOWEST         = 4,
 	PROCESS_PRIORITY_NULL_PROCESS   = 5,
+	PROCESS_PRIORITY_UNSCHEDULABLE  = 6,
 
-	PROCESS_PRIORITY_NUM            = 6
+	PROCESS_PRIORITY_NUM            = 7
 } ProcessPriority;
 
 typedef enum {

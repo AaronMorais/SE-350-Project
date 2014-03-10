@@ -15,16 +15,12 @@
 #include "k_process.h"
 #include "k_memory.h"
 #include "heap.h"
+#include "heap_queue.h"
 #include "sys_proc.h"
 #include "hot_key_helper.h"
 
 
 #define DEBUG_HOTKEYS
-
-uint8_t g_buffer[]= "You Typed a Q\n\r";
-uint8_t *gp_buffer = g_buffer;
-volatile uint8_t g_send_char = 0;
-uint8_t g_char_in;
 
 /**
  * @brief: initialize the n_uart
@@ -181,6 +177,9 @@ __asm void UART0_IRQHandler(void)
 /**
  * @brief: c UART0 IRQ Handler
  */
+
+static HeapBlock* s_last_message_block = NULL; 
+static char* s_message_buffer = NULL;
 void c_UART0_IRQHandler(void)
 {
 	uint8_t IIR_IntId;	    // Interrupt ID from IIR
@@ -194,7 +193,7 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
-		g_char_in = pUart->RBR;
+		uint8_t g_char_in = pUart->RBR;
 
 #ifdef DEBUG_HOTKEYS
 		if( g_char_in == 'a' ) {
@@ -211,36 +210,42 @@ void c_UART0_IRQHandler(void)
 			uart1_put_string("Warning: Out of memory. Could not allocate block to send keyboard input to KCD.");
 			return;
 		}
+		
 		struct msgbuf* message = (struct msgbuf*)user_block_from_heap_block(block);
 		LOG("UART: Alloc'd block %x for char %c", message, g_char_in);
 		message->mtype = MESSAGE_TYPE_KCD_KEYPRESS_EVENT;
 		message->mtext[0] = g_char_in;
 		message->mtext[1] = '\0';
-
-		//g_send_char = 1;
-		//pUart->IER = IER_RLS | IER_RBR;
-
+		
 		k_send_message(PROCESS_ID_KCD, message);
 		return;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
-		if (*gp_buffer == '\0') {
-			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit
-			pUart->THR = '\0';
-			g_send_char = 0;
-			gp_buffer = g_buffer;
-			k_set_process_priority(PROCESS_ID_CRT, PROCESS_PRIORITY_SYSTEM_PROCESS);
-			return;
+		if (s_message_buffer == NULL || *s_message_buffer == '\0') {
+			if (s_last_message_block) {
+				heap_free_block(s_last_message_block);
+				s_last_message_block = NULL;
+			}
+			PCB* uartPCB = process_find(PROCESS_ID_UART);
+			s_last_message_block = heap_queue_pop(&uartPCB->message_queue);
+			if (s_last_message_block == NULL) {
+				uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
+				pUart->IER ^= IER_THRE; // toggle the IER_THRE bit
+				pUart->THR = '\0';
+				s_message_buffer = NULL;
+				return;
+			} else {
+				s_message_buffer = ((struct msgbuf*)user_block_from_heap_block(s_last_message_block))->mtext;
+			}
 		}
-		uint8_t g_char_out = *gp_buffer;
 
+		uint8_t g_char_out = *s_message_buffer;
 		uart1_put_string("Writing a char = ");
 		uart1_put_char(g_char_out);
 		uart1_put_string("\n\r");
 
 		pUart->THR = g_char_out;
-		gp_buffer++;
+		s_message_buffer++;
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
 			printf("Should not get here! %x\n\r", pUart->LSR);
