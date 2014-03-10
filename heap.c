@@ -76,6 +76,12 @@ static int heap_find_free_block(void) {
 	return -1;
 }
 
+void mem_clear(char* ptr, char n) {
+	for (int i = 0; i < n; i++) {
+		ptr[i] = 0x00;
+	}
+}
+
 HeapBlock* heap_alloc_block(void) {
 	int first_free_block = heap_find_free_block();
 	if (first_free_block < 0) {
@@ -83,7 +89,9 @@ HeapBlock* heap_alloc_block(void) {
 		return NULL;
 	}
 	s_free_space_bitmap[first_free_block] = BLOCK_USED;
-	return &s_heap_start[first_free_block];
+	HeapBlock* block = &s_heap_start[first_free_block];
+	mem_clear((char*)block, sizeof(*block));
+	return block;
 }
 
 HeapBlock* heap_block_from_user_block(void* user_block) {

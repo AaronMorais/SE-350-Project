@@ -27,6 +27,8 @@ HeapBlock* heap_queue_pop(HeapBlock** pp_head) {
   HeapBlock* top = heap_queue_top(pp_head);
   *pp_head = (*pp_head)->header.p_next;
 
+  top->header.p_next = NULL;
+
   return top;
 }
 

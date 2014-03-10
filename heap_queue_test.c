@@ -29,7 +29,7 @@ static void test() {
   HeapBlock block3 = {0};
     block3.header.source_pid = 3;
 
-  printf("Starting basic tests\n");
+  printf("Running basic tests\n");
 
   insert(&block1, QUEUE_STATUS_OK);
   insert(&block2, QUEUE_STATUS_OK);
@@ -41,31 +41,40 @@ static void test() {
   pop(&block3);
   pop(NULL);
 
-  printf("End basic tests\n");
+  printf("Running insert popped block\n");
+
+  insert(&block2, QUEUE_STATUS_OK);
+  pop(&block2);
+
+  insert(&block3, QUEUE_STATUS_OK);
+  pop(&block3);
+
+  insert(&block1, QUEUE_STATUS_OK);
+  pop(&block1);
 }
 
 
-static void insert_sort(HeapBlock* queue, HeapQueueStatus should_be) {
+static void sort_insert(HeapBlock* queue, HeapQueueStatus should_be) {
   HeapQueueStatus status = sorted_heap_queue_push(&test_sort_queue, queue);
   if(status != should_be) {
-    printf("ERROR in insert_sort, expected status ok, got %d\n", status);
+    printf("ERROR in sort_insert, expected status ok, got %d\n", status);
     exit(1);
   }
 }
 
-static void pop_sort(HeapBlock* should_be) {
+static void sort_pop(HeapBlock* should_be) {
   HeapBlock* result = sorted_heap_queue_pop(&test_sort_queue);
   if( result != should_be ) {
-    printf("ERROR in pop_sort, expected HeapBlock at %p, got HeapBlock at %p.\n", should_be, result);
+    printf("ERROR in sort_pop, expected HeapBlock at %p, got HeapBlock at %p.\n", should_be, result);
     exit(1);
   }
 }
 
 
-static void top_sort(HeapBlock* should_be) {
+static void sort_top(HeapBlock* should_be) {
   HeapBlock* result = sorted_heap_queue_top(&test_sort_queue);
   if( result != should_be ) {
-    printf("ERROR in top_sort, expected HeapBlock at %p, got HeapBlock at %p.\n", should_be, result);
+    printf("ERROR in sort_top, expected HeapBlock at %p, got HeapBlock at %p.\n", should_be, result);
     exit(1);
   }
 }
@@ -83,10 +92,10 @@ void test_sort() {
 
   printf("Starting sort tests\n");
 
-  insert_sort(&block1, QUEUE_STATUS_OK);
-  insert_sort(&block2, QUEUE_STATUS_OK);
-  insert_sort(&block3, QUEUE_STATUS_OK);
-  insert_sort(NULL, QUEUE_STATUS_INVALID_BLOCK);
+  sort_insert(&block1, QUEUE_STATUS_OK);
+  sort_insert(&block2, QUEUE_STATUS_OK);
+  sort_insert(&block3, QUEUE_STATUS_OK);
+  sort_insert(NULL, QUEUE_STATUS_INVALID_BLOCK);
 
   HeapBlock* test = test_sort_queue;
   while( test != NULL ) {
@@ -94,18 +103,18 @@ void test_sort() {
     test = test->header.p_next;
   }
 
-  top_sort(&block3);
+  sort_top(&block3);
 
-  pop_sort(&block3);
-  pop_sort(&block1);
-  pop_sort(&block2);
-  pop_sort(NULL);
+  sort_pop(&block3);
+  sort_pop(&block1);
+  sort_pop(&block2);
+  sort_pop(NULL);
 
-  insert_sort(&block2, QUEUE_STATUS_OK);
-  insert_sort(&block3, QUEUE_STATUS_OK);
-  pop_sort(&block3);
-  insert_sort(&block1, QUEUE_STATUS_OK);
-  pop_sort(&block1);
+  sort_insert(&block2, QUEUE_STATUS_OK);
+  sort_insert(&block3, QUEUE_STATUS_OK);
+  sort_pop(&block3);
+  sort_insert(&block1, QUEUE_STATUS_OK);
+  sort_pop(&block1);
 
   printf("End sort tests\n");
 }
