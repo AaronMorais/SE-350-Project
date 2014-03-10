@@ -5,6 +5,7 @@
 #include "k_process.h"
 #include "uart.h"
 #include "heap.h"
+#include "uart_polling.h"
 
 static void null_process(void);
 static void crt_process(void);
@@ -38,6 +39,14 @@ void sys_proc_init() {
 	kcd_state.stack_size = 0x200;
 	kcd_state.entry_point = &kcd_process;
 	process_create(&kcd_state);
+	
+	// Set up UART-i process
+	PROC_INIT uart_state;
+	uart_state.pid = (U32)PROCESS_ID_UART;
+	uart_state.priority = PROCESS_PRIORITY_UNSCHEDULABLE;
+	uart_state.stack_size = 0x200;
+	uart_state.entry_point = NULL;
+	process_create(&uart_state);
 }
 
 static void null_process(){
@@ -167,31 +176,6 @@ static void kcd_process() {
 	}
 }
 
-static void uart_write(char* str) {
-	if (g_send_char == 1) {
-		LOG("Warning: UART write scheduled when UART busy! Ignoring...");
-		return;
-	}
-	g_send_char = 1;
-	extern uint8_t *gp_buffer;
-	gp_buffer = (uint8_t*)str;
-
-	set_process_priority_no_preempt(PROCESS_ID_CRT, PROCESS_PRIORITY_LOWEST);
-	LOG("-----Setting interrupt");
-	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-// 	while (1) {
-// 		if (g_send_char) {
-			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
-			pUart->THR = '\0';
-// 		} else break;
-// 	}\
-	
-	release_processor();
-	pUart->IER = IER_RBR | IER_RLS;
-// 	pUart->THR = '\0';
-	LOG("-----Completed");
-}
-
 static void crt_process() {
 	while (1) {
 		struct msgbuf* message = receive_message(NULL);
@@ -200,7 +184,9 @@ static void crt_process() {
 			continue;
 		}
 		LOG("=======Crt process running...");
-		uart_write(message->mtext);
-		release_memory_block(message);
+		send_message(PROCESS_ID_UART, message);
+		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
+		pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+		pUart->THR = '\0';
 	}
 }
