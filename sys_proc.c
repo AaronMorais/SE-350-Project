@@ -5,10 +5,12 @@
 #include "k_process.h"
 #include "uart.h"
 #include "heap.h"
+#include "timer.h"
 
 static void null_process(void);
 static void crt_process(void);
 static void kcd_process(void);
+static void wall_clock_process(void);
 
 struct RegisteredCommand g_registered_commands[NUM_COMMANDS];
 char g_command_buffer[COMMAND_CHAR_NUM] = {COMMAND_NULL};
@@ -38,6 +40,14 @@ void sys_proc_init() {
 	kcd_state.stack_size = 0x200;
 	kcd_state.entry_point = &kcd_process;
 	process_create(&kcd_state);
+	
+  // Set up wall clock process
+	PROC_INIT wall_clock_state;
+	wall_clock_state.pid = (U32)PROCESS_ID_WALL_CLOCK;
+	wall_clock_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
+	wall_clock_state.stack_size = 0x200;
+	wall_clock_state.entry_point = &wall_clock_process;
+	process_create(&wall_clock_state);
 }
 
 static void null_process(){
@@ -200,5 +210,77 @@ static void crt_process() {
 		LOG("=======Crt process running...");
 		uart_write(message->mtext);
 		release_memory_block(message);
+	}
+}
+
+static void wall_clock_process() {
+	while(1){
+		static int is_running = 0;
+		static int first = 0;
+		struct msgbuf* message = receive_message(NULL);
+		if (message == NULL || message->mtype != MESSAGE_TYPE_WALL_CLOCK) {
+			LOG("ERROR: Wall_clock_proc received a message that was not of type MESSAGE_TYPE_WALL_CLOCK");
+			continue;
+		}
+		static uint32_t wall_clock_time_offset;
+		if (first == 0) {
+			wall_clock_time_offset = g_timer_count;
+		}
+		first = 1;
+		static uint32_t wall_clock_time;
+		char type = message->mtext[2];
+		int ATOI_OFFSET = 48;
+		if (type == 'R'){
+			is_running = 1;
+			wall_clock_time = 0;
+			//clock reset
+		} else if (type == 'S') {
+			//set clock
+			//h0h1:m0m1:s0s1
+			if (message->mtext[12] != '\0' || message->mtext[6] != ':' || message->mtext[9] != ':'){
+				LOG("ERROR: incorrect message structure for wall_clock_proc (%WT)");
+			} else {
+				is_running = 1;
+				int h0 = message->mtext[4] - ATOI_OFFSET;
+				int h1 = message->mtext[5] - ATOI_OFFSET;
+				int m0 = message->mtext[7] - ATOI_OFFSET;
+				int m1 = message->mtext[8] - ATOI_OFFSET;
+				int s0 = message->mtext[10] - ATOI_OFFSET;
+				int s1 = message->mtext[11] - ATOI_OFFSET;
+				wall_clock_time = 0;
+				wall_clock_time += h0 * 600 * 60;
+				wall_clock_time += h1 * 60 * 60;
+				wall_clock_time += m0 * 600;
+				wall_clock_time += m1 * 60;
+				wall_clock_time += s0 * 10;
+				wall_clock_time += s1;
+			}
+
+		} else if (type == 'T'){
+			//terminate clock
+			is_running = 0;
+		}
+		if (is_running == 1) {
+			struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+			message_envelope->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+			uint32_t display_time = (g_timer_count - wall_clock_time_offset) + wall_clock_time;
+			int h0 = display_time / (60 * 60 * 10);
+			int h1 = display_time / (60 * 60) % 10;
+			display_time %= (60*60);
+			int m0 = display_time / (60 * 10);
+			int m1 =  display_time / 60;
+			int s0 = (display_time % 100)/ 10;
+			int s1 = display_time % 10;
+			message_envelope->mtext[0] = h0 + ATOI_OFFSET;
+			message_envelope->mtext[1] = h1 + ATOI_OFFSET;
+			message_envelope->mtext[2] = ':';
+			message_envelope->mtext[3] = m0 + ATOI_OFFSET;
+			message_envelope->mtext[4] = m1 + ATOI_OFFSET;
+			message_envelope->mtext[5] = ':';
+			message_envelope->mtext[6] = s0 + ATOI_OFFSET;
+			message_envelope->mtext[7] = s1 + ATOI_OFFSET;
+			send_message(PROCESS_ID_CRT, (void*)message_envelope);
+			printf("printing time: %s\n", message_envelope->mtext);
+		}
 	}
 }

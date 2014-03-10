@@ -9,6 +9,8 @@
 #include <LPC17xx.h>
 #include "timer.h"
 #include "k_process.h"
+#include "sys_proc.h"
+#include "k_memory.h"
 
 #define BIT(X) (1<<X)
 
@@ -128,4 +130,7 @@ void c_TIMER0_IRQHandler(void)
 		top = sorted_heap_queue_pop(&g_delayed_msg_list);
 		process_send_message(top->header.dest_pid, top);
 	}
+	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+	message_envelope->mtype = MESSAGE_TYPE_WALL_CLOCK;
+	process_send_message(PROCESS_ID_WALL_CLOCK, (void*)message_envelope);
 }
