@@ -199,9 +199,9 @@ void c_UART0_IRQHandler(void)
 #ifdef DEBUG_HOTKEYS
 		if( g_char_in == 'a' ) {
 			print_ready_queue();
-		} else if( g_char_in = 'b' ) {
+		} else if( g_char_in == 'b' ) {
 			print_blocked_memory_queue();
-		} else if( g_char_in = 'c') {
+		} else if( g_char_in == 'c') {
 			print_blocked_receive_queue();
 		}
 #endif // DEBUG_HOTKEYS

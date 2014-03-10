@@ -1,7 +1,10 @@
+#include "hot_key_helper.h"
+#include "printf.h"
 #include "k_process.h"
+#include "k_memory.h"
 
-static void send_to_print( U32 pid, U32 priority ) {
-	uart1_put_string(&message->mytext[0], "pid = %d, priority = %d \n\r" node->pid, node->priority );
+static void send_to_print(U32 pid, U32 priority) {
+	printf("pid = %d, priority = %d \n\r", pid,priority);
 }
 
 static void print_priority_queue(PCB** priority_queue_list) {
@@ -10,6 +13,7 @@ static void print_priority_queue(PCB** priority_queue_list) {
 		PCB* node = priority_queue_list[i];
 		while( node ) {
 			send_to_print(node->pid, node->priority);
+			node = node->p_next;
 		}
 	}
 }
