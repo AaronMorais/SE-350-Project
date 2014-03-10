@@ -37,7 +37,7 @@ PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 void process_init()
 {
 	sys_proc_init();
-	
+
 	// Test process initial set up
 	extern void set_test_procs(void);
 	set_test_procs();
@@ -269,7 +269,7 @@ int process_send_message(int dest_pid, HeapBlock* block) {
 	return RTX_OK;
 }
 
-int k_send_message_no_preempt(int dest_pid, void* msg) 
+int k_send_message_no_preempt(int dest_pid, void* msg)
 {
 	HeapBlock* block = heap_block_from_user_block(msg);
 	block->header.source_pid = g_current_process->pid;
