@@ -41,6 +41,7 @@ PCB* priority_queue_pop(PCB** queue)
 
 PCB* priority_queue_top(PCB** queue)
 {
+
 	for (ProcessPriority priority = PROCESS_PRIORITY_SYSTEM_PROCESS; priority < PROCESS_PRIORITY_NUM; priority++) {
 		PCB* priority_list = queue[priority];
 		if (priority_list != NULL) {

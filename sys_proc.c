@@ -221,10 +221,30 @@ static void crt_process() {
 	}
 }
 
+static void wall_clock_print_time(char* buf, int seconds) {
+	int s0 = seconds % 10;
+	int s1 = seconds % 60 / 10;
+	int m0 = seconds / 60 % 10;
+	int m1 = seconds / 60 / 10;
+	int h0 = seconds / 60 / 60 % 10;
+	int h1 = seconds / 60 / 60 / 10;
+	*buf++ = h1 + '0';
+	*buf++ = h0 + '0';
+	*buf++ = ':';
+	*buf++ = m1 + '0';
+	*buf++ = m0 + '0';
+	*buf++ = ':';
+	*buf++ = s1 + '0';
+	*buf++ = s0 + '0';
+	*buf++ = '\n';
+	*buf++ = '\r';
+	*buf++ = '\0';
+}
+
 static void wall_clock_process() {
-	static char CLOCK_RESET     = 'R';
-	static char CLOCK_SET       = 'S';
-	static char CLOCK_TERMINATE = 'T';
+	static const char CLOCK_RESET     = 'R';
+	static const char CLOCK_SET       = 'S';
+	static const char CLOCK_TERMINATE = 'T';
 
 	static uint32_t wall_clock_time_offset = 0;
 	static uint32_t wall_clock_time = 0;
@@ -249,7 +269,7 @@ static void wall_clock_process() {
 			wall_clock_time_offset = g_timer_count;
 			break;
 
-		case CLOCK_SET:
+		case CLOCK_SET: {
 			// h0h1:m0m1:s0s1
 			// TODO check for hh:mm:ss where h or m or s is a character rather than number
 			if (message->mtext[12] != '\0' || message->mtext[6] != ':' || message->mtext[9] != ':'){
@@ -266,16 +286,16 @@ static void wall_clock_process() {
 			int s1 = message->mtext[11] - '0';
 
 			wall_clock_time
-				= h0 * 60 * 60 * 10;
-				+ h1 * 60 * 60;
-				+ m0 * 60 * 10;
-				+ m1 * 60;
-				+ s0 * 10;
+				= h0 * 60 * 60 * 10
+				+ h1 * 60 * 60
+				+ m0 * 60 * 10
+				+ m1 * 60
+				+ s0 * 10
 			  + s1;
 
 			wall_clock_time_offset = g_timer_count;
 			break;
-
+		}
 		case CLOCK_TERMINATE:
 			is_running = 0;
 			release_memory_block(message);
@@ -304,20 +324,4 @@ static void wall_clock_process() {
 	}
 }
 
-static void wall_clock_print_time(char* buf, int seconds) {
-	int s0 = seconds % 10;
-	int s1 = seconds % 60 / 10;
-	int m0 = seconds / 60 % 10;
-	int m1 = seconds / 60 / 10;
-	int h0 = seconds / 60 / 60 % 10;
-	int h1 = seconds / 60 / 60 / 10;
-	*buf++ = h1 + '0';
-	*buf++ = h0 + '0';
-	*buf++ = ':';
-	*buf++ = m1 + '0';
-	*buf++ = m0 + '0';
-	*buf++ = ':';
-	*buf++ = h1 + '0';
-	*buf++ = h0 + '0';
-	*buf++ = '\0';
-}
+
