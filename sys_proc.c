@@ -152,6 +152,11 @@ static void kcd_process_character_input(struct msgbuf* message) {
 			backspace();
 		} else if (message->mtext[0] == '\r') {
 			// Newline means command submit without the newline
+			struct msgbuf* crt_msg = request_memory_block();
+			crt_msg->mtext[0]='\n'; 
+			crt_msg->mtext[1]='\r';
+			crt_msg->mtext[2]='\0';			
+			kcd_process_send_message(PROCESS_ID_CRT, crt_msg);
 			mystrcpy(message->mtext, g_command_buffer);
 			int command_index = g_command_buffer[1] - ASCII_START;
 			kcd_process_send_message(g_registered_commands[command_index].process_id, message);
