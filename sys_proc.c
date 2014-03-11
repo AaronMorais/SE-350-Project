@@ -133,8 +133,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		kcd_process_send_message(PROCESS_ID_CRT, message);
 	} else if (g_cur_command_buffer_index == 1) {
 		// If it second character isn't a command, we send a message to CRT to print shit
-		if(message->mtext[0] == '\b') {
+		if(message->mtext[0] == (char)0x7f) {
 			backspace();
+			kcd_process_send_message(PROCESS_ID_CRT, message);
 		} else if (g_registered_commands[message->mtext[0] - ASCII_START].process_id == -1) {
 			// Modifies the message to be "%" + mtext[0] in the message passed along
 			char second_char = message->mtext[0];
@@ -148,8 +149,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		kcd_process_send_message(PROCESS_ID_CRT, message);
 	} else {
 		// It is in the middle of a buffer wait on newline
-		if (message->mtext[0] == '\b') {
+ 		if (message->mtext[0] == (char)0x7f) {
 			backspace();
+			kcd_process_send_message(PROCESS_ID_CRT, message);
 		} else if (message->mtext[0] == '\r') {
 			// Newline means command submit without the newline
 			struct msgbuf* crt_msg = request_memory_block();
