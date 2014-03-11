@@ -33,6 +33,13 @@ PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
 
+ProcessPriority user_priority_to_system_priority(UserProcessPriority user_priority) {
+	return (ProcessPriority)(user_priority + PROCESS_PRIORITY_HIGH);
+}
+
+UserProcessPriority system_priority_to_user_priority(ProcessPriority system_priority) {
+	return (UserProcessPriority)(system_priority - PROCESS_PRIORITY_HIGH);
+}
 
 void process_init()
 {
@@ -44,7 +51,13 @@ void process_init()
 
 	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		process_create(&g_test_procs[i]);
+		PROC_INIT* usr_proc = &g_test_procs[i];
+		ProcInit proc = {0};
+		proc.pid = usr_proc->pid;
+		proc.priority = user_priority_to_system_priority(usr_proc->priority);
+		proc.stack_size = usr_proc->stack_size;
+		proc.entry_point = usr_proc->entry_point;
+		process_create(proc);
 	}
 }
 
@@ -52,21 +65,21 @@ void process_init()
 
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
-int process_create(PROC_INIT* initial_state)
+int process_create(ProcInit initial_state)
 {
 	PCB* pcb = memory_alloc_pcb();
 	if (!pcb) {
 		return RTX_ERR;
 	}
 
-	pcb->pid = initial_state->pid;
+	pcb->pid = initial_state.pid;
 	pcb->state = PROCESS_STATE_NEW;
-	pcb->priority = initial_state->priority;
+	pcb->priority = initial_state.priority;
 	pcb->p_next = NULL;
 	pcb->message_queue = NULL;
 
 	// initilize exception stack frame (i.e. initial context)
-	U32* sp = memory_alloc_stack(initial_state->stack_size);
+	U32* sp = memory_alloc_stack(initial_state.stack_size);
 	if (!sp) {
 		return RTX_ERR;
 	}
@@ -75,7 +88,7 @@ int process_create(PROC_INIT* initial_state)
 	// user process initial xPSR
 	*(--sp) = INITIAL_xPSR;
 	// PC contains the entry point of the process
-	*(--sp) = (U32)initial_state->entry_point;
+	*(--sp) = (U32)initial_state.entry_point;
 	// Our processes never exit. Set LR to 0x00000000
 	// so accidental returns end up in the
 	// HardFault_Handler.
@@ -278,18 +291,16 @@ int k_release_processor(void)
 }
 
 
-int k_set_process_priority(int id, int priority)
+int k_set_process_priority(int id, int user_priority)
 {
 	// User exposed priorites should be 0-4.
-	if (priority < 0 || priority > 4) {
+	if (user_priority < USER_PROCESS_PRIORITY_HIGH || user_priority > USER_PROCESS_PRIORITY_LOWEST) {
 		LOG("Attempted to set priority to invalid value!");
 		return RTX_ERR;
 	}
 
-	// Convert from user priority level (0-4) to system priority level
-	// (defined by ProcessPriority enum). PROCESS_PRIORITY_HIGH is the
-	// highest allowable user priority (with the lowest value).
-	int status = process_set_priority(id, priority + PROCESS_PRIORITY_HIGH);
+	ProcessPriority priority = user_priority_to_system_priority((UserProcessPriority)user_priority);
+	int status = process_set_priority(id, priority);
 	if (status != RTX_OK) {
 		return status;
 	}
@@ -304,10 +315,7 @@ int k_get_process_priority(int pid)
 		return RTX_ERR;
 	}
 
-	// Convert from user priority level (0-4) to system priority level
-	// (defined by ProcessPriority enum). PROCESS_PRIORITY_HIGH is the
-	// highest allowable user priority (with the lowest value).
-	return proc->priority - PROCESS_PRIORITY_HIGH;
+	return system_priority_to_user_priority(proc->priority);
 }
 
 void* k_receive_message(int* sender_pid)

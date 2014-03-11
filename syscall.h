@@ -4,17 +4,6 @@
 
 #include "rtx_shared.h"
 
-
-typedef enum {
-	USER_PROCESS_PRIORITY_HIGH           = 0,
-	USER_PROCESS_PRIORITY_MEDIUM         = 1,
-	USER_PROCESS_PRIORITY_LOW            = 2,
-	USER_PROCESS_PRIORITY_LOWEST         = 3,
-
-	USER_PROCESS_PRIORITY_NUM            = 4
-} UserProcessPriority;
-
-
 void rtx_init(void);
 int release_processor(void);
 

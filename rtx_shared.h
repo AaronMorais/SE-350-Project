@@ -25,16 +25,30 @@ typedef enum {
 	MESSAGE_TYPE_NUM                      = 4
 } MessageType;
 
+// The priority levels exposed to user space.
+// KERNEL CODE SHOULD NOT USE THESE, USE ProcessPriority
+// enum instead!
+typedef enum {
+	USER_PROCESS_PRIORITY_HIGH           = 0,
+	USER_PROCESS_PRIORITY_MEDIUM         = 1,
+	USER_PROCESS_PRIORITY_LOW            = 2,
+	USER_PROCESS_PRIORITY_LOWEST         = 3,
+
+	USER_PROCESS_PRIORITY_NUM            = 4
+} UserProcessPriority;
+
 struct msgbuf {
 	// TODO: for all of our processes, set the type
 	MessageType mtype; /* user defined message type */
 	char mtext[1]; /* body of the message */
 };
 
-/* initialization table item */
+// Should only be used by user procs.
+// Layout CANNOT change, required for ABI compatability with
+// testing object code.
 typedef struct {
 	int pid;
-	int priority;
+	UserProcessPriority priority:32;
 	int stack_size;
 	void (*entry_point) ();
 } PROC_INIT;

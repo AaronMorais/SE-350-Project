@@ -19,44 +19,44 @@ int g_cur_command_buffer_index = 0;
 
 void sys_proc_init() {
 	// Set up NULL process
-	PROC_INIT null_state;
+	ProcInit null_state;
 	null_state.pid = (U32)PROCESS_ID_NULL;
 	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
 	null_state.stack_size = 0x200;
 	null_state.entry_point = &null_process;
-	process_create(&null_state);
+	process_create(null_state);
 
 	// Set up CRT process
-	PROC_INIT crt_state;
+	ProcInit crt_state;
 	crt_state.pid = (U32)PROCESS_ID_CRT;
 	crt_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
 	crt_state.stack_size = 0x200;
 	crt_state.entry_point = &crt_process;
-	process_create(&crt_state);
+	process_create(crt_state);
 
 	// Set up KCD process
-	PROC_INIT kcd_state;
+	ProcInit kcd_state;
 	kcd_state.pid = (U32)PROCESS_ID_KCD;
 	kcd_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
 	kcd_state.stack_size = 0x200;
 	kcd_state.entry_point = &kcd_process;
-	process_create(&kcd_state);
+	process_create(kcd_state);
 	
 	// Set up UART-i process
-	PROC_INIT uart_state;
+	ProcInit uart_state;
 	uart_state.pid = (U32)PROCESS_ID_UART;
 	uart_state.priority = PROCESS_PRIORITY_UNSCHEDULABLE;
 	uart_state.stack_size = 0x200;
 	uart_state.entry_point = NULL;
-	process_create(&uart_state);
+	process_create(uart_state);
 	
 	// Set up wall_clock process
-	PROC_INIT wall_clock_state;
+	ProcInit wall_clock_state;
 	wall_clock_state.pid = (U32)PROCESS_ID_WALL_CLOCK;
 	wall_clock_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
 	wall_clock_state.stack_size = 0x200;
 	wall_clock_state.entry_point = &wall_clock_process;
-	process_create(&wall_clock_state);
+	process_create(wall_clock_state);
 }
 
 static void null_process(){
@@ -86,7 +86,7 @@ static char *mystrcpy(char *dst, const char *src)
 {
 	char *ptr;
 	ptr = dst;
-	while(*dst++=*src++);
+	while((*dst++=*src++));
 	return(ptr);
 }
 

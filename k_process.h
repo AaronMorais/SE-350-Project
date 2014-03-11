@@ -6,7 +6,7 @@ extern PCB* g_current_process;
 extern PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 void process_init(void);
-int process_create(PROC_INIT* initial_state);
+int process_create(ProcInit initial_state);
 int process_prempt_if_necessary(void);
 PCB* process_find(int pid);
 int process_send_message(HeapBlock* block);
