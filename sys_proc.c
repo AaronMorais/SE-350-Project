@@ -221,13 +221,16 @@ static void crt_process() {
 	}
 }
 
-static void wall_clock_print_time(char* buf, int seconds) {
+static void wall_clock_print_time(char* buf, int time) {
+	int seconds = time / 1000;
+
 	int s0 = seconds % 10;
 	int s1 = seconds % 60 / 10;
 	int m0 = seconds / 60 % 10;
 	int m1 = seconds / 60 / 10;
 	int h0 = seconds / 60 / 60 % 10;
 	int h1 = seconds / 60 / 60 / 10;
+
 	*buf++ = h1 + '0';
 	*buf++ = h0 + '0';
 	*buf++ = ':';
@@ -241,18 +244,65 @@ static void wall_clock_print_time(char* buf, int seconds) {
 	*buf++ = '\0';
 }
 
+static int wall_clock_parse_time(char* message_buffer) {
+	char* buf = &message_buffer[4];
+	int h1 = *buf++ - '0';
+	int h0 = *buf++ - '0';
+	int colon0 = *buf++;
+	int m1 = *buf++ - '0';
+	int m0 = *buf++ - '0';
+	int colon1 = *buf++;
+	int s1 = *buf++ - '0';
+	int s0 = *buf++ - '0';
+	int null = *buf++;
+
+	if (h1 > 9 || h1 < 0 || h0 > 9 || h0 < 0)
+		strcpy(message_buffer, "Invalid hour format!");
+		return -1;
+	}
+	if (colon0 != ':') {
+		strcpy(message_buffer, "Missing colon");
+		return -1;
+	}
+	if (m1 > 6 || m1 < 0 || m0 > 9 || m0 < 0) {
+		strcpy(message_buffer, "Invalid minute format!");
+		return -1;
+	}
+	if (colon1 != ':') {
+		strcpy(message_buffer, "Missing colon");
+		return -1;
+	}
+	if (s1 > 6 || s1 < 0 || s0 > 9 || m0 < 0) {
+		strcpy(message_buffer, "Invalid second format!");
+		return -1;
+	}
+	if (null != '\0') {
+		strcpy(message_buffer, "Missing null terminator!");
+		return -1;
+	}
+
+	return 1000 * (
+		  h0 * 60 * 60 * 10
+		+ h1 * 60 * 60
+		+ m0 * 60 * 10
+		+ m1 * 60
+		+ s0 * 10
+		+ s1);
+}
+
 static void wall_clock_process() {
 	static const char CLOCK_RESET     = 'R';
 	static const char CLOCK_SET       = 'S';
 	static const char CLOCK_TERMINATE = 'T';
 
-	static uint32_t wall_clock_time_offset = 0;
-	static uint32_t wall_clock_time = 0;
+	// All times are stored in milliseconds
+	static int time_base = 0;
 	static int is_running = 0;
 
 	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
 	register_message_envelope->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
 	register_message_envelope->mtext[0] = 'W';
+	register_message_envelope->mtext[1] = '\0';
 	send_message(PROCESS_ID_KCD, (void*)register_message_envelope);
 
 	while (1) {
@@ -265,35 +315,19 @@ static void wall_clock_process() {
 		switch (message->mtext[2]) {
 		case CLOCK_RESET:
 			is_running = 1;
-			wall_clock_time = 0;
-			wall_clock_time_offset = g_timer_count;
+			time_base = g_timer_count;
 			break;
 
 		case CLOCK_SET: {
-			// h0h1:m0m1:s0s1
-			// TODO check for hh:mm:ss where h or m or s is a character rather than number
-			if (message->mtext[12] != '\0' || message->mtext[6] != ':' || message->mtext[9] != ':'){
-				LOG("ERROR: incorrect message structure for wall_clock_proc (%WT)");
+			int new_time_offset = wall_clock_parse_time(message->mtext);
+			if (new_time_offset < 0) {
+				is_running = 0;
+				message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+				send_message(PROCESS_ID_CRT, (void*)message);
 				continue;
 			}
 			is_running = 1;
-
-			int h0 = message->mtext[4] - '0';
-			int h1 = message->mtext[5] - '0';
-			int m0 = message->mtext[7] - '0';
-			int m1 = message->mtext[8] - '0';
-			int s0 = message->mtext[10] - '0';
-			int s1 = message->mtext[11] - '0';
-
-			wall_clock_time
-				= h0 * 60 * 60 * 10
-				+ h1 * 60 * 60
-				+ m0 * 60 * 10
-				+ m1 * 60
-				+ s0 * 10
-			  + s1;
-
-			wall_clock_time_offset = g_timer_count;
+			time_base = g_timer_count + new_time_offset;
 			break;
 		}
 		case CLOCK_TERMINATE:
@@ -304,6 +338,7 @@ static void wall_clock_process() {
 		default:
 			if (message->mtype != MESSAGE_TYPE_WALL_CLOCK) {
 				LOG("ERROR: Wall clock got unrecognized command %d", message->mtype);
+				release_memory_block(message);
 				continue;
 			}
 			break;
@@ -314,12 +349,12 @@ static void wall_clock_process() {
 			message_envelope->mtype = MESSAGE_TYPE_WALL_CLOCK;
 			delayed_send(PROCESS_ID_WALL_CLOCK, (void*)message_envelope, 1000);
 
-			int display_time = (g_timer_count - wall_clock_time_offset) + wall_clock_time*1000;
+			int display_time = g_timer_count - time_base;
 			mem_clear((char*)message, sizeof(*message));
 			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-			wall_clock_print_time(message->mtext, display_time/1000);
-			send_message(PROCESS_ID_CRT, (void*)message);
+			wall_clock_print_time(message->mtext, g_timer_count - time_base);
 			LOG("printing time: %s\n", message->mtext);
+			send_message(PROCESS_ID_CRT, (void*)message);
 		}
 	}
 }
