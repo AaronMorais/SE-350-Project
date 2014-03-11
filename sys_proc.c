@@ -318,6 +318,10 @@ static void wall_clock_process() {
 	register_message_envelope->mtext[1] = '\0';
 	send_message(PROCESS_ID_KCD, (void*)register_message_envelope);
 
+	struct msgbuf* timer_message = (struct msgbuf*)request_memory_block();
+	timer_message->mtype = MESSAGE_TYPE_WALL_CLOCK;
+	delayed_send(PROCESS_ID_WALL_CLOCK, (void*)timer_message, 1000);
+
 	while (1) {
 		struct msgbuf* message = receive_message(NULL);
 		if (message == NULL) {
@@ -354,14 +358,14 @@ static void wall_clock_process() {
 				release_memory_block(message);
 				continue;
 			}
+
+			struct msgbuf* timer_message = (struct msgbuf*)request_memory_block();
+			timer_message->mtype = MESSAGE_TYPE_WALL_CLOCK;
+			delayed_send(PROCESS_ID_WALL_CLOCK, (void*)timer_message, 1000);
 			break;
 		}
 
 		if (is_running) {
-			struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-			message_envelope->mtype = MESSAGE_TYPE_WALL_CLOCK;
-			delayed_send(PROCESS_ID_WALL_CLOCK, (void*)message_envelope, 1000);
-
 			int display_time = g_timer_count - time_base;
 			mem_clear((char*)message, sizeof(*message));
 			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
