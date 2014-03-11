@@ -223,11 +223,19 @@ int k_set_process_priority_no_preempt(int id, int priority)
 		queue = g_blocked_process_priority_queue;
 		pcb = priority_queue_find(queue, id);
 		if (pcb == NULL) {
-			LOG("Attempted to set process priority of nonexistent process!");
-			return RTX_ERR;
+			//potentially BLOCKED_ON_MESSAGE
+			queue = NULL;
+			pcb = process_find(id);
+			if (pcb == NULL) {
+				LOG("Attempted to set process priority of nonexistent process!");
+				return RTX_ERR;
+			} else {
+				pcb->priority = priority;
+				return RTX_OK;
+			}
 		}
 	}
-
+	
 	PriorityStatus status = priority_queue_reprioritize(queue, pcb, (ProcessPriority)priority);
 	if (status == PRIORITY_STATUS_OK) {
 		return RTX_OK;
