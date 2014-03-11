@@ -347,6 +347,7 @@ static void wall_clock_process() {
 			time_base = new_time_offset - g_timer_count;
 			break;
 		}
+
 		case CLOCK_TERMINATE:
 			is_running = 0;
 			release_memory_block(message);
@@ -362,16 +363,16 @@ static void wall_clock_process() {
 			struct msgbuf* timer_message = (struct msgbuf*)request_memory_block();
 			timer_message->mtype = MESSAGE_TYPE_WALL_CLOCK;
 			delayed_send(PROCESS_ID_WALL_CLOCK, (void*)timer_message, 1000);
-			break;
-		}
 
-		if (is_running) {
-			int display_time = g_timer_count - time_base;
-			mem_clear((char*)message, sizeof(*message));
-			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-			wall_clock_print_time(message->mtext, g_timer_count + time_base);
-			LOG("printing time: %s\n", message->mtext);
-			send_message(PROCESS_ID_CRT, (void*)message);
+			if (is_running) {
+				int display_time = g_timer_count - time_base;
+				mem_clear((char*)message, sizeof(*message));
+				message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+				wall_clock_print_time(message->mtext, g_timer_count + time_base);
+				LOG("printing time: %s\n", message->mtext);
+				send_message(PROCESS_ID_CRT, (void*)message);
+			}
+			break;
 		}
 	}
 }
