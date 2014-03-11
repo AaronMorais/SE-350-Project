@@ -256,38 +256,38 @@ static int wall_clock_parse_time(char* message_buffer) {
 	int s0 = *buf++ - '0';
 	int null = *buf++;
 
-	if (h1 > 9 || h1 < 0 || h0 > 9 || h0 < 0)
-		strcpy(message_buffer, "Invalid hour format!");
+	if (h1 > 9 || h1 < 0 || h0 > 9 || h0 < 0) {
+		strcpy(message_buffer, "Invalid hour format!\n\r");
 		return -1;
 	}
 	if (colon0 != ':') {
-		strcpy(message_buffer, "Missing colon");
+		strcpy(message_buffer, "Missing colon\n\r");
 		return -1;
 	}
 	if (m1 > 6 || m1 < 0 || m0 > 9 || m0 < 0) {
-		strcpy(message_buffer, "Invalid minute format!");
+		strcpy(message_buffer, "Invalid minute format!\n\r");
 		return -1;
 	}
 	if (colon1 != ':') {
-		strcpy(message_buffer, "Missing colon");
+		strcpy(message_buffer, "Missing colon\n\r");
 		return -1;
 	}
 	if (s1 > 6 || s1 < 0 || s0 > 9 || m0 < 0) {
-		strcpy(message_buffer, "Invalid second format!");
+		strcpy(message_buffer, "Invalid second format!\n\r");
 		return -1;
 	}
 	if (null != '\0') {
-		strcpy(message_buffer, "Missing null terminator!");
+		strcpy(message_buffer, "Missing null terminator!\n\r");
 		return -1;
 	}
 
 	return 1000 * (
-		  h0 * 60 * 60 * 10
-		+ h1 * 60 * 60
-		+ m0 * 60 * 10
-		+ m1 * 60
-		+ s0 * 10
-		+ s1);
+		  h1 * 60 * 60 * 10
+		+ h0 * 60 * 60
+		+ m1 * 60 * 10
+		+ m0 * 60
+		+ s1 * 10
+		+ s0);
 }
 
 static void wall_clock_process() {
