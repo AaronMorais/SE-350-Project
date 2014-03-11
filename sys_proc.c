@@ -229,14 +229,16 @@ static void crt_process() {
 }
 
 static void wall_clock_print_time(char* buf, int time) {
-	int seconds = time / 1000;
+	int seconds = time / 1000 % 60;
+	int minutes = time / 1000 / 60 % 60;
+	int hours   = time / 1000 / 60 / 60 % 24;
 
+	int s1 = seconds / 10;
 	int s0 = seconds % 10;
-	int s1 = seconds / 10 % 10;
-	int m0 = seconds / 60 % 10;
-	int m1 = seconds / 60 / 10 % 10;
-	int h0 = seconds / 60 / 60 % 10;
-	int h1 = seconds / 60 / 60 / 10 % 10;
+	int m1 = minutes / 10;
+	int m0 = minutes % 10;
+	int h1 = hours   / 10;
+	int h0 = hours   % 10;
 
 	*buf++ = h1 + '0';
 	*buf++ = h0 + '0';
@@ -263,8 +265,12 @@ static int wall_clock_parse_time(char* message_buffer) {
 	int s0 = *buf++ - '0';
 	int null = *buf++;
 
-	if (h1 > 9 || h1 < 0 || h0 > 9 || h0 < 0) {
+	if (h1 > 2 || h1 < 0 || h0 > 9 || h0 < 0) {
 		strcpy(message_buffer, "Invalid hour format!\n\r");
+		return -1;
+	}
+	if (h1 == 2 && h0 > 3) {
+		strcpy(message_buffer, "Invalid hour format\n\r");
 		return -1;
 	}
 	if (colon0 != ':') {
