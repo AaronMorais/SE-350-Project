@@ -124,14 +124,11 @@ void c_TIMER0_IRQHandler(void)
 	*/
 	LPC_TIM0->IR = BIT(0);
 	
-	g_timer_count++;
+	g_timer_count+=35;
 
 	HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
 	if (top && (g_timer_count >= top->header.send_time)) {
 		top = sorted_heap_queue_pop(&g_delayed_msg_list);
-		process_send_message(top->header.dest_pid, top);
+		k_process_send_message(top->header.dest_pid, top);
 	}
-	struct msgbuf* message_envelope = (struct msgbuf*)k_request_memory_block();
-	message_envelope->mtype = MESSAGE_TYPE_WALL_CLOCK;
-	process_send_message(PROCESS_ID_WALL_CLOCK, (void*)message_envelope);
 }

@@ -9,6 +9,8 @@ PriorityStatus priority_queue_insert(PCB** queue, PCB* proc)
 	if (proc->priority > PROCESS_PRIORITY_NUM) {
 		return PRIORITY_STATUS_INVALID_PRIORITY;
 	}
+	
+	proc->p_next = NULL;
 
 	if (queue[proc->priority] == NULL) {
 		queue[proc->priority] = proc;

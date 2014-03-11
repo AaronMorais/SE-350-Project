@@ -217,7 +217,7 @@ void c_UART0_IRQHandler(void)
 		message->mtext[0] = g_char_in;
 		message->mtext[1] = '\0';
 		
-		send_message(PROCESS_ID_KCD, message);
+		k_send_message(PROCESS_ID_KCD, message);
 		return;
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
