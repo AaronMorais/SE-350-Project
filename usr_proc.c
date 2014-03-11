@@ -4,7 +4,6 @@
 #include "usr_proc.h"
 #include "syscall.h"
 #include "uart_polling.h"
-#include "k_process.h"
 
 typedef enum {
 	SET_PRIORITY_TEST              = 0,
@@ -13,7 +12,7 @@ typedef enum {
 	REQUEST_MEMORY_TEST            = 3,
 	RELEASE_MEMORY_UNBLOCKED_TEST  = 4,
 	REQUEST_MEMORY_BLOCKED_TEST    = 5,
-	TEST_NUM											 = 6
+	TEST_NUM                       = 6
 } Test;
 
 static int s_passing_tests = 0;
@@ -39,7 +38,7 @@ static void proc1(void)
 	while (1) {
 		printf("FUCKING in proc1 \n\r");
 		times_proc1_ran++;
-		set_process_priority(2, PROCESS_PRIORITY_HIGH);
+		set_process_priority(2, USER_PROCESS_PRIORITY_HIGH);
 	}
 }
 
@@ -52,17 +51,17 @@ static void proc2(void)
 		printf("FUCKING in proc2 \n\r");
 		times_proc2_ran++;
 		//it should have it's priority set by proc1
-		if (times_proc1_ran == 1 && get_process_priority(2) == PROCESS_PRIORITY_HIGH) {
+		if (times_proc1_ran == 1 && get_process_priority(2) == USER_PROCESS_PRIORITY_HIGH) {
 			test_results[SET_PRIORITY_TEST] = 1;
 		}
-		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
+		set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
 
 
 //#### Testing release processor
 //#### waits until proc2 runs three times, sets its priority to be the same level as the other processes
 //#### proc3 should run after releasing processor
 		if (times_proc2_ran == 3) {
-			set_process_priority(2, PROCESS_PRIORITY_MEDIUM);
+			set_process_priority(2, USER_PROCESS_PRIORITY_MEDIUM);
 			after_set_priority_before_release = 1;
 		}
 		if (times_proc2_ran >= 3) {
@@ -81,9 +80,9 @@ static void proc3(void)
 		if (times_proc2_ran == 3 && times_proc3_ran == 1 && after_set_priority_before_release) {
 			test_results[RELEASE_PROCESSOR_TEST] = 1;
 		}
-		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
-		set_process_priority(2, PROCESS_PRIORITY_LOWEST);
-		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
+		set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
+		set_process_priority(2, USER_PROCESS_PRIORITY_LOWEST);
+		set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
 		//release_processor();
 	}
 }
@@ -103,7 +102,7 @@ static void proc4(void)
 
 	// Setting proc5 to have higher priority so it should
 	// preempt and start running
-	set_process_priority(5, PROCESS_PRIORITY_HIGH);
+	set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
 
 	// Coming back from proc5 after proc5 blocked
 	// Proc4 should preempty and go to proc5 since
@@ -116,7 +115,7 @@ static void proc4(void)
 	// Then it sets its priority to be lowest, in which
 	// the function comes here, and we set ourself to be
 	// lowest so proc 6 can take over.
-	set_process_priority(4, PROCESS_PRIORITY_LOWEST);
+	set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
 	release_processor();
 }
 
@@ -140,14 +139,14 @@ static void proc5(void)
 		test_results[RELEASE_MEMORY_TEST] = 1;
 	}
 
-	set_process_priority(5, PROCESS_PRIORITY_LOWEST);
+	set_process_priority(5, USER_PROCESS_PRIORITY_LOWEST);
 }
 
 static void proc6(void)
 {
 	printf("FUCKING in proc6 \n\r");
 	run_all_tests();
-	set_process_priority(7, PROCESS_PRIORITY_HIGH);
+	set_process_priority(7, USER_PROCESS_PRIORITY_HIGH);
 }
 
 static void strcpy(char* dst, const char* src)
@@ -161,7 +160,7 @@ static const char* test_phrase_one = "The quick brown fox jumped over the lazy d
 static const char* test_phrase_two = "The quick brown fox jumped over the lazy dog\n\r";
 static void proc7(void)
 {
-	set_process_priority(8, PROCESS_PRIORITY_HIGH);
+	set_process_priority(8, USER_PROCESS_PRIORITY_HIGH);
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 	message_envelope->mtype = 0xAAAAAAAA;
 	strcpy(message_envelope->mtext, test_phrase_one);
@@ -181,15 +180,15 @@ static void proc8(void)
 	while (1) {
 		release_processor();
 		printf("proc8: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
-		set_process_priority(7, PROCESS_PRIORITY_LOWEST);
-		set_process_priority(9, PROCESS_PRIORITY_HIGH);
+		set_process_priority(7, USER_PROCESS_PRIORITY_LOWEST);
+		set_process_priority(9, USER_PROCESS_PRIORITY_HIGH);
 	}
 }
 
 static void proc9(void)
 {
-	set_process_priority(8, PROCESS_PRIORITY_LOWEST);
-	set_process_priority(10, PROCESS_PRIORITY_HIGH);
+	set_process_priority(8, USER_PROCESS_PRIORITY_LOWEST);
+	set_process_priority(10, USER_PROCESS_PRIORITY_HIGH);
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
 	printf("proc9: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
@@ -215,42 +214,42 @@ void set_test_procs()
 	PROC_INIT test_proc = {0};
 	for (int i = 0; i < NUM_TEST_PROCS; i++) {
 		test_proc.pid = (U32)(i+1+ignore_num);
-		test_proc.priority = PROCESS_PRIORITY_LOWEST;
+		test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 		test_proc.stack_size = 0x200;
 		switch (i+ignore_num) {
 		case 0:
 			test_proc.entry_point = &proc1;
-			test_proc.priority = PROCESS_PRIORITY_MEDIUM;
+			test_proc.priority = USER_PROCESS_PRIORITY_MEDIUM;
 			break;
 		case 1:
 			test_proc.entry_point = &proc2;
-			test_proc.priority = PROCESS_PRIORITY_LOW;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOW;
 			break;
 		case 2: 
 			test_proc.entry_point = &proc3; 
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		case 3: test_proc.entry_point = &proc4; break;
 		case 4: test_proc.entry_point = &proc5; break;
 		case 5:
 			test_proc.entry_point = &proc6;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		case 6:
 			test_proc.entry_point = &proc7;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		case 7:
 			test_proc.entry_point = &proc8;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		case 8:
 			test_proc.entry_point = &proc9;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		case 9:
 			test_proc.entry_point = &proc10;
-			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			test_proc.priority = USER_PROCESS_PRIORITY_LOWEST;
 			break;
 		default:
 			continue;

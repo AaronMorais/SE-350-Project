@@ -1,11 +1,3 @@
-/**
- * @brief timer.c - Timer example code. Tiemr IRQ is invoked every 1ms
- * @author T. Reidemeister
- * @author Y. Huang
- * @author NXP Semiconductors
- * @date 2012/02/12
- */
-
 #include <LPC17xx.h>
 #include "timer.h"
 #include "k_process.h"
@@ -15,51 +7,44 @@
 
 #define BIT(X) (1<<X)
 
-HeapBlock* g_delayed_msg_list = NULL;
-volatile uint32_t g_timer_count = 0; // increment every 1 ms
+HeapBlock* s_delayed_msg_list = NULL;
+volatile uint32_t s_timer_tick_count = 0;
 
-/**
- * @brief: initialize timer. Only timer 0 is supported
- */
-uint32_t timer_init(uint8_t n_timer)
+void timer_init()
 {
 	LPC_TIM_TypeDef *pTimer;
-	if (n_timer == 0) {
-		/*
-		Steps 1 & 2: system control configuration.
-		Under CMSIS, system_LPC17xx.c does these two steps
 
-		-----------------------------------------------------
-		Step 1: Power control configuration.
-			See table 46 pg63 in LPC17xx_UM
-		-----------------------------------------------------
-		Enable UART0 power, this is the default setting
-		done in system_LPC17xx.c under CMSIS.
-		Enclose the code for your refrence
-		//LPC_SC->PCONP |= BIT(1);
+	/*
+	Steps 1 & 2: system control configuration.
+	Under CMSIS, system_LPC17xx.c does these two steps
 
-		-----------------------------------------------------
-		Step2: Select the clock source,
-			default PCLK=CCLK/4 , where CCLK = 100MHZ.
-			See tables 40 & 42 on pg56-57 in LPC17xx_UM.
-		-----------------------------------------------------
-		Check the PLL0 configuration to see how XTAL=12.0MHZ
-		gets to CCLK=100MHZ in system_LPC17xx.c file.
-		PCLK = CCLK/4, default setting in system_LPC17xx.c.
-		Enclose the code for your reference
-		//LPC_SC->PCLKSEL0 &= ~(BIT(3)|BIT(2));
+	-----------------------------------------------------
+	Step 1: Power control configuration.
+		See table 46 pg63 in LPC17xx_UM
+	-----------------------------------------------------
+	Enable UART0 power, this is the default setting
+	done in system_LPC17xx.c under CMSIS.
+	Enclose the code for your refrence
+	//LPC_SC->PCONP |= BIT(1);
 
-		-----------------------------------------------------
-		Step 3: Pin Ctrl Block configuration.
-			Optional, not used in this example
-			See Table 82 on pg110 in LPC17xx_UM
-		-----------------------------------------------------
-		*/
-		pTimer = (LPC_TIM_TypeDef *) LPC_TIM0;
+	-----------------------------------------------------
+	Step2: Select the clock source,
+		default PCLK=CCLK/4 , where CCLK = 100MHZ.
+		See tables 40 & 42 on pg56-57 in LPC17xx_UM.
+	-----------------------------------------------------
+	Check the PLL0 configuration to see how XTAL=12.0MHZ
+	gets to CCLK=100MHZ in system_LPC17xx.c file.
+	PCLK = CCLK/4, default setting in system_LPC17xx.c.
+	Enclose the code for your reference
+	//LPC_SC->PCLKSEL0 &= ~(BIT(3)|BIT(2));
 
-	} else { /* other timer not supported yet */
-		return 1;
-	}
+	-----------------------------------------------------
+	Step 3: Pin Ctrl Block configuration.
+		Optional, not used in this example
+		See Table 82 on pg110 in LPC17xx_UM
+	-----------------------------------------------------
+	*/
+	pTimer = (LPC_TIM_TypeDef *) LPC_TIM0;
 
 	/*
 	-----------------------------------------------------
@@ -85,15 +70,22 @@ uint32_t timer_init(uint8_t n_timer)
 	 */
 	pTimer->MCR = BIT(0) | BIT(1);
 
-	g_timer_count = 0;
+	s_timer_tick_count = 0;
 
 	/* Step 4.4: CSMSIS enable timer0 IRQ */
 	NVIC_EnableIRQ(TIMER0_IRQn);
 
 	/* Step 4.5: Enable the TCR. See table 427 on pg494 of LPC17xx_UM. */
 	pTimer->TCR = 1;
+}
 
-	return 0;
+uint32_t timer_elapsed_ms() {
+	return s_timer_tick_count;
+}
+
+HeapQueueStatus timer_schedule_delayed_send(HeapBlock* block, int delay_ms) {
+	block->header.send_time = timer_elapsed_ms() + delay_ms;
+	return sorted_heap_queue_push(&s_delayed_msg_list, block);
 }
 
 /**
@@ -124,11 +116,12 @@ void c_TIMER0_IRQHandler(void)
 	*/
 	LPC_TIM0->IR = BIT(0);
 	
-	g_timer_count++;
+	s_timer_tick_count++;
 
-	HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
-	if (top && (g_timer_count >= top->header.send_time)) {
-		top = sorted_heap_queue_pop(&g_delayed_msg_list);
-		k_process_send_message(top->header.dest_pid, top);
+	HeapBlock* top = sorted_heap_queue_top(&s_delayed_msg_list);
+	if (top && (s_timer_tick_count >= top->header.send_time)) {
+		top = sorted_heap_queue_pop(&s_delayed_msg_list);
+		process_send_message(top);
+		process_prempt_if_necessary();
 	}
 }

@@ -21,7 +21,6 @@
 #endif /* DEBUG_0 */
 
 int main()
-
 {
 	/* CMSIS system initialization */
 	SystemInit(); 
