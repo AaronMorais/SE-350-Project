@@ -230,11 +230,11 @@ static void wall_clock_print_time(char* buf, int time) {
 	int seconds = time / 1000;
 
 	int s0 = seconds % 10;
-	int s1 = seconds % 60 / 10;
+	int s1 = seconds / 10 % 10;
 	int m0 = seconds / 60 % 10;
-	int m1 = seconds / 60 / 10;
+	int m1 = seconds / 60 / 10 % 10;
 	int h0 = seconds / 60 / 60 % 10;
-	int h1 = seconds / 60 / 60 / 10;
+	int h1 = seconds / 60 / 60 / 10 % 10;
 
 	*buf++ = h1 + '0';
 	*buf++ = h0 + '0';
