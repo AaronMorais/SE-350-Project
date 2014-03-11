@@ -285,7 +285,7 @@ static int wall_clock_parse_time(char* message_buffer) {
 		strcpy(message_buffer, "Missing colon\n\r");
 		return -1;
 	}
-	if (s1 > 6 || s1 < 0 || s0 > 9 || m0 < 0) {
+	if (s1 > 6 || s1 < 0 || s0 > 9 || s0 < 0) {
 		strcpy(message_buffer, "Invalid second format!\n\r");
 		return -1;
 	}

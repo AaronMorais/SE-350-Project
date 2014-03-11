@@ -124,7 +124,7 @@ void c_TIMER0_IRQHandler(void)
 	*/
 	LPC_TIM0->IR = BIT(0);
 	
-	g_timer_count+=35;
+	g_timer_count++;
 
 	HeapBlock* top = sorted_heap_queue_top(&g_delayed_msg_list);
 	if (top && (g_timer_count >= top->header.send_time)) {
