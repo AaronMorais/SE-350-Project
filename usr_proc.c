@@ -37,6 +37,7 @@ static int times_proc3_ran = 0;
 static void proc1(void)
 {
 	while (1) {
+		printf("FUCKING in proc1 \n\r");
 		times_proc1_ran++;
 		set_process_priority(2, PROCESS_PRIORITY_HIGH);
 	}
@@ -48,6 +49,7 @@ static int after_set_priority_before_release = 0;
 static void proc2(void)
 {
 	while (1) {
+		printf("FUCKING in proc2 \n\r");
 		times_proc2_ran++;
 		//it should have it's priority set by proc1
 		if (times_proc1_ran == 1 && get_process_priority(2) == PROCESS_PRIORITY_HIGH) {
@@ -73,6 +75,7 @@ static void proc2(void)
 static void proc3(void)
 {
 	while (1) {
+		printf("FUCKING in proc3 \n\r");
 		times_proc3_ran++;
 //#### asserts that proc2 ran the 3 times and that this is running because of the release processor call
 		if (times_proc2_ran == 3 && times_proc3_ran == 1 && after_set_priority_before_release) {
@@ -81,7 +84,7 @@ static void proc3(void)
 		set_process_priority(1, PROCESS_PRIORITY_LOWEST);
 		set_process_priority(2, PROCESS_PRIORITY_LOWEST);
 		set_process_priority(3, PROCESS_PRIORITY_LOWEST);
-//		release_processor();
+		//release_processor();
 	}
 }
 
@@ -89,6 +92,7 @@ static int s_requested_all_blocks = 0;
 
 static void proc4(void)
 {
+	printf("FUCKING in proc4 \n\r");
 	void* mem_block_2 = NULL;
 	void* mem_block = request_memory_block();
 	mem_block_2 = request_memory_block();
@@ -119,7 +123,7 @@ static void proc4(void)
 static void proc5(void)
 {
 	void* want_all_blocks;
-
+	printf("FUCKING in proc5 \n\r");
 	while( !s_requested_all_blocks ) {
 		want_all_blocks = request_memory_block();
 	}
@@ -141,6 +145,7 @@ static void proc5(void)
 
 static void proc6(void)
 {
+	printf("FUCKING in proc6 \n\r");
 	run_all_tests();
 	set_process_priority(7, PROCESS_PRIORITY_HIGH);
 }
@@ -152,8 +157,8 @@ static void strcpy(char* dst, const char* src)
 	}
 }
 
-static const char* test_phrase_one = "The quick brown fox jumped over the lazy dog";
-static const char* test_phrase_two = "The quick brown fox jumped over the lazy dog";
+static const char* test_phrase_one = "The quick brown fox jumped over the lazy dog\n\r";
+static const char* test_phrase_two = "The quick brown fox jumped over the lazy dog\n\r";
 static void proc7(void)
 {
 	set_process_priority(8, PROCESS_PRIORITY_HIGH);
@@ -164,7 +169,7 @@ static void proc7(void)
 
 	while (1) {
 		release_processor();
-		printf("proc7: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+		printf("proc7: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 	}
 }
 
@@ -172,10 +177,10 @@ static void proc8(void)
 {
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
 
-	printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	printf("proc8: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
-		printf("proc8: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+		printf("proc8: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 		set_process_priority(7, PROCESS_PRIORITY_LOWEST);
 		set_process_priority(9, PROCESS_PRIORITY_HIGH);
 	}
@@ -186,7 +191,7 @@ static void proc9(void)
 	set_process_priority(8, PROCESS_PRIORITY_LOWEST);
 	set_process_priority(10, PROCESS_PRIORITY_HIGH);
 	struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
-	printf("proc9: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	printf("proc9: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
 	}
@@ -197,7 +202,7 @@ static void proc10(void)
 	message_envelope->mtype = 0x22222;
 	strcpy(message_envelope->mtext, test_phrase_two);
 	delayed_send(9, (void*)message_envelope, 7);
-	printf("proc10: %x %s\n", message_envelope->mtype, message_envelope->mtext);
+	printf("proc10: %x %s\n\r", message_envelope->mtype, message_envelope->mtext);
 	while (1) {
 		release_processor();
 	}
@@ -221,7 +226,10 @@ void set_test_procs()
 			test_proc.entry_point = &proc2;
 			test_proc.priority = PROCESS_PRIORITY_LOW;
 			break;
-		case 2: test_proc.entry_point = &proc3; break;
+		case 2: 
+			test_proc.entry_point = &proc3; 
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
+			break;
 		case 3: test_proc.entry_point = &proc4; break;
 		case 4: test_proc.entry_point = &proc5; break;
 		case 5:
@@ -238,11 +246,11 @@ void set_test_procs()
 			break;
 		case 8:
 			test_proc.entry_point = &proc9;
-			test_proc.priority = PROCESS_PRIORITY_HIGH;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
 			break;
 		case 9:
 			test_proc.entry_point = &proc10;
-			test_proc.priority = PROCESS_PRIORITY_HIGH;
+			test_proc.priority = PROCESS_PRIORITY_LOWEST;
 			break;
 		default:
 			continue;
