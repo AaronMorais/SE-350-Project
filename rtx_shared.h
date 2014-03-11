@@ -17,23 +17,11 @@
 #endif
 
 typedef enum {
-	PROCESS_PRIORITY_SYSTEM_PROCESS = 0,
-	PROCESS_PRIORITY_HIGH           = 1,
-	PROCESS_PRIORITY_MEDIUM         = 2,
-	PROCESS_PRIORITY_LOW            = 3,
-	PROCESS_PRIORITY_LOWEST         = 4,
-	PROCESS_PRIORITY_NULL_PROCESS   = 5,
-	PROCESS_PRIORITY_UNSCHEDULABLE  = 6,
-
-	PROCESS_PRIORITY_NUM            = 7
-} ProcessPriority;
-
-typedef enum {
-  MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
+	MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
 	MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
 	MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
-	MESSAGE_TYPE_WALL_CLOCK								= 3,
-	
+	MESSAGE_TYPE_WALL_CLOCK               = 3,
+
 	MESSAGE_TYPE_NUM                      = 4
 } MessageType;
 
@@ -42,6 +30,14 @@ struct msgbuf {
 	MessageType mtype; /* user defined message type */
 	char mtext[1]; /* body of the message */
 };
+
+/* initialization table item */
+typedef struct {
+	int pid;
+	int priority;
+	int stack_size;
+	void (*entry_point) ();
+} PROC_INIT;
 
 typedef unsigned char U8;
 typedef unsigned int U32;

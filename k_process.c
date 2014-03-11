@@ -179,6 +179,80 @@ PCB* process_find(int pid) {
 	return NULL;
 }
 
+PCB** process_find_queue(int id) {
+	PCB** queue = g_ready_process_priority_queue;
+	PCB* pcb = priority_queue_find(queue, id);
+	if (pcb != NULL) {
+		return queue;
+	}
+	queue = g_blocked_process_priority_queue;
+	pcb = priority_queue_find(queue, id);
+	if (pcb != NULL) {
+		return queue;
+	}
+	return NULL;
+}
+
+// Change a process's priority. Does not preempt.
+int process_set_priority(int id, ProcessPriority priority)
+{
+	if (priority < PROCESS_PRIORITY_SYSTEM_PROCESS || priority > PROCESS_PRIORITY_LOWEST) {
+		LOG("Attempted to set priority to invalid value!");
+		return RTX_ERR;
+	}
+
+	if (id == g_current_process->pid) {
+		g_current_process->priority = priority;
+		return RTX_OK;
+	}
+
+	PCB* pcb = process_find(id);
+	if (pcb == NULL) {
+		LOG("Attempted to set process priority of nonexistent process!");
+		return RTX_ERR;
+	}
+
+	PCB** queue = process_find_queue(id);
+	if (queue == NULL) {
+		// Not in any queue, probably BLOCKED_ON_MESSAGE.
+		pcb->priority = priority;
+		return RTX_OK;
+	}
+
+	PriorityStatus status = priority_queue_reprioritize(queue, pcb, priority);
+	if (status == PRIORITY_STATUS_OK) {
+		return RTX_OK;
+	}
+
+	return RTX_ERR;
+}
+
+int process_send_message(HeapBlock* block) {
+	if (!block) {
+		LOG("NULL block passed to process_send_message!");
+		return RTX_ERR;
+	}
+
+	PCB* dest = process_find(block->header.dest_pid);
+	if (!dest) {
+		LOG("Destination process %d not found!", block->header.dest_pid);
+		return RTX_ERR;
+	}
+
+	heap_queue_push(&dest->message_queue, block);
+	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
+		return RTX_OK;
+	}
+
+	dest->state = PROCESS_STATE_READY;
+	int result = priority_queue_insert(g_ready_process_priority_queue, dest);
+	if (result != PRIORITY_STATUS_OK) {
+		LOG("Shit hit the fan. Priority queue insert issue.");
+		return RTX_ERR;
+	}
+	return RTX_OK;
+}
+
 /**
  * @brief release_processor().
  * @return RTX_ERR on error and zero on success
@@ -203,97 +277,37 @@ int k_release_processor(void)
 	return rtx_status;
 }
 
-int k_set_process_priority_no_preempt(int id, int priority) 
-{
-	if (priority < PROCESS_PRIORITY_SYSTEM_PROCESS || priority > PROCESS_PRIORITY_LOWEST) {
-		LOG("Attempted to set priority to invalid value!");
-		return RTX_ERR;
-	}
-	if (id == g_current_process->pid) {
-		g_current_process->priority = priority;
-		return RTX_OK;
-	}
-
-	// TODO: We need to use process_find() here, since processes
-	// that are BLOCKED_ON_MESSAGE won't be in either of these
-	// queues.
-	PCB** queue = g_ready_process_priority_queue;
-	PCB* pcb = priority_queue_find(queue, id);
-	if (pcb == NULL) {
-		queue = g_blocked_process_priority_queue;
-		pcb = priority_queue_find(queue, id);
-		if (pcb == NULL) {
-			//potentially BLOCKED_ON_MESSAGE
-			queue = NULL;
-			pcb = process_find(id);
-			if (pcb == NULL) {
-				LOG("Attempted to set process priority of nonexistent process!");
-				return RTX_ERR;
-			} else {
-				pcb->priority = priority;
-				return RTX_OK;
-			}
-		}
-	}
-	
-	PriorityStatus status = priority_queue_reprioritize(queue, pcb, (ProcessPriority)priority);
-	if (status == PRIORITY_STATUS_OK) {
-		return RTX_OK;
-	}
-	return RTX_ERR;
-}
 
 int k_set_process_priority(int id, int priority)
 {
-	// TODO: User exposed priorites should be 0-4.
-	int status = k_set_process_priority_no_preempt(id, priority);
+	// User exposed priorites should be 0-4.
+	if (priority < 0 || priority > 4) {
+		LOG("Attempted to set priority to invalid value!");
+		return RTX_ERR;
+	}
+
+	// Convert from user priority level (0-4) to system priority level
+	// (defined by ProcessPriority enum). PROCESS_PRIORITY_HIGH is the
+	// highest allowable user priority (with the lowest value).
+	int status = process_set_priority(id, priority + PROCESS_PRIORITY_HIGH);
 	if (status != RTX_OK) {
 		return status;
 	}
+
 	return process_prempt_if_necessary();
 }
 
 int k_get_process_priority(int pid)
 {
 	PCB* proc = process_find(pid);
-	if (proc != NULL) {
-		return proc->priority;
-	}
-	return RTX_ERR;
-}
-
-int k_process_send_message(int dest_pid, HeapBlock* block) {
-	PCB* dest = process_find(dest_pid);
-	if (!dest) {
-		LOG("Destination process %d not found!", dest_pid);
+	if (proc == NULL) {
 		return RTX_ERR;
 	}
-	heap_queue_push(&dest->message_queue, block);
-	if (dest->state != PROCESS_STATE_BLOCKED_ON_MESSAGE) {
-		return RTX_OK;
-	}
 
-	dest->state = PROCESS_STATE_READY;
-	int result = priority_queue_insert(g_ready_process_priority_queue, dest);
-	if (result != PRIORITY_STATUS_OK) {
-		LOG("Shit hit the fan. Priority queue insert issue.");
-		return RTX_ERR;
-	}
-	return RTX_OK;
-}
-
-int k_send_message_no_preempt(int dest_pid, void* msg)
-{
-	HeapBlock* block = heap_block_from_user_block(msg);
-	block->header.source_pid = g_current_process->pid;
-	return k_process_send_message(dest_pid, block);
-}
-
-int k_send_message(int dest_pid, void* msg)
-{
-	int result = k_send_message_no_preempt(dest_pid, msg);
-	if (result != RTX_OK) return RTX_ERR;
-	return process_prempt_if_necessary();
+	// Convert from user priority level (0-4) to system priority level
+	// (defined by ProcessPriority enum). PROCESS_PRIORITY_HIGH is the
+	// highest allowable user priority (with the lowest value).
+	return proc->priority - PROCESS_PRIORITY_HIGH;
 }
 
 void* k_receive_message(int* sender_pid)
@@ -315,17 +329,33 @@ void* k_receive_message(int* sender_pid)
 	return user_block_from_heap_block(block);
 }
 
-int k_delayed_send(int dest_pid, void *message_envelope, int delay)
+int k_send_message(int dest_pid, void* msg)
 {
-	// TODO: It would be a bit nicer to have this code (at least part
-	// of it) in timer.c so we don't need the global variables.
-	HeapBlock* full_env = heap_block_from_user_block(message_envelope);
-	full_env->header.send_time = g_timer_count + delay;
-	full_env->header.dest_pid = dest_pid;
-	full_env->header.source_pid = g_current_process->pid;
-  HeapQueueStatus status = sorted_heap_queue_push(&g_delayed_msg_list, full_env);
+	HeapBlock* block = heap_block_from_user_block(msg);
+	block->header.source_pid = g_current_process->pid;
+	block->header.dest_pid = dest_pid;
 
-  if (status != QUEUE_STATUS_OK) {
+	int result = process_send_message(block);
+	if (result != RTX_OK) {
+		return RTX_ERR;
+	}
+	return process_prempt_if_necessary();
+}
+
+int k_delayed_send(int dest_pid, void *message_envelope, int delay_ms)
+{
+	PCB* pcb = process_find(dest_pid);
+	if (pcb == NULL) {
+		LOG("Attempted delayed_send to nonexistent process!");
+		return RTX_ERR;
+	}
+
+	HeapBlock* block = heap_block_from_user_block(message_envelope);
+	block->header.source_pid = g_current_process->pid;
+	block->header.dest_pid = dest_pid;
+
+	HeapQueueStatus status = timer_schedule_delayed_send(block, delay_ms);
+  if (status != HEAP_QUEUE_STATUS_OK) {
   	return RTX_ERR;
   }
 	return RTX_OK;

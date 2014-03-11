@@ -10,6 +10,18 @@ typedef enum {
 	PROCESS_STATE_BLOCKED_ON_MESSAGE = 4,
 } ProcessState;
 
+typedef enum {
+	PROCESS_PRIORITY_SYSTEM_PROCESS = 0,
+	PROCESS_PRIORITY_HIGH           = 1,
+	PROCESS_PRIORITY_MEDIUM         = 2,
+	PROCESS_PRIORITY_LOW            = 3,
+	PROCESS_PRIORITY_LOWEST         = 4,
+	PROCESS_PRIORITY_NULL_PROCESS   = 5,
+	PROCESS_PRIORITY_UNSCHEDULABLE  = 6,
+
+	PROCESS_PRIORITY_NUM            = 7
+} ProcessPriority;
+
 struct HeapBlock;
 typedef struct HeapBlock HeapBlock;
 
@@ -24,11 +36,3 @@ typedef struct PCB {
 	// Incoming messages, waiting to be processed.
 	HeapBlock* message_queue;
 } PCB;
-
-/* initialization table item */
-typedef struct {
-	int pid;
-	int priority;
-	int stack_size;
-	void (*entry_point) ();
-} PROC_INIT;

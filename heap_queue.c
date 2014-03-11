@@ -2,7 +2,7 @@
 
 HeapQueueStatus heap_queue_push(HeapBlock** pp_head, HeapBlock* p_block) {
   if (p_block == NULL) {
-    return QUEUE_STATUS_INVALID_BLOCK;
+    return HEAP_QUEUE_STATUS_INVALID_BLOCK;
   }
 
   if (*pp_head == NULL) {
@@ -16,7 +16,7 @@ HeapQueueStatus heap_queue_push(HeapBlock** pp_head, HeapBlock* p_block) {
     p_temp_block->header.p_next = p_block;
   }
 
-  return QUEUE_STATUS_OK;
+  return HEAP_QUEUE_STATUS_OK;
 }
 
 HeapBlock* heap_queue_pop(HeapBlock** pp_head) {
@@ -38,7 +38,7 @@ HeapBlock* heap_queue_top(HeapBlock** pp_head) {
 
 HeapQueueStatus sorted_heap_queue_push(HeapBlock** pp_head, HeapBlock* p_block) {
   if( p_block == NULL ) {
-    return QUEUE_STATUS_INVALID_BLOCK;
+    return HEAP_QUEUE_STATUS_INVALID_BLOCK;
   }
 
   if( *pp_head == NULL ) {
@@ -59,7 +59,7 @@ HeapQueueStatus sorted_heap_queue_push(HeapBlock** pp_head, HeapBlock* p_block) 
     }
   }
 
-  return QUEUE_STATUS_OK;
+  return HEAP_QUEUE_STATUS_OK;
 }
 
 HeapBlock* sorted_heap_queue_top(HeapBlock** pp_head) {

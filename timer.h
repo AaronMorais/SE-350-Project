@@ -1,6 +1,7 @@
 #pragma once
+
 #include "heap_queue.h"
 
-extern HeapBlock* g_delayed_msg_list;
-extern uint32_t timer_init ( uint8_t n_timer );  /* initialize timer n_timer */
-extern volatile uint32_t g_timer_count;
+extern void timer_init(void);
+extern HeapQueueStatus timer_schedule_delayed_send(HeapBlock* block, int delay_ms);
+extern uint32_t timer_elapsed_ms(void);

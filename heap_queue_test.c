@@ -31,10 +31,10 @@ static void test() {
 
   printf("Running basic tests\n");
 
-  insert(&block1, QUEUE_STATUS_OK);
-  insert(&block2, QUEUE_STATUS_OK);
-  insert(&block3, QUEUE_STATUS_OK);
-  insert(NULL, QUEUE_STATUS_INVALID_BLOCK);
+  insert(&block1, HEAP_QUEUE_STATUS_OK);
+  insert(&block2, HEAP_QUEUE_STATUS_OK);
+  insert(&block3, HEAP_QUEUE_STATUS_OK);
+  insert(NULL, HEAP_QUEUE_STATUS_INVALID_BLOCK);
 
   pop(&block1);
   pop(&block2);
@@ -43,13 +43,13 @@ static void test() {
 
   printf("Running insert popped block\n");
 
-  insert(&block2, QUEUE_STATUS_OK);
+  insert(&block2, HEAP_QUEUE_STATUS_OK);
   pop(&block2);
 
-  insert(&block3, QUEUE_STATUS_OK);
+  insert(&block3, HEAP_QUEUE_STATUS_OK);
   pop(&block3);
 
-  insert(&block1, QUEUE_STATUS_OK);
+  insert(&block1, HEAP_QUEUE_STATUS_OK);
   pop(&block1);
 }
 
@@ -92,10 +92,10 @@ void test_sort() {
 
   printf("Starting sort tests\n");
 
-  sort_insert(&block1, QUEUE_STATUS_OK);
-  sort_insert(&block2, QUEUE_STATUS_OK);
-  sort_insert(&block3, QUEUE_STATUS_OK);
-  sort_insert(NULL, QUEUE_STATUS_INVALID_BLOCK);
+  sort_insert(&block1, HEAP_QUEUE_STATUS_OK);
+  sort_insert(&block2, HEAP_QUEUE_STATUS_OK);
+  sort_insert(&block3, HEAP_QUEUE_STATUS_OK);
+  sort_insert(NULL, HEAP_QUEUE_STATUS_INVALID_BLOCK);
 
   HeapBlock* test = test_sort_queue;
   while( test != NULL ) {
@@ -110,10 +110,10 @@ void test_sort() {
   sort_pop(&block2);
   sort_pop(NULL);
 
-  sort_insert(&block2, QUEUE_STATUS_OK);
-  sort_insert(&block3, QUEUE_STATUS_OK);
+  sort_insert(&block2, HEAP_QUEUE_STATUS_OK);
+  sort_insert(&block3, HEAP_QUEUE_STATUS_OK);
   sort_pop(&block3);
-  sort_insert(&block1, QUEUE_STATUS_OK);
+  sort_insert(&block1, HEAP_QUEUE_STATUS_OK);
   sort_pop(&block1);
 
   printf("End sort tests\n");

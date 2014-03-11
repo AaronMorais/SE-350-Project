@@ -3,8 +3,8 @@
 #include "heap.h"
 
 typedef enum {
-  QUEUE_STATUS_OK = 0,
-  QUEUE_STATUS_INVALID_BLOCK = 1
+  HEAP_QUEUE_STATUS_OK = 0,
+  HEAP_QUEUE_STATUS_INVALID_BLOCK = 1
 } HeapQueueStatus;
 
 HeapQueueStatus heap_queue_push(HeapBlock** pp_head, HeapBlock* p_block);

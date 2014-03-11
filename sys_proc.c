@@ -332,7 +332,7 @@ static void wall_clock_process() {
 		switch (message->mtext[2]) {
 		case CLOCK_RESET:
 			is_running = 1;
-			time_base = 0 - g_timer_count;
+			time_base = 0 - timer_elapsed_ms();
 			break;
 
 		case CLOCK_SET: {
@@ -344,7 +344,7 @@ static void wall_clock_process() {
 				continue;
 			}
 			is_running = 1;
-			time_base = new_time_offset - g_timer_count;
+			time_base = new_time_offset - timer_elapsed_ms();
 			break;
 		}
 
@@ -365,10 +365,9 @@ static void wall_clock_process() {
 			delayed_send(PROCESS_ID_WALL_CLOCK, (void*)timer_message, 1000);
 
 			if (is_running) {
-				int display_time = g_timer_count - time_base;
 				mem_clear((char*)message, sizeof(*message));
 				message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-				wall_clock_print_time(message->mtext, g_timer_count + time_base);
+				wall_clock_print_time(message->mtext, timer_elapsed_ms() + time_base);
 				LOG("printing time: %s\n", message->mtext);
 				send_message(PROCESS_ID_CRT, (void*)message);
 			} else {
