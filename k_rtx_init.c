@@ -1,11 +1,9 @@
 #include "k_rtx_init.h"
+#include "uart.h"
 #include "uart_polling.h"
 #include "k_memory.h"
 #include "k_process.h"
 #include "timer.h"
-
-#include "uart.h"
-// #include <LPC17xx.h>
 
 void k_rtx_init(void)
 {
