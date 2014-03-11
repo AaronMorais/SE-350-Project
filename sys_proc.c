@@ -322,7 +322,7 @@ static void wall_clock_process() {
 		switch (message->mtext[2]) {
 		case CLOCK_RESET:
 			is_running = 1;
-			time_base = g_timer_count;
+			time_base = 0 - g_timer_count;
 			break;
 
 		case CLOCK_SET: {
@@ -334,7 +334,7 @@ static void wall_clock_process() {
 				continue;
 			}
 			is_running = 1;
-			time_base = g_timer_count + new_time_offset;
+			time_base = new_time_offset - g_timer_count;
 			break;
 		}
 		case CLOCK_TERMINATE:
@@ -359,7 +359,7 @@ static void wall_clock_process() {
 			int display_time = g_timer_count - time_base;
 			mem_clear((char*)message, sizeof(*message));
 			message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-			wall_clock_print_time(message->mtext, g_timer_count - time_base);
+			wall_clock_print_time(message->mtext, g_timer_count + time_base);
 			LOG("printing time: %s\n", message->mtext);
 			send_message(PROCESS_ID_CRT, (void*)message);
 		}
