@@ -249,7 +249,7 @@ void c_UART0_IRQHandler(void)
 		s_message_buffer++;
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
-			printf("Should not get here! %x\n\r", pUart->LSR);
+			printf("UART RLS Interrupt %x\n\r", pUart->LSR);
 #endif // DEBUG_0
 		return;
 	}

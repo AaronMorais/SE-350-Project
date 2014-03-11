@@ -91,7 +91,7 @@ static char *mystrcpy(char *dst, const char *src)
 }
 
 static void kcd_process_clear_command_buffer() {
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
+	for (int i = 0; i <= COMMAND_CHAR_NUM; i++) {
 		g_command_buffer[i] = COMMAND_NULL;
 	}
 	g_cur_command_buffer_index = 0;
@@ -129,7 +129,7 @@ static void kcd_process_character_input(struct msgbuf* message) {
 			// Start the buffer wait
 			push_to_command_buffer(message);
 		}
-		// Pass the message to CRT tp print and clear block
+		// Pass the message to CRT to print and clear block
 		kcd_process_send_message(PROCESS_ID_CRT, message);
 	} else if (g_cur_command_buffer_index == 1) {
 		// If it second character isn't a command, we send a message to CRT to print shit
@@ -371,6 +371,8 @@ static void wall_clock_process() {
 				wall_clock_print_time(message->mtext, g_timer_count + time_base);
 				LOG("printing time: %s\n", message->mtext);
 				send_message(PROCESS_ID_CRT, (void*)message);
+			} else {
+				release_memory_block(message);
 			}
 			break;
 		}
