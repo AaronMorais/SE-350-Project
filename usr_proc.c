@@ -17,47 +17,102 @@ typedef enum {
 
 static int test_results[TEST_NUM] = {0};
 
-static int times_proc1_ran = 0;
-
 static void strcpy(char* dst, const char* src);
 void print_test_results(void);
 
-static const char* test_phrase_one = "The quick brown fox jumped over the lazy dog\n\r";
-static const char* test_phrase_two = "The quick brown fox jumped over the lazy dog\n\r";
-		//struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-		//message_envelope->mtype = 0x22222;
-		//strcpy(message_envelope->mtext, test_phrase_two);
+static const char* test_phrase = "The quick brown fox jumped over the lazy dog\n\r";
+static int s_iteration_count = 0;
 
 static void proc1(void)
 {
+	static const int memory_block_count = 2;
+	void** memory_blocks[memory_block_count] = request_memory_block();
+	for (int i = 0; i < memory_block_count; i++) {
+		memory_blocks[i] = request_memory_block();
+	}
+	test_results[REQUEST_MEMORY_TEST] = 1;
+	for (int i = 0; i < memory_block_count; i++) {
+		release_memory_block(memory_blocks[i]);
+	}
+	test_results[RELEASE_MEMORY_TEST] = 1;
+	set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
+	set_process_priority(2, USER_PROCESS_PRIORITY_HIGH);
 	while (1) {
+		s_iteration_count++;
 		release_processor();
 	}
 }
 
 static void proc2(void)
 {
+	test_results[SET_PRIORITY_TEST] = 1;
+	set_process_priority(3, USER_PROCESS_PRIORITY_HIGH);
+	set_process_priority(4, USER_PROCESS_PRIORITY_MEDIUM);
+	set_process_priority(2, USER_PROCESS_PRIORITY_LOWEST);
+	// proc 2 should be pre-empted and this should never be set to 0
+	test_results[SET_PRIORITY_TEST] = 0;
 	while (1) {
 		release_processor();
 	}
 }
 
+static int const required_messages = 2;
+
 static void proc3(void)
 {
+	int received_messages = 0;
 	while (1) {
-		release_processor();
+		if (received_messages == required_messages) {
+			test_results[RECEIVE_MESSAGE_TEST] = 1;
+			set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
+			set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
+			set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
+			release_processor();
+		} else {
+			test_results[RECEIVE_MESSAGE_TEST] = 0;
+			void* message = receive_message(NULL);
+			received_messages++;
+			release_memory_block(message);
+		}
 	}
 }
 
 static void proc4(void)
 {
+	int sent_messages = 0;
 	while (1) {
-		release_processor();
+		test_results[SEND_MESSAGE_TEST] = 1;
+		struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+		message_envelope->mtype = 10;
+		strcpy(message_envelope->mtext, test_phrase);
+		sent_messages++;
+		if (sent_messages == required_messages) {
+			test_results[SEND_MESSAGE_TEST] = 1;
+			release_processor();
+		} else {
+			send_message(3, message_envelope);
+		}
 	}
 }
 
 static void proc5(void)
 {
+	set_process_priority(1, USER_PROCESS_PRIORITY_MEDIUM);
+	LOG("Current Iteration Count: %d", s_iteration_count);
+	
+	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+	delayed_send(5, message_envelope, 1000 / 35);
+	void* message = receive_message(NULL);
+	
+	if (s_iteration_count > 2) {
+			test_results[DELAYED_SEND_TEST] = 1;
+			LOG("Final Iteration Count: %d", s_iteration_count);
+	}
+	release_memory_block(message);
+	
+	set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
+	set_process_priority(5, USER_PROCESS_PRIORITY_LOWEST);
+	set_process_priority(6, USER_PROCESS_PRIORITY_HIGH);
 	while (1) {
 		release_processor();
 	}
