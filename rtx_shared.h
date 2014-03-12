@@ -7,7 +7,7 @@
 
 #define NULL 0
 
-#define NUM_TEST_PROCS 10
+#define NUM_TEST_PROCS 6
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -48,6 +48,7 @@ struct msgbuf {
 // testing object code.
 typedef struct {
 	int pid;
+	// The :32 is neccessary for ABI compatibility
 	UserProcessPriority priority:32;
 	int stack_size;
 	void (*entry_point) ();
