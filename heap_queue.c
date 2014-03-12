@@ -69,3 +69,24 @@ HeapBlock* sorted_heap_queue_top(HeapBlock** pp_head) {
 HeapBlock* sorted_heap_queue_pop(HeapBlock** pp_head) {
   return heap_queue_pop( pp_head );
 }
+
+void sorted_heap_queue_print(HeapBlock** pp_head) {
+	if (pp_head == NULL) {
+		printf("Heap Queue Empty!\n\r");
+		return;
+	}
+	
+	HeapBlock* p_current = *pp_head;
+	printf("Printing sorted heap queue\n\r");
+	while (p_current != NULL) {
+		// XXX TODO: FIXXX Printing
+		printf("TODO: FIX THIS!\n\r");
+		//printf("Source PID:%d   Destination PID:%d   Time:%d\n\r",  
+	//		p_current->header.source_pid,  
+	//		p_current->header.dest_pid, 
+	//		p_current->header.send_time);
+		p_current = p_current->header.p_next;
+	}
+	
+	return;
+}

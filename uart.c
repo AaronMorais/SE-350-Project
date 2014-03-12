@@ -19,6 +19,7 @@
 #include "sys_proc.h"
 #include "hot_key_helper.h"
 #include "syscall.h"
+#include "timer.h"
 
 #define DEBUG_HOTKEYS
 
@@ -198,6 +199,8 @@ void c_UART0_IRQHandler(void)
 			print_blocked_memory_queue();
 		} else if( g_char_in == 'c') {
 			print_blocked_receive_queue();
+		} else if ( g_char_in == 'd' ) {
+			timer_print_delayed_message_queue();
 		}
 #endif // DEBUG_HOTKEYS
 
@@ -234,8 +237,7 @@ void c_UART0_IRQHandler(void)
 				s_message_buffer = ((struct msgbuf*)user_block_from_heap_block(s_last_message_block))->mtext;
 			}
 		}
-
-		
+	
 		uint8_t g_char_out = *s_message_buffer;
 		uart1_put_string("Writing a char = ");
 		uart1_put_char(g_char_out);

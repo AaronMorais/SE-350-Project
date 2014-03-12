@@ -4,6 +4,7 @@
 #include "sys_proc.h"
 #include "k_memory.h"
 #include "syscall.h"
+#include "heap_queue.h"
 
 #define BIT(X) (1<<X)
 
@@ -86,6 +87,10 @@ uint32_t timer_elapsed_ms() {
 HeapQueueStatus timer_schedule_delayed_send(HeapBlock* block, int delay_ms) {
 	block->header.send_time = timer_elapsed_ms() + delay_ms;
 	return sorted_heap_queue_push(&s_delayed_msg_list, block);
+}
+
+void timer_print_delayed_message_queue() {
+	sorted_heap_queue_print(&s_delayed_msg_list);
 }
 
 /**

@@ -128,6 +128,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		if(message->mtext[0] == '%') {
 			// Start the buffer wait
 			push_to_command_buffer(message);
+		} else if (message->mtext[0] == '\r') {
+			message->mtext[1] = '\n';
+			message->mtext[2] = '\0';
 		}
 		// Pass the message to CRT to print and clear block
 		kcd_process_send_message(PROCESS_ID_CRT, message);
@@ -136,6 +139,9 @@ static void kcd_process_character_input(struct msgbuf* message) {
 		if(message->mtext[0] == (char)0x7f) {
 			backspace();
 			kcd_process_send_message(PROCESS_ID_CRT, message);
+		} else if (message->mtext[0] == '\r') {
+			message->mtext[1] = '\n';
+			message->mtext[2] = '\0';
 		} else if (g_registered_commands[message->mtext[0] - ASCII_START].process_id == -1) {
 			// Modifies the message to be "%" + mtext[0] in the message passed along
 			char second_char = message->mtext[0];
@@ -216,9 +222,6 @@ static void crt_process() {
 		if (message == NULL || message->mtype != MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
 			LOG("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
 			continue;
-		}
-		if (message->mtext[0] == '\r') {
-			message->mtext[1] = '\n';
 		}
 		LOG("=======Crt process running...");
 		send_message(PROCESS_ID_UART, message);
@@ -333,6 +336,7 @@ static void wall_clock_process() {
 		case CLOCK_RESET:
 			is_running = 1;
 			time_base = 0 - timer_elapsed_ms();
+			release_memory_block(message);
 			break;
 
 		case CLOCK_SET: {
@@ -345,13 +349,14 @@ static void wall_clock_process() {
 			}
 			is_running = 1;
 			time_base = new_time_offset - timer_elapsed_ms();
+			release_memory_block(message);
 			break;
 		}
 
 		case CLOCK_TERMINATE:
-			is_running = 0;
+			is_running = !is_running;
 			release_memory_block(message);
-			continue;
+			break;
 
 		default:
 			if (message->mtype != MESSAGE_TYPE_WALL_CLOCK) {
