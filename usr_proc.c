@@ -26,7 +26,7 @@ static int s_iteration_count = 0;
 static void proc1(void)
 {
 	static const int memory_block_count = 30;
-	void* memory_blocks[memory_block_count];
+	static void* memory_blocks[memory_block_count];
 	for (int i = 0; i < memory_block_count; i++) {
 		memory_blocks[i] = request_memory_block();
 	}
@@ -102,7 +102,7 @@ static void proc5(void)
 	delayed_send(5, message_envelope, 1000);
 	void* message = receive_message(NULL);
 	
-	if (s_iteration_count > 2) {
+	if (s_iteration_count > 0) {
 			test_results[DELAYED_SEND_TEST] = 1;
 			LOG("Final Iteration Count: %d", s_iteration_count);
 	}
