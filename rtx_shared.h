@@ -48,7 +48,8 @@ struct msgbuf {
 // testing object code.
 typedef struct {
 	int pid;
-	UserProcessPriority priority;
+	// The :32 is neccessary for ABI compatibility
+	UserProcessPriority priority:32;
 	int stack_size;
 	void (*entry_point) ();
 } PROC_INIT;

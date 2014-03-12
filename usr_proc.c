@@ -25,7 +25,7 @@ static int s_iteration_count = 0;
 
 static void proc1(void)
 {
-	static const int memory_block_count = 2;
+	static const int memory_block_count = 30;
 	void** memory_blocks[memory_block_count] = request_memory_block();
 	for (int i = 0; i < memory_block_count; i++) {
 		memory_blocks[i] = request_memory_block();
@@ -56,23 +56,22 @@ static void proc2(void)
 	}
 }
 
-static int const required_messages = 2;
+static int const required_messages = 50;
 
 static void proc3(void)
 {
 	int received_messages = 0;
 	while (1) {
+		test_results[RECEIVE_MESSAGE_TEST] = 0;
+		void* message = receive_message(NULL);
+		received_messages++;
+		release_memory_block(message);
 		if (received_messages == required_messages) {
 			test_results[RECEIVE_MESSAGE_TEST] = 1;
 			set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
 			set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
 			set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
 			release_processor();
-		} else {
-			test_results[RECEIVE_MESSAGE_TEST] = 0;
-			void* message = receive_message(NULL);
-			received_messages++;
-			release_memory_block(message);
 		}
 	}
 }
@@ -81,7 +80,6 @@ static void proc4(void)
 {
 	int sent_messages = 0;
 	while (1) {
-		test_results[SEND_MESSAGE_TEST] = 1;
 		struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 		message_envelope->mtype = 10;
 		strcpy(message_envelope->mtext, test_phrase);
@@ -101,7 +99,7 @@ static void proc5(void)
 	LOG("Current Iteration Count: %d", s_iteration_count);
 	
 	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-	delayed_send(5, message_envelope, 1000 / 35);
+	delayed_send(5, message_envelope, 1000);
 	void* message = receive_message(NULL);
 	
 	if (s_iteration_count > 2) {
