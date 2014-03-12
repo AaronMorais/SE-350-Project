@@ -48,7 +48,7 @@ struct msgbuf {
 // testing object code.
 typedef struct {
 	int pid;
-	UserProcessPriority priority:32;
+	UserProcessPriority priority;
 	int stack_size;
 	void (*entry_point) ();
 } PROC_INIT;
