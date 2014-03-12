@@ -26,7 +26,7 @@ static int s_iteration_count = 0;
 static void proc1(void)
 {
 	static const int memory_block_count = 30;
-	void** memory_blocks[memory_block_count] = request_memory_block();
+	void* memory_blocks[memory_block_count];
 	for (int i = 0; i < memory_block_count; i++) {
 		memory_blocks[i] = request_memory_block();
 	}
