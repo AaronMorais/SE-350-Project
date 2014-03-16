@@ -117,11 +117,10 @@ static void a_process() {
 
 	while (1) {
 		p = receive_message(NULL);
-		if (p->mtext[0] == '%' && p->mtext[1] == 'Z') {
-			release_memory_block(p);
+		bool percent_z_command = strequal(p->mtext, "%Z");
+		release_memory_block(p);
+		if (percent_z_command) {
 			break;
-		} else {
-			release_memory_block(p);
 		}
 	}
 

@@ -2,6 +2,8 @@
 // that we want to share between the user and kernel.
 #pragma once
 
+#include <stdbool.h>
+
 #define RTX_OK   0
 #define RTX_ERR -1
 
@@ -16,7 +18,9 @@
 #define LOG(...)
 #endif
 
+void strcpyn(char* dst, const char* src, int n);
 void strcpy(char* dst, const char* src);
+bool strequal(const char* a, const char* b);
 
 typedef enum {
 	MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
