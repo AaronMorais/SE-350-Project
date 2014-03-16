@@ -61,8 +61,6 @@ void process_init()
 	}
 }
 
-
-
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
 int process_create(ProcInit initial_state)
@@ -77,6 +75,13 @@ int process_create(ProcInit initial_state)
 	pcb->priority = initial_state.priority;
 	pcb->p_next = NULL;
 	pcb->message_queue = NULL;
+
+	if (initial_state.stack_size == 0) {
+		// i-procs don't need their own stack, they just share the stack
+		// with whatever process is currently running.
+		pcb->sp = (U32*)0xFFFFFFFF;
+		return RTX_OK;
+	}
 
 	// initilize exception stack frame (i.e. initial context)
 	U32* sp = memory_alloc_stack(initial_state.stack_size);

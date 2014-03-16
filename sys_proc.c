@@ -24,79 +24,70 @@ char g_command_buffer[COMMAND_CHAR_NUM] = {COMMAND_NULL};
 int g_cur_command_buffer_index = 0;
 
 void sys_proc_init() {
-	// Set up NULL process
-	ProcInit null_state;
-	null_state.pid = (U32)PROCESS_ID_NULL;
-	null_state.priority = PROCESS_PRIORITY_NULL_PROCESS;
-	null_state.stack_size = 0x200;
-	null_state.entry_point = &null_process;
-	process_create(null_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_NULL,
+		.priority    = PROCESS_PRIORITY_NULL_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &null_process,
+	});
 
-	// Set up A process
-	ProcInit a_state;
-	a_state.pid = (U32)PROCESS_ID_A;
-	a_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	a_state.stack_size = 0x200;
-	a_state.entry_point = &a_process;
-	process_create(a_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_A,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &a_process,
+	});
 
-	// Set up B process
-	ProcInit b_state;
-	b_state.pid = (U32)PROCESS_ID_B;
-	b_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	b_state.stack_size = 0x200;
-	b_state.entry_point = &b_process;
-	process_create(b_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_B,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &b_process,
+	});
 
-	// Set up C process
-	ProcInit c_state;
-	c_state.pid = (U32)PROCESS_ID_C;
-	c_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	c_state.stack_size = 0x200;
-	c_state.entry_point = &c_process;
-	process_create(c_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_C,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &c_process,
+	});
 
-	// Set up C process
-	ProcInit set_priority_state;
-	set_priority_state.pid = (U32)PROCESS_ID_SET_PRIORITY;
-	set_priority_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	set_priority_state.stack_size = 0x200;
-	set_priority_state.entry_point = &set_priority_process;
-	process_create(set_priority_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_SET_PRIORITY,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &set_priority_process,
+	});
 
-	// Set up wall_clock process
-	ProcInit wall_clock_state;
-	wall_clock_state.pid = (U32)PROCESS_ID_WALL_CLOCK;
-	wall_clock_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	wall_clock_state.stack_size = 0x200;
-	wall_clock_state.entry_point = &wall_clock_process;
-	process_create(wall_clock_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_WALL_CLOCK,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &wall_clock_process,
+	});
 
-	// Set up KCD process
-	ProcInit kcd_state;
-	kcd_state.pid = (U32)PROCESS_ID_KCD;
-	kcd_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	kcd_state.stack_size = 0x200;
-	kcd_state.entry_point = &kcd_process;
-	process_create(kcd_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_KCD,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &kcd_process,
+	});
 
-	// Set up CRT process
-	ProcInit crt_state;
-	crt_state.pid = (U32)PROCESS_ID_CRT;
-	crt_state.priority = PROCESS_PRIORITY_SYSTEM_PROCESS;
-	crt_state.stack_size = 0x200;
-	crt_state.entry_point = &crt_process;
-	process_create(crt_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_CRT,
+		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.stack_size  = 0x200,
+		.entry_point = &crt_process,
+	});
 
 	// TODO(maybe): Should we give the timer i-process a PCB?
 
-	// Set up UART i-process
-	ProcInit uart_state;
-	uart_state.pid = (U32)PROCESS_ID_UART;
-	uart_state.priority = PROCESS_PRIORITY_UNSCHEDULABLE;
-	uart_state.stack_size = 0x200;
-	uart_state.entry_point = NULL;
-	process_create(uart_state);
+	process_create((ProcInit) {
+		.pid         = (U32)PROCESS_ID_UART,
+		.priority    = PROCESS_PRIORITY_UNSCHEDULABLE,
+		.stack_size  = 0x0,
+		.entry_point = NULL,
+	});
 }
 
 static void null_process() {
