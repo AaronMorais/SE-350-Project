@@ -136,37 +136,37 @@ static void b_process() {
 }
 
 void message_queue_push(void** pp_head, void* p_block) {
-  if (p_block == NULL) {
-    return;
-  }
+	if (p_block == NULL) {
+		return;
+	}
 
-  if (*pp_head == NULL) {
-    *pp_head = p_block;
-  } else {
-  	void* p_temp_block = *pp_head;
-  	while (1) {
-    	void* next_block = memory_block_next(p_temp_block);
-    	if (next_block) {
-    		p_temp_block = next_block;
-    	} else {
-    		break;
-    	}
-    }
-    memory_block_set_next(p_temp_block, p_block);
-  }
+	if (*pp_head == NULL) {
+		*pp_head = p_block;
+	} else {
+		void* p_temp_block = *pp_head;
+		while (1) {
+			void* next_block = memory_block_next(p_temp_block);
+			if (next_block) {
+				p_temp_block = next_block;
+			} else {
+				break;
+			}
+		}
+		memory_block_set_next(p_temp_block, p_block);
+	}
 }
 
 void* message_queue_pop(void** pp_head) {
-  if (*pp_head == NULL) {
-    return NULL;
-  }
+	if (*pp_head == NULL) {
+		return NULL;
+	}
 
-  HeapBlock* top = *pp_head;
-  *pp_head = memory_block_next(*pp_head);
+	HeapBlock* top = *pp_head;
+	*pp_head = memory_block_next(*pp_head);
 
-  memory_block_set_next(top, NULL);
+	memory_block_set_next(top, NULL);
 
-  return top;
+	return top;
 }
 
 static void c_process() {
