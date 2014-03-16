@@ -16,13 +16,17 @@
 #define LOG(...)
 #endif
 
+void strcpy(char* dst, const char* src);
+
 typedef enum {
 	MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
 	MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
 	MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
 	MESSAGE_TYPE_WALL_CLOCK               = 3,
+	MESSAGE_TYPE_COUNT_REPORT             = 4,
+	MESSAGE_TYPE_WAKEUP_10							  = 5,
 
-	MESSAGE_TYPE_NUM                      = 4
+	MESSAGE_TYPE_NUM                      = 6
 } MessageType;
 
 // The priority levels exposed to user space.

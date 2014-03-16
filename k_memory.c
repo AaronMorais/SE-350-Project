@@ -173,3 +173,24 @@ int k_release_memory_block(void* p_mem_blk) {
 
 	return process_prempt_if_necessary();
 }
+
+void* k_memory_block_next(void* p_mem_blk) {
+  if (!p_mem_blk) return NULL;
+
+  HeapBlock* block = heap_block_from_user_block(p_mem_blk);
+  HeapBlock* next_block = block->header.p_next;
+  if (!next_block) {
+    return NULL;
+  }
+  return user_block_from_heap_block(next_block);
+}
+
+void k_memory_block_set_next(void* p_mem_blk, void* next_mem_blk) {
+  if (!p_mem_blk) return;
+
+  HeapBlock* block = heap_block_from_user_block(p_mem_blk);
+  HeapBlock* next_block = heap_block_from_user_block(next_mem_blk);
+  if (block) {
+    block->header.p_next = next_block;
+  }
+}

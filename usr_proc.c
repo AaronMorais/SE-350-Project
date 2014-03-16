@@ -17,7 +17,6 @@ typedef enum {
 
 static int test_results[TEST_NUM] = {0};
 
-static void strcpy(char* dst, const char* src);
 void print_test_results(void);
 
 static const char* test_phrase = "The quick brown fox jumped over the lazy dog\n\r";
@@ -121,13 +120,6 @@ static void proc6(void)
 	print_test_results();
 	while (1) {
 		release_processor();
-	}
-}
-
-static void strcpy(char* dst, const char* src)
-{
-	while (*src) {
-		*dst++ = *src++;
 	}
 }
 

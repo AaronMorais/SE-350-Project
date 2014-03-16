@@ -10,6 +10,9 @@ int release_processor(void);
 void* request_memory_block(void);
 int release_memory_block(void*);
 
+void* memory_block_next(void* block);
+void memory_block_set_next(void* block, void* next_block);
+
 int get_process_priority(int process_id);
 int set_process_priority(int process_id, int priority);
 
