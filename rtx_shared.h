@@ -28,9 +28,9 @@ typedef enum {
 	MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
 	MESSAGE_TYPE_WALL_CLOCK               = 3,
 	MESSAGE_TYPE_COUNT_REPORT             = 4,
-	MESSAGE_TYPE_WAKEUP_10							  = 5,
+	MESSAGE_TYPE_WAKEUP_10                = 5,
 
-	MESSAGE_TYPE_NUM                      = 6
+	MESSAGE_TYPE_NUM                      = 6,
 } MessageType;
 
 // The priority levels exposed to user space.
@@ -42,7 +42,7 @@ typedef enum {
 	USER_PROCESS_PRIORITY_LOW            = 2,
 	USER_PROCESS_PRIORITY_LOWEST         = 3,
 
-	USER_PROCESS_PRIORITY_NUM            = 4
+	USER_PROCESS_PRIORITY_NUM            = 4,
 } UserProcessPriority;
 
 struct msgbuf {

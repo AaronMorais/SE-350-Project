@@ -9,13 +9,13 @@
 #include "timer.h"
 
 static void null_process(void);
-static void crt_process(void);
-static void kcd_process(void);
-static void wall_clock_process(void);
-static void set_priority_process(void);
 static void a_process(void);
 static void b_process(void);
 static void c_process(void);
+static void set_priority_process(void);
+static void wall_clock_process(void);
+static void kcd_process(void);
+static void crt_process(void);
 
 static void* s_message_queue = NULL;
 
