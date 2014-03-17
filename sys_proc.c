@@ -146,12 +146,12 @@ void message_queue_push(void** pp_head, void* p_block) {
 		void* p_temp_block = *pp_head;
 		while (1) {
 			void* next_block = memory_block_next(p_temp_block);
-			if (next_block) {
-				p_temp_block = next_block;
-			} else {
+			if (next_block == NULL) {
 				break;
 			}
+			p_temp_block = next_block;
 		}
+		memory_block_set_next(p_block, NULL);
 		memory_block_set_next(p_temp_block, p_block);
 	}
 }
