@@ -144,17 +144,17 @@ void* k_request_memory_block(void) {
 
 		block = heap_alloc_block();
 		if (block == NULL) {
-			LOG("Warning: Blocked process scheduled to run when no blocks free!");
+			LOG("Warning: Blocked process %d scheduled to run when no blocks free!", g_current_process->pid);
 		}
 	}
 
-	LOG("alloc'd block %x", block);
+	LOG("alloc'd block 0x%x to process %d", block, g_current_process->pid);
 	return user_block_from_heap_block(block);
 }
 
 int k_release_memory_block(void* p_mem_blk) {
 	HeapBlock* block = heap_block_from_user_block(p_mem_blk);
-	LOG("k_release_memory_block: releasing block @ 0x%x\n", block);
+	LOG("k_release_memory_block: releasing block @ 0x%x from process %d", block, g_current_process->pid);
 
 	HeapStatus status = heap_free_block(block);
 	if (status != HEAP_STATUS_OK) {

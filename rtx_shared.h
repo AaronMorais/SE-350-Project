@@ -47,8 +47,9 @@ typedef enum {
 
 struct msgbuf {
 	// TODO: for all of our processes, set the type
-	MessageType mtype; /* user defined message type */
-	char mtext[1]; /* body of the message */
+	MessageType mtype:32; /* user defined message type */
+	// Hard code the size to make debuuging easier
+	char mtext[128 - 32/8]; /* body of the message */
 };
 
 // Should only be used by user procs.

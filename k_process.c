@@ -22,6 +22,7 @@
 #include "heap_queue.h"
 #include "timer.h"
 #include "sys_proc.h"
+#include "hot_key_helper.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -120,7 +121,12 @@ static PCB* scheduler(void)
 	if (next_process == NULL) {
 		LOG("Warning: No processes on ready queue.\n");
 	} else {
-		// LOG("next_process id is: %d", next_process->pid);
+		if (next_process->pid == 7 || next_process->pid == 8 || next_process->pid == 9) {
+			LOG("next_process id is: %d", next_process->pid);
+			print_ready_queue();
+			print_blocked_memory_queue();
+			print_blocked_receive_queue();
+		}
 	}
 
 	return next_process;

@@ -28,6 +28,7 @@ static int print_priority_queue(PCB** priority_queue_list) {
 }
 
 void print_ready_queue() {
+	printf("==== Ready queue! ==== \n\r");
 	int printedStuff = print_priority_queue(g_ready_process_priority_queue);
 	if( printedStuff == EMPTY ) {
 		printf("Ready queue is empty \n\r");
@@ -35,6 +36,7 @@ void print_ready_queue() {
 }
 
 void print_blocked_memory_queue() {
+	printf("==== Blocked memory queue! ==== \n\r");
 	int printedStuff = print_priority_queue(g_blocked_process_priority_queue);
 	if( printedStuff == EMPTY ) {
 		printf("Blocked memory queue is empty \n\r");
@@ -42,6 +44,7 @@ void print_blocked_memory_queue() {
 }
 
 void print_blocked_receive_queue() {
+	printf("==== Blocked received queue! ==== \n\r");
 	int printedStuff = EMPTY;
 	for (unsigned int i = 0; i < g_pcb_counter; i++) {
 		if (s_pcb_allocations_start[i].state == PROCESS_STATE_BLOCKED_ON_MESSAGE) {
