@@ -99,17 +99,17 @@ static void null_process() {
 
 static void a_process() {
 	// assuming the KCD releases memory blocks it receives
-	struct msgbuf* p = (struct msgbuf*)request_memory_block();
+	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
 
-	p->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
-	p->mtext[0] = 'Z';
-	p->mtext[1] = '\0';
-	send_message(PROCESS_ID_KCD, (void*)p);
+	register_message_envelope->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
+	register_message_envelope->mtext[0] = 'Z';
+	register_message_envelope->mtext[1] = '\0';
+	send_message(PROCESS_ID_KCD, (void*)register_message_envelope);
 
 	while (1) {
-		p = receive_message(NULL);
-		bool percent_z_command = strequal(p->mtext, "%Z");
-		release_memory_block(p);
+		struct msgbuf* command_message = receive_message(NULL);
+		bool percent_z_command = strequal(command_message->mtext, "%Z");
+		release_memory_block(command_message);
 		if (percent_z_command) {
 			break;
 		}
@@ -117,7 +117,7 @@ static void a_process() {
 
 	int num = 0;
 	while (1) {
-		p = (struct msgbuf*)request_memory_block();
+		struct msgbuf* p = (struct msgbuf*)request_memory_block();
 		p->mtype = MESSAGE_TYPE_COUNT_REPORT;
 		p->mtext[0] = num;
 		send_message(PROCESS_ID_B, (void*)p);
@@ -173,18 +173,19 @@ static void c_process() {
 	while (1) {
 		struct msgbuf* p = NULL;
 
-		if (!s_message_queue) {
+		p = message_queue_pop(&s_message_queue);
+		if (!p) {
 			p = receive_message(NULL);
-		} else {
-			p = message_queue_pop(&s_message_queue);
 		}
 
-		if (p-> mtype == MESSAGE_TYPE_COUNT_REPORT) {
+		if (p->mtype == MESSAGE_TYPE_COUNT_REPORT) {
 			int count = (int)p->mtext[0];
 
 			if ((count % 20) == 0) {
+				p->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
 				strcpy(p->mtext, "Process C\n\r");
-
+				send_message(PROCESS_ID_CRT, p);
+				
 				// hibernate
 				struct msgbuf* q = (struct msgbuf*)request_memory_block();
 				q->mtype = MESSAGE_TYPE_WAKEUP_10;
