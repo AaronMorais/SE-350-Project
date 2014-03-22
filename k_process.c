@@ -22,6 +22,7 @@
 #include "heap_queue.h"
 #include "timer.h"
 #include "sys_proc.h"
+#include "hot_key_helper.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -61,8 +62,6 @@ void process_init()
 	}
 }
 
-
-
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
 int process_create(ProcInit initial_state)
@@ -77,6 +76,13 @@ int process_create(ProcInit initial_state)
 	pcb->priority = initial_state.priority;
 	pcb->p_next = NULL;
 	pcb->message_queue = NULL;
+
+	if (initial_state.stack_size == 0) {
+		// i-procs don't need their own stack, they just share the stack
+		// with whatever process is currently running.
+		pcb->sp = (U32*)0xFFFFFFFF;
+		return RTX_OK;
+	}
 
 	// initilize exception stack frame (i.e. initial context)
 	U32* sp = memory_alloc_stack(initial_state.stack_size);
@@ -115,7 +121,12 @@ static PCB* scheduler(void)
 	if (next_process == NULL) {
 		LOG("Warning: No processes on ready queue.\n");
 	} else {
-		// LOG("next_process id is: %d", next_process->pid);
+		if (next_process->pid == 7 || next_process->pid == 8 || next_process->pid == 9) {
+			LOG("next_process id is: %d", next_process->pid);
+			print_ready_queue();
+			print_blocked_memory_queue();
+			print_blocked_receive_queue();
+		}
 	}
 
 	return next_process;

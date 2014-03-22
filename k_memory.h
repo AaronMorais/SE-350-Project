@@ -15,3 +15,6 @@ void memory_init_heap(void);
 void* k_request_memory_block(void);
 int k_release_memory_block(void*);
 void clear_pcb_stack_allocation_ptrs(void);
+
+void* k_memory_block_next(void* p_mem_block);
+void k_memory_block_set_next(void* p_mem_block, void* next_mem_block);

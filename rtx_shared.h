@@ -2,6 +2,8 @@
 // that we want to share between the user and kernel.
 #pragma once
 
+#include <stdbool.h>
+
 #define RTX_OK   0
 #define RTX_ERR -1
 
@@ -16,13 +18,19 @@
 #define LOG(...)
 #endif
 
+void strcpyn(char* dst, const char* src, int n);
+void strcpy(char* dst, const char* src);
+bool strequal(const char* a, const char* b);
+
 typedef enum {
 	MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
 	MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
 	MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
 	MESSAGE_TYPE_WALL_CLOCK               = 3,
+	MESSAGE_TYPE_COUNT_REPORT             = 4,
+	MESSAGE_TYPE_WAKEUP_10                = 5,
 
-	MESSAGE_TYPE_NUM                      = 4
+	MESSAGE_TYPE_NUM                      = 6,
 } MessageType;
 
 // The priority levels exposed to user space.
@@ -34,13 +42,14 @@ typedef enum {
 	USER_PROCESS_PRIORITY_LOW            = 2,
 	USER_PROCESS_PRIORITY_LOWEST         = 3,
 
-	USER_PROCESS_PRIORITY_NUM            = 4
+	USER_PROCESS_PRIORITY_NUM            = 4,
 } UserProcessPriority;
 
 struct msgbuf {
 	// TODO: for all of our processes, set the type
-	MessageType mtype; /* user defined message type */
-	char mtext[1]; /* body of the message */
+	MessageType mtype:32; /* user defined message type */
+	// Hard code the size to make debuuging easier
+	char mtext[128 - 32/8]; /* body of the message */
 };
 
 // Should only be used by user procs.

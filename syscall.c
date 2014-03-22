@@ -30,6 +30,20 @@ int release_memory_block(void* block)
 	return _release_memory_block((U32)k_release_memory_block, block);
 }
 
+void* memory_block_next(void* block)
+{
+	extern void* k_memory_block_next(void*);
+	extern void* _memory_block_next(U32 p_func, void* p_mem_blk) SVC;
+	return _memory_block_next((U32)k_memory_block_next, block);
+}
+
+void memory_block_set_next(void* block, void* next_block)
+{
+	extern void k_memory_block_set_next(void*, void*);
+	extern void _memory_block_set_next(U32 p_func, void* p_mem_blk, void* next_mem_block) SVC;
+	_memory_block_set_next((U32)k_memory_block_set_next, block, next_block);
+}
+
 int set_process_priority(int process_id, int priority)
 {
 	extern int k_set_process_priority(int, int);
