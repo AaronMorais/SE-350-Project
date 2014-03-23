@@ -1,7 +1,6 @@
 // This file contains userland processes to test the
 // various functionalities of the kernel.
 
-#include "usr_proc.h"
 #include "../syscall.h"
 #include "../uart_polling.h"
 

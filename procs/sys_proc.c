@@ -1,12 +1,6 @@
 #include <LPC17xx.h>
 #include "../syscall.h"
-// #include "sys_proc.h"
-// #include "k_rtx.h"
-// #include "k_process.h"
-#include "uart.h"
-// #include "heap.h"
 #include "../uart_polling.h"
-// #include "timer.h"
 #include "process_id.h"
 
 void null_process() {

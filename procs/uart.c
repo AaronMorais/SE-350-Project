@@ -8,10 +8,11 @@
 #include <LPC17xx.h>
 #include "uart.h"
 #include "../uart_polling.h"
+
 #ifdef DEBUG_0
 #include "../printf.h"
 #endif
-// #include "../rtx_shared.h"
+
 #include "../k_process.h"
 #include "../k_memory.h"
 #include "../heap.h"

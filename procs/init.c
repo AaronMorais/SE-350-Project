@@ -34,6 +34,7 @@ void procs_create_all() {
 	extern void stress_procs_create(void);
 	stress_procs_create();
 
+	// User util procs
 	extern void set_priority_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_SET_PRIORITY,
@@ -41,7 +42,6 @@ void procs_create_all() {
 		.stack_size  = 0x200,
 		.entry_point = &set_priority_process,
 	});
-
 	extern void wall_clock_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_WALL_CLOCK,
@@ -50,6 +50,7 @@ void procs_create_all() {
 		.entry_point = &wall_clock_process,
 	});
 
+	// Console input/output
 	extern void kcd_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_KCD,
@@ -57,7 +58,6 @@ void procs_create_all() {
 		.stack_size  = 0x200,
 		.entry_point = &kcd_process,
 	});
-
 	extern void crt_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_CRT,
@@ -66,13 +66,13 @@ void procs_create_all() {
 		.entry_point = &crt_process,
 	});
 
+	// I-procs
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_TIMER,
 		.priority    = PROCESS_PRIORITY_UNSCHEDULABLE,
 		.stack_size  = 0x0,
 		.entry_point = NULL,
 	});
-
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_UART,
 		.priority    = PROCESS_PRIORITY_UNSCHEDULABLE,
