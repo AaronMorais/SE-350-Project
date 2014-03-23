@@ -38,14 +38,14 @@ void procs_create_all() {
 	extern void set_priority_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_SET_PRIORITY,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.priority    = PROCESS_PRIORITY_HIGH,
 		.stack_size  = 0x200,
 		.entry_point = &set_priority_process,
 	});
 	extern void wall_clock_process(void);
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_WALL_CLOCK,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.priority    = PROCESS_PRIORITY_HIGH,
 		.stack_size  = 0x200,
 		.entry_point = &wall_clock_process,
 	});

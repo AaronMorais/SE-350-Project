@@ -9,21 +9,21 @@ static void c_process(void);
 void stress_procs_create() {
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_A,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.priority    = PROCESS_PRIORITY_HIGH,
 		.stack_size  = 0x200,
 		.entry_point = &a_process,
 	});
 
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_B,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.priority    = PROCESS_PRIORITY_HIGH,
 		.stack_size  = 0x200,
 		.entry_point = &b_process,
 	});
 
 	process_create((ProcInit) {
 		.pid         = (U32)PROCESS_ID_C,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
+		.priority    = PROCESS_PRIORITY_HIGH,
 		.stack_size  = 0x200,
 		.entry_point = &c_process,
 	});
