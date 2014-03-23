@@ -1,72 +1,22 @@
 #include <LPC17xx.h>
-#include "syscall.h"
-#include "sys_proc.h"
-#include "k_rtx.h"
-#include "k_process.h"
+#include "../syscall.h"
+// #include "sys_proc.h"
+// #include "k_rtx.h"
+// #include "k_process.h"
 #include "uart.h"
-#include "heap.h"
-#include "uart_polling.h"
-#include "timer.h"
+// #include "heap.h"
+#include "../uart_polling.h"
+// #include "timer.h"
 #include "process_id.h"
 
-static void null_process(void);
-static void set_priority_process(void);
-static void crt_process(void);
-
-void sys_proc_init() {
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_NULL,
-		.priority    = PROCESS_PRIORITY_NULL_PROCESS,
-		.stack_size  = 0x200,
-		.entry_point = &null_process,
-	});
-
-	extern void stress_procs_create(void);
-	stress_procs_create();
-
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_SET_PRIORITY,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
-		.stack_size  = 0x200,
-		.entry_point = &set_priority_process,
-	});
-
-	extern void wall_clock_create(void);
-	wall_clock_create();
-
-	extern void kcd_create(void);
-	kcd_create();
-
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_CRT,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
-		.stack_size  = 0x200,
-		.entry_point = &crt_process,
-	});
-
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_TIMER,
-		.priority    = PROCESS_PRIORITY_UNSCHEDULABLE,
-		.stack_size  = 0x0,
-		.entry_point = NULL,
-	});
-
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_UART,
-		.priority    = PROCESS_PRIORITY_UNSCHEDULABLE,
-		.stack_size  = 0x0,
-		.entry_point = NULL,
-	});
-}
-
-static void null_process() {
+void null_process() {
 	while (1) {
 		release_processor();
 		LOG("Running null process");
 	}
 }
 
-static void set_priority_process() {
+void set_priority_process() {
 	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
 	register_message_envelope->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
 	register_message_envelope->mtext[0] = 'C';
@@ -113,8 +63,7 @@ static void set_priority_process() {
 	}
 }
 
-
-static void crt_process() {
+void crt_process() {
 	while (1) {
 		struct msgbuf* message = receive_message(NULL);
 		if (message == NULL || message->mtype != MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {

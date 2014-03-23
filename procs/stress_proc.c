@@ -1,5 +1,5 @@
-#include "syscall.h"
-#include "k_process.h"
+#include "../syscall.h"
+#include "../k_process.h"
 #include "process_id.h"
 
 static void a_process(void);

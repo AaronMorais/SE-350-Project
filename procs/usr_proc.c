@@ -2,8 +2,8 @@
 // various functionalities of the kernel.
 
 #include "usr_proc.h"
-#include "syscall.h"
-#include "uart_polling.h"
+#include "../syscall.h"
+#include "../uart_polling.h"
 
 typedef enum {
 	REQUEST_MEMORY_TEST   = 0,

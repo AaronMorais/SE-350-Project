@@ -1,18 +1,6 @@
 #include "process_id.h"
-#include "k_process.h"
-#include "syscall.h"
+#include "../syscall.h"
 #include "timer.h"
-
-static void wall_clock_process(void);
-
-void wall_clock_create(void) {
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_WALL_CLOCK,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
-		.stack_size  = 0x200,
-		.entry_point = &wall_clock_process,
-	});
-}
 
 static void wall_clock_print_time(char* buf, int time) {
 	int seconds = time / 1000 % 60;
@@ -89,7 +77,7 @@ static int wall_clock_parse_time(char* message_buffer) {
 		+ s0);
 }
 
-static void wall_clock_process() {
+void wall_clock_process() {
 	static const char CLOCK_RESET     = 'R';
 	static const char CLOCK_SET       = 'S';
 	static const char CLOCK_TERMINATE = 'T';

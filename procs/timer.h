@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "heap_queue.h"
+#include "../heap_queue.h"
 
 extern void timer_init(void);
 extern HeapQueueStatus timer_schedule_delayed_send(HeapBlock* block, int delay_ms);

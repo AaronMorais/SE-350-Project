@@ -20,8 +20,7 @@
 #include "k_memory.h"
 #include "heap.h"
 #include "heap_queue.h"
-#include "timer.h"
-#include "sys_proc.h"
+#include "procs/timer.h"
 #include "hot_key_helper.h"
 
 #ifdef DEBUG_0
@@ -40,26 +39,6 @@ ProcessPriority user_priority_to_system_priority(UserProcessPriority user_priori
 
 UserProcessPriority system_priority_to_user_priority(ProcessPriority system_priority) {
 	return (UserProcessPriority)(system_priority - PROCESS_PRIORITY_HIGH);
-}
-
-void process_init()
-{
-	sys_proc_init();
-
-	// Test process initial set up
-	extern void set_test_procs(void);
-	set_test_procs();
-
-	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		PROC_INIT* usr_proc = &g_test_procs[i];
-		ProcInit proc = {0};
-		proc.pid = usr_proc->pid;
-		proc.priority = user_priority_to_system_priority(usr_proc->priority);
-		proc.stack_size = usr_proc->stack_size;
-		proc.entry_point = usr_proc->entry_point;
-		process_create(proc);
-	}
 }
 
 // Note: This must be called during system initialization, before

@@ -1,7 +1,7 @@
 #include "process_id.h"
-#include "syscall.h"
-#include "k_process.h"
-#include "heap.h"
+#include "../syscall.h"
+// TODO: Remove heap.h
+#include "../heap.h"
 
 #define NUM_COMMANDS 26
 #define ASCII_START 65
@@ -16,17 +16,6 @@ struct RegisteredCommand {
 struct RegisteredCommand g_registered_commands[NUM_COMMANDS];
 char g_command_buffer[COMMAND_CHAR_NUM] = {COMMAND_NULL};
 int g_cur_command_buffer_index = 0;
-
-static void kcd_process(void);
-
-void kcd_create() {
-	process_create((ProcInit) {
-		.pid         = (U32)PROCESS_ID_KCD,
-		.priority    = PROCESS_PRIORITY_SYSTEM_PROCESS,
-		.stack_size  = 0x200,
-		.entry_point = &kcd_process,
-	});
-}
 
 static void init_kcd_process() {
 	for( int i = 0; i < NUM_COMMANDS; i++ ) {
@@ -136,11 +125,13 @@ static void kcd_process_command_registration(struct msgbuf* message) {
 			return;
 		}
 
+		// TODO: We should use the value receive_message gives us
+		// instead of traversing into the heap block.
 		HeapBlock* block = heap_block_from_user_block( (void*)message );
 		g_registered_commands[index].process_id = block->header.source_pid;
 }
 
-static void kcd_process() {
+void kcd_process() {
 	init_kcd_process();
 	while (1) {
 		struct msgbuf* message = NULL;

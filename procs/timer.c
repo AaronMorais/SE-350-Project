@@ -1,10 +1,10 @@
 #include <LPC17xx.h>
 #include "timer.h"
-#include "k_process.h"
+#include "../k_process.h"
 #include "sys_proc.h"
-#include "k_memory.h"
-#include "syscall.h"
-#include "heap_queue.h"
+// #include "../k_memory.h"
+// #include "syscall.h"
+#include "../heap_queue.h"
 
 #define BIT(X) (1<<X)
 
