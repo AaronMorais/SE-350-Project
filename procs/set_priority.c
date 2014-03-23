@@ -1,48 +1,62 @@
 #include "../syscall.h"
 
+static const char* read_int(const char* buf, int* result) {
+	int n = 0;
+	char c = *buf;
+	bool valid = false;
+	while (c >= '0' && c <= '9') {
+		n = n*10 + (c - '0');
+		buf++;
+		c = *buf;
+		valid = true;
+	}
+	if (valid) {
+		*result = n;
+	}
+	return buf;
+}
+
+static const char* handle_set_priority_request(const char* buf) {
+	int process_id = -1;
+	buf = read_int(buf, &process_id);
+	if (process_id == -1) {
+		return "Invalid process id!\n\r";
+	}
+	int space = *buf++;
+	if (space != ' ') {
+		return "Invalid parameter format\n\r";
+	}
+	int new_priority = -1;
+	buf = read_int(buf, &new_priority);
+	if (new_priority == -1) {
+		return "Invalid process priority!\n\r";
+	}
+	int null = *buf++;
+	if (null != '\0') {
+		return "Missing null terminator!\n\r";
+	}
+
+	int result = set_process_priority(process_id, new_priority);
+	if (result == RTX_OK) {
+		return "Process priority set!\n\r";
+	} else {
+		return "Error: Could not set priority!\n\r";
+	}
+}
+
 void set_priority_process() {
-	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
-	register_message_envelope->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
-	register_message_envelope->mtext[0] = 'C';
-	register_message_envelope->mtext[1] = '\0';
-	send_message(PROCESS_ID_KCD, (void*)register_message_envelope);
+	struct msgbuf* register_msg = (struct msgbuf*)request_memory_block();
+	register_msg->mtype = MESSAGE_TYPE_KCD_COMMAND_REGISTRATION;
+	strcpy(register_msg->mtext, "C");
+	send_message(PROCESS_ID_KCD, (void*)register_msg);
 
 	while (1) {
-		struct msgbuf* message_envelope = (struct msgbuf*)receive_message(NULL);
-		char* buf = &message_envelope->mtext[3];
-		int process_id = *buf++ - '0';
-		int space = *buf++;
-		int new_priority = *buf++ - '0';
-		int null = *buf++;
+		struct msgbuf* msg = (struct msgbuf*)receive_message(NULL);
 
-		int valid = 1;
-		if (process_id > NUM_TEST_PROCS || process_id <= 0) {
-			strcpy(message_envelope->mtext, "Invalid process id!\n\r");
-			valid = 0;
-		}
-		if (space != ' ') {
-			strcpy(message_envelope->mtext, "Invalid parameter format\n\r");
-			valid = 0;
-		}
-		if (new_priority >= USER_PROCESS_PRIORITY_NUM || new_priority < 0) {
-			strcpy(message_envelope->mtext, "Invalid process priority!\n\r");
-			valid = 0;
-		}
-		if (null != '\0') {
-			strcpy(message_envelope->mtext, "Missing null terminator!\n\r");
-			valid = 0;
-		}
+		const char* result = handle_set_priority_request(&msg->mtext[3]);
 
-		if (valid) {
-			int result = set_process_priority(process_id, new_priority);
-			if (result == RTX_OK) {
-				strcpy(message_envelope->mtext, "Process priority set!\n\r");
-			} else {
-				strcpy(message_envelope->mtext, "Error could not set priority!\n\r");
-			}
-		}
-
-		message_envelope->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
-		send_message(PROCESS_ID_CRT, (void*)message_envelope);
+		msg->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+		strcpy(msg->mtext, result);
+		send_message(PROCESS_ID_CRT, (void*)msg);
 	}
 }
