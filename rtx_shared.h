@@ -3,6 +3,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define RTX_OK   0
 #define RTX_ERR -1
@@ -32,6 +33,36 @@ typedef enum {
 
 	MESSAGE_TYPE_NUM                      = 6,
 } MessageType;
+
+// Process IDs specified by the manual
+typedef enum {
+	PROCESS_ID_NULL           = 0,
+
+	// User test procs
+	PROCESS_ID_1              = 1,
+	PROCESS_ID_2              = 2,
+	PROCESS_ID_3              = 3,
+	PROCESS_ID_4              = 4,
+	PROCESS_ID_5              = 5,
+	PROCESS_ID_6              = 6,
+
+	// Stress testing procs
+	PROCESS_ID_A              = 7,
+	PROCESS_ID_B              = 8,
+	PROCESS_ID_C              = 9,
+
+	// User utility procs
+	PROCESS_ID_SET_PRIORITY   = 10,
+	PROCESS_ID_WALL_CLOCK     = 11,
+
+	// System procs
+	PROCESS_ID_KCD            = 12,
+	PROCESS_ID_CRT            = 13,
+
+	// i-procs
+	PROCESS_ID_TIMER          = 14,
+	PROCESS_ID_UART           = 15,
+} ProcessID;
 
 // The priority levels exposed to user space.
 // KERNEL CODE SHOULD NOT USE THESE, USE ProcessPriority
