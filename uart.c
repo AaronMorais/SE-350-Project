@@ -16,7 +16,7 @@
 #include "k_memory.h"
 #include "heap.h"
 #include "heap_queue.h"
-#include "sys_proc.h"
+#include "process_id.h"
 #include "hot_key_helper.h"
 #include "syscall.h"
 #include "timer.h"
