@@ -487,16 +487,6 @@
               <FilePath>.\procs\kcd.c</FilePath>
             </File>
             <File>
-              <FileName>stress_proc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\procs\stress_proc.c</FilePath>
-            </File>
-            <File>
-              <FileName>sys_proc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\procs\sys_proc.c</FilePath>
-            </File>
-            <File>
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\procs\timer.c</FilePath>
@@ -507,14 +497,34 @@
               <FilePath>.\procs\uart.c</FilePath>
             </File>
             <File>
-              <FileName>usr_proc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\procs\usr_proc.c</FilePath>
-            </File>
-            <File>
               <FileName>wall_clock.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\procs\wall_clock.c</FilePath>
+            </File>
+            <File>
+              <FileName>crt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\procs\crt.c</FilePath>
+            </File>
+            <File>
+              <FileName>set_priority.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\procs\set_priority.c</FilePath>
+            </File>
+            <File>
+              <FileName>stress.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\procs\stress.c</FilePath>
+            </File>
+            <File>
+              <FileName>testers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\procs\testers.c</FilePath>
+            </File>
+            <File>
+              <FileName>null.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\procs\null.c</FilePath>
             </File>
           </Files>
         </Group>

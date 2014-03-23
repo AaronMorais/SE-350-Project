@@ -1,14 +1,5 @@
-#include <LPC17xx.h>
 #include "../syscall.h"
-#include "../uart_polling.h"
 #include "process_id.h"
-
-void null_process() {
-	while (1) {
-		release_processor();
-		LOG("Running null process");
-	}
-}
 
 void set_priority_process() {
 	struct msgbuf* register_message_envelope = (struct msgbuf*)request_memory_block();
@@ -54,20 +45,5 @@ void set_priority_process() {
 
 		message_envelope->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
 		send_message(PROCESS_ID_CRT, (void*)message_envelope);
-	}
-}
-
-void crt_process() {
-	while (1) {
-		struct msgbuf* message = receive_message(NULL);
-		if (message == NULL || message->mtype != MESSAGE_TYPE_CRT_DISPLAY_REQUEST) {
-			LOG("ERROR: CRT_Proc received a message that was not of type CRT_DISPLAY_REQUEST");
-			continue;
-		}
-		LOG("=======Crt process running...");
-		send_message(PROCESS_ID_UART, message);
-		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-		pUart->IER = IER_RBR | IER_THRE | IER_RLS;
-		pUart->THR = '\0';
 	}
 }
