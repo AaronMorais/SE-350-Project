@@ -222,7 +222,7 @@ void c_UART0_IRQHandler(void)
 	/* THRE Interrupt, transmit holding register becomes empty */
 		if (s_message_buffer == NULL || *s_message_buffer == '\0') {
 			if (s_last_message_block) {
-				heap_free_block(s_last_message_block);
+				memory_release_block(s_last_message_block);
 				s_last_message_block = NULL;
 			}
 			PCB* uartPCB = process_find(PROCESS_ID_UART);

@@ -12,6 +12,7 @@ void memory_init(void);
 PCB* memory_alloc_pcb(void);
 U32* memory_alloc_stack(U32 size_b);
 void memory_init_heap(void);
+int memory_release_block(HeapBlock* block);
 void* k_request_memory_block(void);
 int k_release_memory_block(void*);
 void clear_pcb_stack_allocation_ptrs(void);

@@ -152,10 +152,7 @@ void* k_request_memory_block(void) {
 	return user_block_from_heap_block(block);
 }
 
-int k_release_memory_block(void* p_mem_blk) {
-	HeapBlock* block = heap_block_from_user_block(p_mem_blk);
-	LOG("k_release_memory_block: releasing block @ 0x%x from process %d", block, g_current_process->pid);
-
+int memory_release_block(HeapBlock* block) {
 	HeapStatus status = heap_free_block(block);
 	if (status != HEAP_STATUS_OK) {
 		LOG("Heap returned error code %d", status);
@@ -170,7 +167,19 @@ int k_release_memory_block(void* p_mem_blk) {
 
 	blocked_process->state = PROCESS_STATE_READY;
 	priority_queue_insert(g_ready_process_priority_queue, blocked_process);
+	return RTX_OK;
+}
 
+
+int k_release_memory_block(void* p_mem_blk) {
+	HeapBlock* block = heap_block_from_user_block(p_mem_blk);
+	LOG("k_release_memory_block: releasing block @ 0x%x from process %d", block, g_current_process->pid);
+	
+	int result = memory_release_block(p_mem_blk);
+	if (result != RTX_OK) {
+		return result;
+	}
+	
 	return process_prempt_if_necessary();
 }
 
