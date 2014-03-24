@@ -38,7 +38,7 @@ void heap_init(byte* start_address, byte* end_address) {
 	for (int i = 0; i < s_num_blocks; i++) {
 		s_free_space_bitmap[i] = BLOCK_FREE;
 	}
-
+	LOG("Number of blocks! %d", s_num_blocks);
 	s_heap_start = (HeapBlock*)(start_address + s_num_blocks);
 }
 

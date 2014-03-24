@@ -15,14 +15,14 @@ void stress_procs_create() {
 
 	process_create((ProcInit) {
 		.pid         = PROCESS_ID_B,
-		.priority    = PROCESS_PRIORITY_HIGH,
+		.priority    = PROCESS_PRIORITY_MEDIUM,
 		.stack_size  = 0x200,
 		.entry_point = &b_process,
 	});
 
 	process_create((ProcInit) {
 		.pid         = PROCESS_ID_C,
-		.priority    = PROCESS_PRIORITY_HIGH,
+		.priority    = PROCESS_PRIORITY_LOW,
 		.stack_size  = 0x200,
 		.entry_point = &c_process,
 	});
@@ -102,6 +102,19 @@ void* message_queue_pop(void** pp_head) {
 
 static void* s_message_queue = NULL;
 
+static struct msgbuf* hibernate(int duration_ms) {
+	struct msgbuf* q = (struct msgbuf*)request_memory_block();
+	q->mtype = MESSAGE_TYPE_WAKEUP_10;
+	delayed_send(PROCESS_ID_C, q, duration_ms);
+	while (1) {
+		struct msgbuf* p = (struct msgbuf*)receive_message(NULL);
+		if (p->mtype == MESSAGE_TYPE_WAKEUP_10) {
+			return p;
+		}
+		message_queue_push(&s_message_queue, p);
+	}
+}
+
 static void c_process() {
 	while (1) {
 		struct msgbuf* p = NULL;
@@ -120,17 +133,7 @@ static void c_process() {
 				send_message(PROCESS_ID_CRT, p);
 
 				// hibernate
-				struct msgbuf* q = (struct msgbuf*)request_memory_block();
-				q->mtype = MESSAGE_TYPE_WAKEUP_10;
-				delayed_send(PROCESS_ID_C, q, 10000);
-				while (1) {
-					p = receive_message(NULL);
-					if (p->mtype == MESSAGE_TYPE_WAKEUP_10) {
-						break;
-					} else {
-						message_queue_push(&s_message_queue, p);
-					}
-				}
+				p = hibernate(10000);
 			}
 		}
 
