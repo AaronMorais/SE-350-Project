@@ -29,20 +29,23 @@ typedef struct HeapBlock HeapBlock;
 
 typedef struct PCB {
 	// Stack pointer
-	U32 *sp;
-	// Process ID
-	U32 pid;
-	ProcessState state;
+	U32*            sp;
+
+	ProcessID       pid;
+	ProcessState    state;
 	ProcessPriority priority;
-	struct PCB* p_next;
+
+	struct PCB*     p_next;
 	// Incoming messages, waiting to be processed.
-	HeapBlock* message_queue;
+	HeapBlock*      message_queue;
 } PCB;
+
+typedef void (*ProcessEntryPoint)();
 
 // Use this one for system procs.
 typedef struct {
-	int pid;
-	ProcessPriority priority;
-	int stack_size;
-	void (*entry_point)();
+	int               stack_size;
+	ProcessID         pid;
+	ProcessPriority   priority;
+	ProcessEntryPoint entry_point;
 } ProcInit;

@@ -11,6 +11,9 @@ int process_prempt_if_necessary(void);
 PCB* process_find(int pid);
 int process_send_message(HeapBlock* block);
 
+// Other crap
+ProcessPriority user_priority_to_system_priority(UserProcessPriority user_priority);
+
 // Syscall interface
 int k_release_processor(void);
 int k_set_process_priority(int id, int priority);

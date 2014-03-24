@@ -20,8 +20,7 @@
 #include "k_memory.h"
 #include "heap.h"
 #include "heap_queue.h"
-#include "timer.h"
-#include "sys_proc.h"
+#include "procs/timer.h"
 #include "hot_key_helper.h"
 
 #ifdef DEBUG_0
@@ -33,34 +32,6 @@ PCB* g_current_process = NULL;
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 // User process initial xPSR value
 #define INITIAL_xPSR 0x01000000
-
-ProcessPriority user_priority_to_system_priority(UserProcessPriority user_priority) {
-	return (ProcessPriority)(user_priority + PROCESS_PRIORITY_HIGH);
-}
-
-UserProcessPriority system_priority_to_user_priority(ProcessPriority system_priority) {
-	return (UserProcessPriority)(system_priority - PROCESS_PRIORITY_HIGH);
-}
-
-void process_init()
-{
-	sys_proc_init();
-
-	// Test process initial set up
-	extern void set_test_procs(void);
-	set_test_procs();
-
-	extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
-	for (int i = 0; i < NUM_TEST_PROCS; i++) {
-		PROC_INIT* usr_proc = &g_test_procs[i];
-		ProcInit proc = {0};
-		proc.pid = usr_proc->pid;
-		proc.priority = user_priority_to_system_priority(usr_proc->priority);
-		proc.stack_size = usr_proc->stack_size;
-		proc.entry_point = usr_proc->entry_point;
-		process_create(proc);
-	}
-}
 
 // Note: This must be called during system initialization, before
 // heap_init() is called (we don't yet have dynamic processes :(.
@@ -218,25 +189,24 @@ PCB** process_find_queue(int id) {
 }
 
 // Change a process's priority. Does not preempt.
-int process_set_priority(int id, ProcessPriority priority)
+int process_set_priority(PCB* pcb, ProcessPriority priority)
 {
+	if (pcb == NULL) {
+		LOG("NULL PCB passed to process_set_priority!");
+		return RTX_ERR;
+	}
+
 	if (priority < PROCESS_PRIORITY_SYSTEM_PROCESS || priority > PROCESS_PRIORITY_LOWEST) {
 		LOG("Attempted to set priority to invalid value!");
 		return RTX_ERR;
 	}
 
-	if (id == g_current_process->pid) {
+	if (pcb->pid == g_current_process->pid) {
 		g_current_process->priority = priority;
 		return RTX_OK;
 	}
 
-	PCB* pcb = process_find(id);
-	if (pcb == NULL) {
-		LOG("Attempted to set process priority of nonexistent process!");
-		return RTX_ERR;
-	}
-
-	PCB** queue = process_find_queue(id);
+	PCB** queue = process_find_queue(pcb->pid);
 	if (queue == NULL) {
 		// Not in any queue, probably BLOCKED_ON_MESSAGE.
 		pcb->priority = priority;
@@ -301,8 +271,19 @@ int k_release_processor(void)
 	return rtx_status;
 }
 
+bool pid_is_system(int pid) {
+	return pid <= PROCESS_ID_NULL || pid >= PROCESS_ID_KCD;
+}
 
-int k_set_process_priority(int id, int user_priority)
+ProcessPriority user_priority_to_system_priority(UserProcessPriority user_priority) {
+	return (ProcessPriority)(user_priority + PROCESS_PRIORITY_HIGH);
+}
+
+UserProcessPriority system_priority_to_user_priority(ProcessPriority system_priority) {
+	return (UserProcessPriority)(system_priority - PROCESS_PRIORITY_HIGH);
+}
+
+int k_set_process_priority(int pid, int user_priority)
 {
 	// User exposed priorites should be 0-4.
 	if (user_priority < USER_PROCESS_PRIORITY_HIGH || user_priority > USER_PROCESS_PRIORITY_LOWEST) {
@@ -310,8 +291,19 @@ int k_set_process_priority(int id, int user_priority)
 		return RTX_ERR;
 	}
 
+	if (pid_is_system(pid) && !pid_is_system(g_current_process->pid)) {
+		LOG("User process %d attempted to set process priority of system process %d! Denied.", g_current_process->pid, pid);
+		return RTX_ERR;
+	}
+
+	PCB* pcb = process_find(pid);
+	if (pcb == NULL) {
+		LOG("Attempted to set process priority of nonexistent process!");
+		return RTX_ERR;
+	}
+
 	ProcessPriority priority = user_priority_to_system_priority((UserProcessPriority)user_priority);
-	int status = process_set_priority(id, priority);
+	int status = process_set_priority(pcb, priority);
 	if (status != RTX_OK) {
 		return status;
 	}
@@ -374,8 +366,8 @@ int k_delayed_send(int dest_pid, void *message_envelope, int delay_ms)
 	block->header.dest_pid = dest_pid;
 
 	HeapQueueStatus status = timer_schedule_delayed_send(block, delay_ms);
-  if (status != HEAP_QUEUE_STATUS_OK) {
-  	return RTX_ERR;
-  }
+	if (status != HEAP_QUEUE_STATUS_OK) {
+		return RTX_ERR;
+	}
 	return RTX_OK;
 }

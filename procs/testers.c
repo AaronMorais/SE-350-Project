@@ -1,13 +1,12 @@
 // This file contains userland processes to test the
 // various functionalities of the kernel.
 
-#include "usr_proc.h"
-#include "syscall.h"
-#include "uart_polling.h"
+#include "../syscall.h"
+#include "../uart_polling.h"
 
 typedef enum {
 	REQUEST_MEMORY_TEST   = 0,
-	RELEASE_MEMORY_TEST  	= 1,
+	RELEASE_MEMORY_TEST   = 1,
 	SET_PRIORITY_TEST     = 2,
 	SEND_MESSAGE_TEST     = 3,
 	RECEIVE_MESSAGE_TEST  = 4,
