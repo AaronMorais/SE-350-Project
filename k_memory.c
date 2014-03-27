@@ -148,7 +148,7 @@ void* k_request_memory_block(void) {
 		}
 	}
 
-	LOG("alloc'd block 0x%x to process %d", block, g_current_process->pid);
+	//LOG("alloc'd block 0x%x to process %d", block, g_current_process->pid);
 	return user_block_from_heap_block(block);
 }
 
@@ -173,7 +173,7 @@ int memory_release_block(HeapBlock* block) {
 
 int k_release_memory_block(void* p_mem_blk) {
 	HeapBlock* block = heap_block_from_user_block(p_mem_blk);
-	LOG("k_release_memory_block: releasing block @ 0x%x from process %d", block, g_current_process->pid);
+//	LOG("k_release_memory_block: releasing block @ 0x%x from process %d", block, g_current_process->pid);
 	
 	int result = memory_release_block(block);
 	if (result != RTX_OK) {

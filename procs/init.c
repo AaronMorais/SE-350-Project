@@ -32,7 +32,7 @@ void procs_create_all() {
 		.entry_point = &null_process,
 	});
 
-//	user_test_procs_create();
+	user_test_procs_create();
 
 	// Stress-testing procs
 	extern void stress_procs_create(void);

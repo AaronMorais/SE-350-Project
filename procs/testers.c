@@ -3,6 +3,7 @@
 
 #include "../syscall.h"
 #include "../uart_polling.h"
+#include <LPC17xx.h>
 
 typedef enum {
 	REQUEST_MEMORY_TEST   = 0,
@@ -21,17 +22,56 @@ void print_test_results(void);
 static const char* test_phrase = "The quick brown fox jumped over the lazy dog\n\r";
 static int s_iteration_count = 0;
 
+static LPC_TIM_TypeDef *s_test_timer;
+
+static void timer_test_init() {
+	s_test_timer = (LPC_TIM_TypeDef *) LPC_TIM1;
+	s_test_timer->TCR = 1;
+}
+
+static void print_current_time() {
+	int current_time = s_test_timer->TC; 
+	LOG("The current time is %d", current_time);
+}
+
 static void proc1(void)
 {
-	static const int memory_block_count = 30;
+	timer_test_init();
+	static const int memory_block_count = 50;
 	static void* memory_blocks[memory_block_count];
+
+	int start_time = 0;
+	int end_time = 0;
+	LOG("Started single request single release");
+	for (int i = 0; i < 1000; i++) {
+		start_time = s_test_timer->TC;
+		memory_blocks[0] = request_memory_block();
+		end_time = s_test_timer->TC;
+		LOG("Request: %d", end_time - start_time);
+		start_time = s_test_timer->TC;
+		release_memory_block(memory_blocks[0]);
+		end_time = s_test_timer->TC;
+		LOG("Release: %d", end_time - start_time);
+	}
+	LOG("Finished single request single release");
+	LOG("Started requesting");
 	for (int i = 0; i < memory_block_count; i++) {
+		start_time = s_test_timer->TC;
 		memory_blocks[i] = request_memory_block();
+		end_time = s_test_timer->TC;
+		LOG("%d", end_time - start_time);
 	}
+	LOG("Finished requesting");
 	test_results[REQUEST_MEMORY_TEST] = 1;
+	LOG("Started releasing");
 	for (int i = 0; i < memory_block_count; i++) {
+		start_time = s_test_timer->TC;
 		release_memory_block(memory_blocks[i]);
+		end_time = s_test_timer->TC;
+		LOG("%d", end_time - start_time);
 	}
+	LOG("Finished releasing");
+
 	test_results[RELEASE_MEMORY_TEST] = 1;
 	set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
 	set_process_priority(2, USER_PROCESS_PRIORITY_HIGH);
@@ -177,5 +217,5 @@ void print_test_results()
 	uart0_put_string("/");
 	uart0_put_char(TEST_NUM + '0');
 	uart0_put_string(" tests FAIL\r\n");
-	uart0_put_string("G002_test: END\n");
+	uart0_put_string("G002_test: END\r\n");
 }

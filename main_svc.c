@@ -15,7 +15,7 @@
 #include <LPC17xx.h>
 #include <system_LPC17xx.h>
 #include "syscall.h"
-#ifdef DEBUG_0
+#ifdef DEBUG_0 
 #include "uart_polling.h"
 #include "printf.h"
 #endif /* DEBUG_0 */

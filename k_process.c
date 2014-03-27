@@ -161,7 +161,7 @@ int process_prempt_if_necessary(void)
 		return RTX_OK;
 	}
 
-	LOG("Premepting %d with %d", g_current_process->pid, top->pid);
+//	LOG("Premepting %d with %d", g_current_process->pid, top->pid);
 	return k_release_processor();
 }
 
