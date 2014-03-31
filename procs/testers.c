@@ -84,8 +84,7 @@ static void proc1(void)
 static void proc2(void)
 {
 	test_results[SET_PRIORITY_TEST] = 1;
-	set_process_priority(3, USER_PROCESS_PRIORITY_HIGH);
-	set_process_priority(4, USER_PROCESS_PRIORITY_MEDIUM);
+	set_process_priority(4, USER_PROCESS_PRIORITY_HIGH);
 	set_process_priority(2, USER_PROCESS_PRIORITY_LOWEST);
 	// proc 2 should be pre-empted and this should never be set to 0
 	test_results[SET_PRIORITY_TEST] = 0;
@@ -98,68 +97,95 @@ static int const required_messages = 50;
 
 static void proc3(void)
 {
-	int received_messages = 0;
-	while (1) {
-		test_results[RECEIVE_MESSAGE_TEST] = 0;
+	LOG("Started receiving messages");
+	for (int i = 0; i < required_messages; i++) {
+		int start_time = 0;
+		int end_time = 0;
+		start_time = s_test_timer->TC;
 		void* message = receive_message(NULL);
-		received_messages++;
+		end_time = s_test_timer->TC;
+		LOG("Receive: %d", end_time - start_time);
 		release_memory_block(message);
-		if (received_messages == required_messages) {
-			test_results[RECEIVE_MESSAGE_TEST] = 1;
-			set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
-			set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
-			set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
-			release_processor();
-		}
 	}
+	LOG("Finished receiving messages");
+	set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
+	set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
+	set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
+	release_processor();
 }
 
 static void proc4(void)
 {
-	int sent_messages = 0;
-	while (1) {
+	LOG("Started sending messages");
+	for (int i = 0; i < required_messages; i++) {
 		struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
 		message_envelope->mtype = 10;
 		strcpy(message_envelope->mtext, test_phrase);
-		sent_messages++;
-		if (sent_messages == required_messages) {
-			test_results[SEND_MESSAGE_TEST] = 1;
-			release_processor();
-		} else {
-			send_message(3, message_envelope);
-		}
+		int start_time = 0;
+		int end_time = 0;
+		start_time = s_test_timer->TC;
+		send_message(3, message_envelope);
+		end_time = s_test_timer->TC;
+		LOG("Send: %d", end_time - start_time);
 	}
+	LOG("Finished sending messages");
+	set_process_priority(3, USER_PROCESS_PRIORITY_HIGH);
+	set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
+	release_processor();
 }
 
+int sample_size = 500;
 static void proc5(void)
 {
-	set_process_priority(1, USER_PROCESS_PRIORITY_MEDIUM);
-	LOG("Current Iteration Count: %d", s_iteration_count);
-	
-	struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
-	delayed_send(5, message_envelope, 1000);
+	set_process_priority(6, USER_PROCESS_PRIORITY_HIGH);
 	void* message = receive_message(NULL);
-	
-	if (s_iteration_count > 0) {
-			test_results[DELAYED_SEND_TEST] = 1;
-			LOG("Final Iteration Count: %d", s_iteration_count);
-	}
 	release_memory_block(message);
 	
-	set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
-	set_process_priority(5, USER_PROCESS_PRIORITY_LOWEST);
-	set_process_priority(6, USER_PROCESS_PRIORITY_HIGH);
-	while (1) {
+	while (true) {
+		int start_time = 0;
+		int end_time = 0;
+		start_time = s_test_timer->TC;
+		void* message = receive_message(NULL);
+		end_time = s_test_timer->TC;
+		LOG("Receive: %d", end_time - start_time);
+		release_memory_block(message);
 		release_processor();
 	}
 }
 
 static void proc6(void)
 {
-	print_test_results();
-	while (1) {
+	LOG("Started send-receive together");
+	for (int i = 0; i < sample_size; i++) {
+		struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+		message_envelope->mtype = 10;
+		strcpy(message_envelope->mtext, test_phrase);
+		int start_time = 0;
+		int end_time = 0;
+		start_time = s_test_timer->TC;
+		send_message(5, message_envelope);
+		end_time = s_test_timer->TC;
+		LOG("Send: %d", end_time - start_time);
 		release_processor();
 	}
+	LOG("Finished send-receive together");
+	
+	LOG("Started variable message length together");
+	for (int i = 0; i < sample_size; i++) {
+		struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+		message_envelope->mtype = 10;
+		for (int j = 0; j < i; j++) {
+			message_envelope->mtext[j] = *"a";
+		}
+		int start_time = 0;
+		int end_time = 0;
+		start_time = s_test_timer->TC;
+		send_message(5, message_envelope);
+		end_time = s_test_timer->TC;
+		LOG("Send: %d", end_time - start_time);
+		release_processor();
+	}
+	LOG("Finished variable message length together");
 }
 
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
