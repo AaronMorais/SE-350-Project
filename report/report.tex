@@ -117,11 +117,13 @@
 \part{Introduction}
 % TODO INTRODUCTION
 
-\part{Kernel API}
+\part{Awesome RTX}
 % Make sure to include pseudocode and testing, if appropriate.
 
-\chapter{RTX Primitives and Services}
+\chapter{Kernel API}
 
+\section{Description}
+This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Details of the implementation can be found in section TODO or from the raw code.
 
 \section{Memory Management}
 \subsection{Description}
@@ -157,7 +159,8 @@ void user_process() {
 
 \par All processes will share the same heap memory pool. Thus, this primitive will block the process if the OS does not have anymore memory blocks to give out at the time, thus effecting the execution of the process. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check for segmentation faulting. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
 
-\newpage
+\bigskip
+
 \subsection{Releasing Memory}
 \begin{lstlisting}
 int release_memory_block(void *memory_block);
@@ -303,32 +306,25 @@ void user_process() {
 }
 \end{lstlisting}
 
-\section{Description}
 
-\section{Process Priority}
-
-% TODO Sections are a bit fucked up after this point
-
-\section{Interrupts and Their Han}
-% Make sure to include pseudo-code and testing, if appropriate.
+\chapter{Interrupts and Their Handler and Processes}
 
 \section{Description}
 
-\subsection{Block Layer}
+\section{UART}
 
-\subsection{Metadata Layer}
+\section{TIMER}
 
-\section{Theoretical Analysis}
 
-\section{Measurements}
-
-\chapter{Interrupts and Their Handlers / Processes}
-
-\section{Description}
+% TODO Make sure to include pseudo-code and testing, if appropriate.
 
 \chapter{System and User Processes}
 
 \section{Description}
+
+\section{System Processes}
+
+\section{User Processes}
 
 \subsection{`funProcess'}
 
@@ -340,19 +336,52 @@ void user_process() {
 
 \subsection{`releaseProcess'}
 
-\part{Initialization}
 
-\part{Testing}
 
-\part{Timing}
+\chapter{Initialization}
 
-\chapter{Acquiring Timings}
+\section{Description}
+
+\section{Memory Layout}
+
+\section{Process Mailbox}
+
+
+
+\chapter{Major Design Changes}
+
+\section{Description}
+
+\section{Heap}
+
+\section{Scheduler}
+
+\section{What We Learned}
+
+
+
+\part{Testing and Analysis}
+
+
+\chapter{Testing}
+
+\section{Description}
+
+\section{Theoretical Analysis}
+
+\section{Measurements}
+
+
+% TODO Sections are a bit fucked up after this point
 
 \chapter{Timing Analysis}
 
-\part{What We Learned}
+\section{Description}
 
-\part{Major Design Changes}
+\section{Acquiring Timings}
+
+
+
 
 
 \appendix
