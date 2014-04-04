@@ -164,17 +164,37 @@ int release_memory_block(void *memory_block);
 
 \par The second functionality supported by the OS is the ability to release memory. This is a non-blocking call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
 
-\chapter{Processor Management}
-% int release_processor();
+\bigskip
 
-\chapter{Processor Management}
+\section{Processor Management}
+\begin{lstlisting}
+int release_processor();
+\end{lstlisting}
+
+\par The OS manages processes as though it is on a uniprocessor. A priority based scheme with context switching is used for scheduling processes. A process can voluntarily release the processor to the OS at any time during its execution. If there are errors in the call, it will return an error without releasing the processor to the OS. If there are no errors and the invoking process is ready to execute, it is put to the end of the ready queue of its priority. If there are no other processes of equal or higher priority, the process will be chosen to execute again. However, if there is, another process may be chosen for execution. Below is an example which prints an increasing number and releases the processor at every turn.
+
+\begin{lstlisting}
+void user_process() {
+    static num = 0;
+    while(1) {
+        print(num++);
+        release_processor();
+    }
+}
+\end{lstlisting}
+
+\section{Interprocess Communication}
+
+
 
 \section{Description}
 
-\section{Running Time Analysis}
+\section{Process Priority}
 
-\chapter{Memory Allocator}
-% Make sure to include pseudocode and testing, if appropriate.
+% TODO Sections are a bit fucked up after this point
+
+\section{Interrupts and Their Han}
+% Make sure to include pseudo-code and testing, if appropriate.
 
 \section{Description}
 
@@ -186,7 +206,7 @@ int release_memory_block(void *memory_block);
 
 \section{Measurements}
 
-\part{Interrupts and Their Handlers / Processes}
+\chapter{Interrupts and Their Handlers / Processes}
 
 \section{Description}
 
