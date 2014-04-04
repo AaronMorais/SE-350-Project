@@ -213,7 +213,7 @@ struct msgbuf {
 };
 \end{lstlisting}
 % TODO (Justin) make sure that's okay for the mtext and type:P
-\par The primitive returns a status which validates the, message, receiver process ID, and ready queue. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
+\par The primitive returns a status which validates the, message, receiver process ID, and ready queue. User processes is allowed to send a message to any user processes or system processes such as the KCD. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
 \newline
 \subsection{Receive Messages}
 \label{sec:receive_message}
@@ -266,6 +266,42 @@ int delayed_send(int process_id, void *message_envelope, int delay);
 
 \par This primitive is very similar to the primitive of send\_message in section \ref{sec:send_message} with the addition of a delay. Instead of sending the message immediately, the message will be sent delay number of milliseconds. The message\_envelope is constructed in the same way. The process\_id will be the receiving process. The execution of the process may be preempted after a the delay period if the receiving process was blocked on receive\_message and has a higher priority.
 
+\section{Process Priority}
+\par The RTX schedules processes based on a fixed priority scheme. Thus, the RTX provides the utility to change priorities and to get the process priority of any user processes.
+
+\subsection{Set Process Priority}
+\label{sec:set_process_priority}
+\begin{lstlisting}
+int set_process_priority(int process_id, int priority);
+\end{lstlisting}
+
+This primitive allows user processes to set the priorities of other user processes. User processes are not allowed to set the priorities of any system processes. System processes, however, are allowed to set the priorities of other system or i-processes. The primitive validates if the current process is allowed to set the priority of the process with process\_id and whether it's a valid process\_id. It also checks the validity of the priority. An error status of RTX\_ERR is given back if the validation does not pass. If properly set, a status of RTX\_OK is returned. The caller of this primitive is not blocked but can be preempted if the priority of the set process is higher. Otherwise, the process continues to execute. An example usage is shown in section \ref{sec:get_process_priority}
+
+\bigskip
+
+\subsection{Get Process Priority}
+\label{sec:get_process_priority}
+\begin{lstlisting}
+int get_process_priority(int process_id);
+\end{lstlisting}
+Given a process\_id, this primitive gives back the priority of any processes including any system or i-processes to a user process. A invalid process\_id will result in a RTX\_ERR status. Otherwise, a RTX\_OK is returned to the caller. An example usage of both get and set process priority is shown below.
+
+\begin{lstlisting}
+// Assume this process has a process ID of 3
+// and there is another user process with ID of 1
+void user_process() {
+    int process_priority_3 = get_process_priority(3);
+    if( process_priority_3 == USER_PROCESS_PRIORITY_MEDIUM ) {
+        // Make process 1 have a higher priority
+        // This call will preempt
+        int status = set_process_priority(
+                        1, USER_PROCESS_PRIORITY_HIGH );
+        if( status == RTX_ERR ) {
+            release_processor();
+        }
+    }
+}
+\end{lstlisting}
 
 \section{Description}
 
