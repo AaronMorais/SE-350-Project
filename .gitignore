@@ -55,6 +55,6 @@ kernel.map
 *.lof
 *.fdb_latexmk
 *.synctex.gz
-
+*.fls
 # Unit test binaries
 *_test
