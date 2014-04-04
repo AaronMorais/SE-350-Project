@@ -18,6 +18,7 @@
 \lstset{
     backgroundcolor=\color{light-gray}, % Background color
     basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+    belowskip=1pt,
     breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
     breaklines=true,                 % sets automatic line breaking
     captionpos=b,                    % sets the caption-position to bottom
@@ -184,7 +185,86 @@ void user_process() {
 \end{lstlisting}
 
 \section{Interprocess Communication}
+\par Apart from heap memory, processes do not share information. Thus, communication between processes is done through message-based interprocess communication (IPC). Details of the internal layout of process mailboxes can be found in section TODO. The RTX gives three primitives to carry out this task, one for sending, one for delayed sending, and one for receiving.
 
+\subsection{Send Messages}
+\label{sec:send_message}
+\begin{lstlisting}
+int send_message(int process_id, void *message_envelope);
+\end{lstlisting}
+
+\par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX (see section TODO for more information). The message data has a predefined size which is a MessageType smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message.
+\newline
+
+\begin{lstlisting}
+typedef enum {
+    MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
+    MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
+    MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
+    MESSAGE_TYPE_WALL_CLOCK               = 3,
+    MESSAGE_TYPE_USER_DEFINED             = 4,
+
+    MESSAGE_TYPE_NUM                      = 5,
+} MessageType;
+
+struct msgbuf {
+    MessageType mtype;
+    char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
+};
+\end{lstlisting}
+% TODO (Justin) make sure that's okay for the mtext and type:P
+\par The primitive returns a status which validates the, message, receiver process ID, and ready queue. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
+\newline
+\subsection{Receive Messages}
+\label{sec:receive_message}
+% TODO put labels on sections so we can reference them throughout without worrying about changing numbers
+
+\begin{lstlisting}
+void *receive_message(int *sender_id);
+\end{lstlisting}
+\par A process can use this primitive to receive messages from other processes. Unless the sender\_id is NULL, the sender of the message will be written to the sender\_id parameter. The current process will check its mailbox for any incoming messages. If there are no messages in its mailbox, the routine will block the process and select another process for execution. Execution of the process will occur again if a message is sent from another process and this process has the highest priority in the ready queue. The message\_envelope are heap memory underneath. Thus, it is required that unless the process passes the message onto another process, the final receiving process must release the message\_envelope block after its usage. An example of send\_message and receive\_message is shown below.
+
+\begin{lstlisting}
+void process_send() {
+    while(1) {
+        // Request one block for process_receive to use
+        struct msgbuf* message_envelope
+            = (struct msgbuf*)request_memory_block();
+        message_envelope->mtype = MESSAGE_TYPE_USER_DEFINED_1;
+        strcpy(message_envelope->mtext, "process message");
+        send_message(PROCESS_RECEIVE_ID, message_envelope);
+
+        // Send another block for process_receive to send to CRT
+        struct msgbuf* message_envelope
+            = (struct msgbuf*)request_memory_block();
+        message_envelope->mtype = MESSAGE_TYPE_USER_DEFINED_2;
+        strcpy(message_envelope->mtext, "print this");
+        send_message(PROCESS_RECEIVE_ID, message_envelope);
+    }
+}
+
+void process_receive() {
+    while(1) {
+        struct msgbuf* message
+            = (struct msgbuf*)receive_message(NULL);
+        if( message->mtype = MESSAGE_TYPE_USER_DEFINED_2 ) {
+            // Send to CRT for printing; do not release memory
+            message->mtype = MESSAGE_TYPE_CRT_DISPLAY_REQUEST;
+            send_message(PROCESS_ID_CRT, message);
+        } else {
+            // Do something with the message then release it
+            release_memory_block( (void*)message );
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{Receive Messages}
+\begin{lstlisting}
+int delayed_send(int process_id, void *message_envelope, int delay);
+\end{lstlisting}
+
+\par This primitive is very similar to the primitive of send\_message in section \ref{sec:send_message} with the addition of a delay. Instead of sending the message immediately, the message will be sent delay number of milliseconds. The message\_envelope is constructed in the same way. The process\_id will be the receiving process. The execution of the process may be preempted after a the delay period if the receiving process was blocked on receive\_message and has a higher priority.
 
 
 \section{Description}
