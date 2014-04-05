@@ -120,8 +120,137 @@
 \part{Awesome RTX}
 % Make sure to include pseudocode and testing, if appropriate.
 
-\chapter{Kernel API}
+\chapter{Global Variables}
+\section{Description}
+There are various amounts of variables used throughout the RTX. This section describes the global variables that are used to accomplish tasks in the RTX. Other global variables such as the global process IDs can be seen in the appendix TODO. There are three major sections that required global variables and data structures: memory management in the heap, scheduler, and user processes.
 
+\section{Heap Data Structures}
+The RTX provides functionality to request and release memory from the heap, which is shared and stored in the RAM of the board. There is one main data structure that stores each memory block.
+
+\begin{lstlisting}
+typedef struct HeapBlockHeader {
+  int source_pid;
+  int dest_pid;
+  unsigned int send_time;
+  struct HeapBlock* p_next;
+  struct HeapBlock* p_next_usr;
+} HeapBlockHeader;
+
+#define HEAP_BLOCK_SIZE 128
+
+typedef struct HeapBlock {
+  HeapBlockHeader header;
+  byte            data[HEAP_BLOCK_SIZE];
+} HeapBlock;
+
+\end{lstlisting}
+
+The HeapBlock structure stores a header and the content of the block. When a memory is requested, users are given the data with a adjustable size of HEAP\_BLOCK\_SIZE and does not have knowledge of the header. Helper functions in the RTX turn the user block back into kernel block by adjusting the pointer of the block. Each header contains information about message passing (if the block is used for this purpose) and a pointer to the next block (for kernel memory management purposes). This global data structure is used in the following sections:
+\begin{enumerate}
+    \item {\bf Memory Management} - this section uses this data structure to give and receive back heap memory blocks
+    \item {\bf Process Message Passing} - this section uses this data structure pass messages between processes. Message envelope are implemented as HeapBlocks.
+    \item {\bf Timer I-Process} - The process uses message passing to send delayed messages.
+    \item {\bf UART I-Process} - The process uses message passing to process input and output characters.
+    \item {\bf CRT I-Process} - The process receives messages and passes message for terminal output.
+    \item {\bf KCD Process} - The KCD uses message passing to CRT for display and user processes for processing.
+\end{enumerate}
+
+
+\section{Process Scheduler Data Structures}
+The RTX has a fixed-priority based scheduler that acts as a uniprocessor system. Context switching is required and the following data structures are used for this purpose.
+
+\subsection{Ready and Blocked Priority Queues}
+On initialization, each in memory process is given a process control block (PCB). The PCB contains data on the process such as its process ID, stack pointer, process state, and priority that the kernel will use for scheduling. The blocked and ready priority queues of PCBs keep track of which processes are blocked and ready for execution. Each process is in one of the 5 states at all time listed in ProcessState. More details about the states can be found in section TODO. Processes that are in state PROCES\_STATE\_READY are on the ready queue. Processes in state PROCESS\_STATE\_BLOCKED are in the blocked queue. There is also an implicit queue for processes blocked on message but we won't go into that in this section.
+
+\begin{lstlisting}
+typedef enum {
+  PROCESS_STATE_NEW                = 0,
+  PROCESS_STATE_READY              = 1,
+  PROCESS_STATE_RUNNING            = 2,
+  PROCESS_STATE_BLOCKED            = 3,
+  PROCESS_STATE_BLOCKED_ON_MESSAGE = 4,
+} ProcessState;
+
+typedef struct PCB {
+  // Stack pointer
+  U32*            sp;
+
+  ProcessID       pid;
+  ProcessState    state;
+  ProcessPriority priority;
+
+  struct PCB*     p_next;
+  // Incoming messages, waiting to be processed.
+  HeapBlock*      message_queue;
+} PCB;
+
+PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
+PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
+\end{lstlisting}
+
+PCBs and the priority queues are used in the following sections:
+\begin{enumerate}
+    \item {\bf Memory Management} - When a process requests memory without available memory blocks, the memory management unit must add the process to a blocked queue. When a memory block is released, the process with the highest priority in the blocked queue (if any) is moved into the ready queue. Thus, the memory management unit must have access to the PCBs, and blocked and ready queues in order to accomplish these task.
+    \item {\bf Process Management} - The process management unit is the one that schedules processes and keep track of the process priorities. Ready processes are taken from the ready queue to be ran if the current process is blocked or finished its execution. The process management unit also takes care of updating the two priority queues when the priority of a process has been changed.
+    \item {\bf UART Process} - The UART Process needs access to the PCB. The PCBs also contain a mailbox for messages. The UART displays any incoming messages to the terminal display. Thus, it needs to know the PCB structure in order to gain access to the mailbox.
+\end{enumerate}
+
+\subsection{Priorities}
+The RTX is based on a fixed-priority scheduler with 5 user process priorities and 2 system process priorities given below. Users are given priorities PROCESS\_PRIORITY\_HIGH to PROCESS\_PRIORITY\_LOWEST. PROCESS\_PRIORITY\_NULL\_PROCESS is given to the null process and PROCESS\_PRIORITY\_SYSTEM\_PROCESS are given to critical processes such as the KCD, CRT, timer I-process, and UART I-process.
+
+\begin{lstlisting}
+typedef enum {
+  PROCESS_PRIORITY_INVALID        = 0,
+  PROCESS_PRIORITY_SYSTEM_PROCESS = 1,
+  PROCESS_PRIORITY_HIGH           = 2,
+  PROCESS_PRIORITY_MEDIUM         = 3,
+  PROCESS_PRIORITY_LOW            = 4,
+  PROCESS_PRIORITY_LOWEST         = 5,
+  PROCESS_PRIORITY_NULL_PROCESS   = 6,
+  PROCESS_PRIORITY_UNSCHEDULABLE  = 7,
+
+  PROCESS_PRIORITY_NUM            = 8
+} ProcessPriority;
+
+typedef enum {
+  USER_PROCESS_PRIORITY_HIGH           = 0,
+  USER_PROCESS_PRIORITY_MEDIUM         = 1,
+  USER_PROCESS_PRIORITY_LOW            = 2,
+  USER_PROCESS_PRIORITY_LOWEST         = 3,
+
+  USER_PROCESS_PRIORITY_NUM            = 4,
+} UserProcessPriority;
+\end{lstlisting}
+
+This priority structure is used by the process management unit to schedule and block processes based on their priorities. The RTX provides users with UserProcessPriority while keeping an internal structure of ProcessPriority.
+
+\subsection{Message Passing}
+Message passing is a way for interprocess communication provided by the RTX. Messages are created in the form of a msgbuf structure, which includes the type and content. Some processes such as the CRT and KCD will require a certain type of message to be sent before the message can be processed correctly.
+
+\begin{lstlisting}
+typedef enum {
+  MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
+  MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
+  MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
+  MESSAGE_TYPE_WALL_CLOCK               = 3,
+  MESSAGE_TYPE_COUNT_REPORT             = 4,
+  MESSAGE_TYPE_WAKEUP_10                = 5,
+
+  MESSAGE_TYPE_NUM                      = 6,
+} MessageType;
+
+struct msgbuf {
+  MessageType mtype:
+  char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
+};
+
+\end{lstlisting}
+
+The message passing data structure is evident in the KCD, wall clock process, and all I-processes. It can also be used in all user processes.
+
+
+\chapter{Kernel API}
+% TODO add a section on implementation details and run time analysis.
 \section{Description}
 This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Details of the implementation can be found in section TODO or from the raw code.
 
