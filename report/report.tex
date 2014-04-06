@@ -602,9 +602,12 @@ An example of this usage is the wall clock process (described in more detail in 
 
 \section{Description}
 
-\section{Theoretical Analysis}
+In order to test the operating system there were 3 main methods of testing: Unit Tests, Testing Processes, and Manual Testing. The latter was used for the CRT and KCD. Unit tests were implemented for the various data structures in the operating system. For the different queues that were implemented, the unit tests would check the push and pop functionalities. The heap was also unit tested. In this case there were unit tests in place to validate expected behaviour for memory blocks being continuously freed, validation for misaligned memory, freeing invalid blocks, and double freeing. All unit tests set up a specific state, called a specific method, and had its results verified against the expected.
 
-\section{Measurements}
+At each iteration of development, processes were designed to test the newly added features. For instance, after the first iteration 6 processes were implemented to automatically test the functionality of setting priority, releasing processor, releasing memory, requesting memory, blocking, and unblocking. This was accomplished by having the processes use the new functionality, and keeping track of the number of times each process was running and the order in which they ran. As the processes ran, certain test flags were set to see the progress of the testing suite. At the second and third iteration the processes were designed in the same way but for the following functionality: sending messages, receiving messages, and delayed messages.  When all the processes finished running, the results of the tests would be displayed indicating the number of tests that passed and which ones.
+
+While testing the CRT and KCD, the majority of the tests were manual. These processes are involved with keyboard inputs and visual feedback. As such they were tested with manual input and validations. 
+
 
 \chapter{Timing Analysis}
 
