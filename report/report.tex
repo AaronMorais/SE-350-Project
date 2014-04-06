@@ -449,11 +449,97 @@ void user_process() {
 
 \chapter{System and User Processes}
 
-\section{Description}
-
 \section{System Processes}
+\subsection{Description}
+The RTX consists of system processes that sit on top of the kernel. These system processes usually have higher priority than user processes because they carry out tasks for the OS that the kernel cannot do otherwise. System processes in this RTX includes the null process, and I/O processes.
+
+\subsection{Null Process}
+The design of the RTX requires that a process should always be executing. Thus, if there are no user or other system processes, the null process executes. The only job of the null process is to keep the processor running. It has the lowest priority of any process using the RTX. If any process is added into the ready queue during the execution of this process, a preemption will occur and the new process will take control of the processor. The final implementation follows the following form.
+
+ \begin{algorithmic}
+  \Function{null\_process}{}
+    \While{true}
+    \EndWhile
+  \EndFunction
+ \end{algorithmic}
+
+\subsection{CRT Display Process}
+\label{sec:crt_process}
+% TODO make footnotes for details
+The RTX supports output to terminal display. CRT is a system process that the RTX uses to accomplish the task of display. The CRT process depends on the UART I-Process (details of the UART can be found in section TODO). The CRT is implemented using the following algorithm.
+
+\begin{algorithmic}
+  \Function{crt\_process}{}
+    \While{true}
+        \State message = \Call{receive\_message}{NULL}
+        \If{message is not a CRT display request}
+            \State continue
+        \EndIf
+        \State \Call{send\_message}{PROCESS\_ID\_UART, message}
+        \State Set interrupt bits
+    \EndWhile
+  \EndFunction
+ \end{algorithmic}
+
+ The CRT display process accepts message requests from any process of type MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST. This tells the CRT to send the message for display to the UART I-process, which interacts with the hardware registers to output to terminal. Since the UART process is an interrupt process, the interrupt bit must be set in order for the process to run. Thus, after sending the message to UART's mailbox, the CRT process enables the interrupt bits for the I-process to trigger. The UART I-process passes the message character by character to the hardware to display to the terminal.
+
+\subsection{Keyboard Command Decoder Process}
+\label{sec:kcd_process}
+The RTX provides functionality to forward user input commands to a particular process. The keyboard command decoder process (KCD) handles two tasks: giving input to the CRT for terminal display and forwarding certain inputs to different processes for further processing. For the first task, all keyboard inputs are filtered by the KCD. The UART I-process is called when a key is first pressed. The UART I-process (explained further in section TODO) then passes a message to the KCD telling of type key press. In the first case, the KCD will take this message and pass it on to the CRT for terminal display.
+
+In the latter case, processes can register a command with the KCD. Each command registration consists of a single capital letter of the alphabet. If a command is taken, the KCD will not register the command and exit with an error. After a valid command has been registered, user input with the pattern "\%" followed by a upper case character will be parsed by the KCD. If user types in "\%" followed by a registered character, the KCD will buffer the input until the user presses the return key. In that scenario, the KCD will pass it onto the registered process. The following algorithm of the KCD explains this in more detail.
+
+\begin{algorithmic}
+    \Function{process\_input}{message}
+        \If{ There a "\%" character in the buffer }
+            \If{message.Content is a command character}
+                \State add to buffer
+            \Else
+                \State clear buffer
+            \EndIf
+        \ElsIf{ message.Content is "\%" }
+            \State add to buffer
+        \ElsIf{ message.Content is enter and buffer is not empty}
+            \State send buffer to registered command
+        \EndIf
+        \State Send message to CRT to display
+
+    \EndFunction
+
+    \bigskip
+
+    \Function{process\_register}{message}
+        \If{ message.Command has not been taken}
+            \State register message.Command
+        \Else
+            \State error
+        \EndIf
+    \EndFunction
+
+    \bigskip
+
+    \Function{kcd\_process}{}
+        \State initialization
+        \While{true}
+            \State message = \Call{receive\_message}{NULL}
+            \If{message type is key press input}
+                \State \Call{process\_input}{message}
+            \ElsIf {message type is command registration}
+                \State \Call{process\_register}{message}
+            \EndIf
+        \EndWhile
+    \EndFunction
+\end{algorithmic}
+
+An example of this usage is the wall clock process (described in more detail in section \ref{sec:wall_clock_process}). The wall clock process registers the character 'W' as a command. The registration will be done by passing a message to the KCD of command registration type. This message is received by the KCD. If the 'W' command has not been registered, it becomes registered by the wall clock process. Meanwhile, the user types in random characters. Any character that is not '\%' is passed by the KCD to the CRT for display. Once a '\%' is received, the KCD checks the next character to see if it's a registered command. If its not a registered command, the KCD clears the buffer and starts at the beginning. If it is a registered command, the KCD keeps a buffer of all the input characters. This buffer fills with data and is sent to the wall clock process for processing after the user presses enter. The buffer is only 20 characters long. Thus, any data for a process after 20 characters will not be sent to the registered process on enter.
+
+
 
 \section{User Processes}
+\label{sec:user_processes}
+
+\subsection{Wall Clock Process}
+\label{sec:wall_clock_process}
 
 \subsection{`funProcess'}
 
