@@ -723,6 +723,152 @@ Another factor that was tested is the length of the message being sent. Dependin
 \chapter{Raw Measurement Data}
 \label{appendix:raw_data}
 
+\section{Code Used To Collect Timing Data}
+\begin{lstlisting}
+static void proc1(void)
+{
+  timer_test_init();
+  static const int memory_block_count = 50;
+  static void* memory_blocks[memory_block_count];
+
+  int start_time = 0;
+  int end_time = 0;
+  LOG("Started single request single release");
+  for (int i = 0; i < 1000; i++) {
+    start_time = s_test_timer->TC;
+    memory_blocks[0] = request_memory_block();
+    end_time = s_test_timer->TC;
+    LOG("Request: %d", end_time - start_time);
+    start_time = s_test_timer->TC;
+    release_memory_block(memory_blocks[0]);
+    end_time = s_test_timer->TC;
+    LOG("Release: %d", end_time - start_time);
+  }
+  LOG("Finished single request single release");
+  LOG("Started requesting");
+  for (int i = 0; i < memory_block_count; i++) {
+    start_time = s_test_timer->TC;
+    memory_blocks[i] = request_memory_block();
+    end_time = s_test_timer->TC;
+    LOG("%d", end_time - start_time);
+  }
+  LOG("Finished requesting");
+  test_results[REQUEST_MEMORY_TEST] = 1;
+  LOG("Started releasing");
+  for (int i = 0; i < memory_block_count; i++) {
+    start_time = s_test_timer->TC;
+    release_memory_block(memory_blocks[i]);
+    end_time = s_test_timer->TC;
+    LOG("%d", end_time - start_time);
+  }
+  LOG("Finished releasing");
+
+  test_results[RELEASE_MEMORY_TEST] = 1;
+  set_process_priority(1, USER_PROCESS_PRIORITY_LOWEST);
+  set_process_priority(2, USER_PROCESS_PRIORITY_HIGH);
+  while (1) {
+    s_iteration_count++;
+    release_processor();
+  }
+}
+
+//...
+
+static int const required_messages = 50;
+
+static void proc3(void)
+{
+  LOG("Started receiving messages");
+  for (int i = 0; i < required_messages; i++) {
+    int start_time = 0;
+    int end_time = 0;
+    start_time = s_test_timer->TC;
+    void* message = receive_message(NULL);
+    end_time = s_test_timer->TC;
+    LOG("Receive: %d", end_time - start_time);
+    release_memory_block(message);
+  }
+  LOG("Finished receiving messages");
+  set_process_priority(5, USER_PROCESS_PRIORITY_HIGH);
+  set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
+  set_process_priority(3, USER_PROCESS_PRIORITY_LOWEST);
+  release_processor();
+}
+
+static void proc4(void)
+{
+  LOG("Started sending messages");
+  for (int i = 0; i < required_messages; i++) {
+    struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+    message_envelope->mtype = 10;
+    strcpy(message_envelope->mtext, test_phrase);
+    int start_time = 0;
+    int end_time = 0;
+    start_time = s_test_timer->TC;
+    send_message(3, message_envelope);
+    end_time = s_test_timer->TC;
+    LOG("Send: %d", end_time - start_time);
+  }
+  LOG("Finished sending messages");
+  set_process_priority(3, USER_PROCESS_PRIORITY_HIGH);
+  set_process_priority(4, USER_PROCESS_PRIORITY_LOWEST);
+  release_processor();
+}
+
+int sample_size = 500;
+static void proc5(void)
+{
+  set_process_priority(6, USER_PROCESS_PRIORITY_HIGH);
+  void* message = receive_message(NULL);
+  release_memory_block(message);
+  
+  while (true) {
+    int start_time = 0;
+    int end_time = 0;
+    start_time = s_test_timer->TC;
+    void* message = receive_message(NULL);
+    end_time = s_test_timer->TC;
+    LOG("Receive: %d", end_time - start_time);
+    release_memory_block(message);
+    release_processor();
+  }
+}
+
+static void proc6(void)
+{
+  LOG("Started send-receive together");
+  for (int i = 0; i < sample_size; i++) {
+    struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+    message_envelope->mtype = 10;
+    strcpy(message_envelope->mtext, test_phrase);
+    int start_time = 0;
+    int end_time = 0;
+    start_time = s_test_timer->TC;
+    send_message(5, message_envelope);
+    end_time = s_test_timer->TC;
+    LOG("Send: %d", end_time - start_time);
+    release_processor();
+  }
+  LOG("Finished send-receive together");
+  
+  LOG("Started variable message length together");
+  for (int i = 0; i < sample_size; i++) {
+    struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
+    message_envelope->mtype = 10;
+    for (int j = 0; j < i; j++) {
+      message_envelope->mtext[j] = *"a";
+    }
+    int start_time = 0;
+    int end_time = 0;
+    start_time = s_test_timer->TC;
+    send_message(5, message_envelope);
+    end_time = s_test_timer->TC;
+    LOG("Send: %d", end_time - start_time);
+    release_processor();
+  }
+  LOG("Finished variable message length together");
+}
+\end{lstlisting}
 \section{Data Analysis For Single Request Single Release}
 
 \subsection{Request}
