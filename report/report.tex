@@ -289,6 +289,20 @@ void user_process() {
 
 \par All processes will share the same heap memory pool. Thus, this primitive will block the process if the OS does not have anymore memory blocks to give out at the time, thus effecting the execution of the process. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check for segmentation faulting. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
 
+\par Requesting memory is reliant on calls to the heap to find an available memory block to allocate. The heap keeps a list of the status of each memory block to determine whether or not a block of memory can be requested. The following is the implementation used by the heap:
+\begin{algorithmic}
+  \Function{FindFreeBlock}{}
+    \For{$i = 0$ to $TotalNumberOfBlocks$}
+      \If{FreeSpaceBitmap[i] is a free block}
+        \State return i
+      \EndIf
+    \EndFor
+  \State return not found
+  \EndFunction
+\end{algorithmic}
+
+The lookup time of the FreeSpaceBitmap is O(1) as it is a simple array lookup and a boolean evaluation. Finding a free block has its dependencies on the total number of blocks. The best case for requesting memory is O(1) when the first block in the heap is free. Since this is a linear search, on average the complexity is O(n) where n is the total number of blocks.
+
 \bigskip
 
 \subsection{Releasing Memory}
@@ -297,6 +311,13 @@ int release_memory_block(void *memory_block);
 \end{lstlisting}
 
 \par The second functionality supported by the OS is the ability to release memory. This is a non-blocking call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
+
+\par In order to release the memory, release\_memory\_block will need to rely on the implementation of the heap. As stated in \ref{sec:request_memory}, the heap keeps a list of all available memory blocks. In order to release a memory block, the heap will set that block in the list as a free block. Releasing the block thus has O(1) complexity as it only relies on an array lookup. The implementation is as follows:
+\begin{algorithmic}
+  \Function{ReleaseMemory}{MemoryBlock}
+    \State FreeSpaceBitmap[position of MemoryBlock] \gets true
+  \EndFunction
+\end{algorithmic}
 
 \bigskip
 
@@ -347,6 +368,8 @@ struct msgbuf {
 \end{lstlisting}
 % TODO (Justin) make sure that's okay for the mtext and type:P
 \par The primitive returns a status which validates the, message, receiver process ID, and ready queue. User processes is allowed to send a message to any user processes or system processes such as the KCD. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
+
+\par In order to keep track of messages that have been sent, the messages are stored in a queue, specifically a linked list. Messages are added to the end of the linked list resulting in an O(n) insertion complexity. It is possible to have this run in O(1) time by having the inserting take place at the front of the linked list, however this is a trade-off for receiving messages. In the current implementation, received messages will be taken from the front of the linked list having O(1) complexity. If the change was to be made to optimize sending messages, then this would slow down receiving messages to O(n).
 \newline
 \subsection{Receive Messages}
 \label{sec:receive_message}
@@ -392,7 +415,7 @@ void process_receive() {
 }
 \end{lstlisting}
 
-\subsection{Receive Messages}
+\subsection{Delayed Messages}
 \begin{lstlisting}
 int delayed_send(int process_id, void *message_envelope, int delay);
 \end{lstlisting}
