@@ -190,8 +190,8 @@ PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
 
 PCBs and the priority queues are used in the following sections:
 \begin{enumerate}
-    \item {\bf Memory Management} - When a process requests memory without available memory blocks, the memory management unit must add the process to a blocked queue. When a memory block is released, the process with the highest priority in the blocked queue (if any) is moved into the ready queue. Thus, the memory management unit must have access to the PCBs, and blocked and ready queues in order to accomplish these task.
-    \item {\bf Process Management} - The process management unit is the one that schedules processes and keep track of the process priorities. Ready processes are taken from the ready queue to be ran if the current process is blocked or finished its execution. The process management unit also takes care of updating the two priority queues when the priority of a process has been changed.
+    \item {\bf Memory Management} - When a process requests memory without available memory blocks, the memory management subsystem must add the process to a blocked queue. When a memory block is released, the process with the highest priority in the blocked queue (if any) is moved into the ready queue. Thus, the memory management subsystem must have access to the PCBs, and blocked and ready queues in order to accomplish these task.
+    \item {\bf Process Management} - The process management subsystem is the one that schedules processes and keep track of the process priorities. Ready processes are taken from the ready queue to be ran if the current process is blocked or finished its execution. The process management subsystem also takes care of updating the two priority queues when the priority of a process has been changed.
     \item {\bf UART Process} - The UART Process needs access to the PCB. The PCBs also contain a mailbox for messages. The UART displays any incoming messages to the terminal display. Thus, it needs to know the PCB structure in order to gain access to the mailbox.
 \end{enumerate}
 
