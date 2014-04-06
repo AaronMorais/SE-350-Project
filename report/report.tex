@@ -146,10 +146,9 @@ typedef struct HeapBlock {
 
 \end{lstlisting}
 
-The HeapBlock structure stores a header and the content of the block. When a memory is requested, users are given the data with a adjustable size of HEAP\_BLOCK\_SIZE and does not have knowledge of the header. Helper functions in the RTX turn the user block back into kernel block by adjusting the pointer of the block. Each header contains information about message passing (if the block is used for this purpose) and a pointer to the next block (for kernel memory management purposes). This global data structure is used in the following sections:
+The HeapBlock structure stores a header and the content of the block. When a memory is requested, users are given the data with a adjustable size of HEAP\_BLOCK\_SIZE and do not have knowledge of the header. Helper functions in the RTX turn the user block back into kernel block by adjusting the pointer of the block. Each header contains information used for message passing. This global data structure is used in the following sections:
 \begin{enumerate}
-    \item {\bf Memory Management} - this section uses this data structure to give and receive back heap memory blocks
-    \item {\bf Process Message Passing} - this section uses this data structure pass messages between processes. Message envelope are implemented as HeapBlocks.
+    \item {\bf Process Message Passing} - Uses this data structure to pass messages between processes. Message envelopes are implemented as HeapBlocks.
     \item {\bf Timer I-Process} - The process uses message passing to send delayed messages.
     \item {\bf UART I-Process} - The process uses message passing to process input and output characters.
     \item {\bf CRT I-Process} - The process receives messages and passes message for terminal output.
