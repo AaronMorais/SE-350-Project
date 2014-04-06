@@ -7,7 +7,8 @@
     hyperref,       % For PDF bookmarks
     tikz,           % For state diagrams
     color,
-    listings
+    listings,
+    graphicx
 }
 
 \definecolor{light-gray}{rgb}{0.9, 0.9, 0.9}
@@ -349,7 +350,6 @@ int send_message(int process_id, void *message_envelope);
 
 \par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX (see section TODO for more information). The message data has a predefined size which is a MessageType smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message.
 \newline
-
 \begin{lstlisting}
 typedef enum {
     MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
@@ -611,6 +611,8 @@ An example of this usage is the wall clock process (described in more detail in 
 
 \section{Requesting and Releasing Memory}
 
+\par All data used and processed data can be found in the Appendix in \ref{appendix:raw_data}
+
 \subsection{Single Request Single Release}
 \label{sec:single_request_single_release}
 In the first analysis, the request\_memory and release\_memory methods were timed. Single request, single release means that a single memory block was requested and the time taken was recorded. Similarly for releasing a memory block. By doing so we are able to keep the heap in the same state, eliminating the effects of cumulative memory requests (which will be tested in section \ref{sec:cumulative_memory_requests}). The method to time this is shown in the following algorithm. Data was collected across 5 machines, with 1000 calls to each function.
@@ -630,15 +632,24 @@ In the first analysis, the request\_memory and release\_memory methods were time
 
 Based on the analysis, the mean run time for release memory is 405.44ns. The standard error (marked in the green mean diamonds on the figure) is very small, giving a 95\% confidence interval ranging from [404.99, 405.84] to [405.1, 405.95]. The F ratio is incredibly small (0.0474), meaning that there is little to no variance among the different machines and as such it can be concluded that the hardware does not greatly affect the performance of the method.
 
-%TODO Graph
+\begin{figure}[h!]
+  \centering
+    \includegraphics{SRSRRequestMemory.png}
+  \caption{Request Memory over 5 machines}
+\end{figure}
 
 The results of releasing memory are very similar to that of requesting memory. The mean time taken to release memory is 1229.237ns. The variations among different machines were very small, giving an F Ratio of 0.0328. This shows that the performance is consistent across different hardware. The performance was as well consistent within itself, the fastest machine had a 95\% confidence interval of [1228.5, 1229.9], and for the slowest [1228.6, 1230.0]. Releasing memory takes on average a little under three times as long as requesting memory   
 
-%TODO Graph
+\begin{figure}[h!]
+  \centering
+    \includegraphics{SRSRReleaseMemory.png}
+  \caption{Release Memory over 5 machines}
+\end{figure}
+
 \subsection{Cumulative Memory Requests}
 \label{sec:cumulative_memory_requests}
 
-The cumulative memory requests condition had 50 memory blocks requested and then subsequently released. This differs from experiment in \ref{sec:single_request_single_release} where the requested memory blocks do not accumulate. The purpose of this experiment is to see the effect of depleting resources on run time. Once again, trials were taken over 5 machines, however, each machine showed the same performance. To acheive this, the following two method calls were made.
+\par The cumulative memory requests condition had 50 memory blocks requested and then subsequently released. This differs from experiment in \ref{sec:single_request_single_release} where the requested memory blocks do not accumulate. The purpose of this experiment is to see the effect of depleting resources on run time. Once again, trials were taken over 5 machines, however, each machine showed the same performance. To acheive this, the following two method calls were made.
 
 \begin{algorithmic}
   \Function{Cumulative\_Request}{}
@@ -660,9 +671,13 @@ The cumulative memory requests condition had 50 memory blocks requested and then
   \EndFunction
 \end{algorithmic}
 
-%TODO Graph
+\par Consistent with the Single Request, Single Release experiment, the first memory block requested took 1229ns. A linear trend line is overlaid on top showing an R2 value of 1 (a perfect trend). The trend shows that for each additional memory block requested, the run time increase by 17ns. This linear trend is in accordance with the implementation of the request memory method which has O(n) complexity described in \ref{sec:request_memory}. 
 
-Consistent with the Single Request, Single Release experiment, the first memory block requested took 1229ns. A linear trend line is overlaid on top showing an R2 value of 1 (a perfect trend). The trend shows that for each additional memory block requested, the run time increase by 17ns. This linear trend is in accordance with the implementation of the request memory method which has O(n) complexity described in \ref{sec:request_memory}. 
+\begin{figure}[h!]
+  \centering
+    \includegraphics{RequestMemory.png}
+  \caption{Release Memory over 5 machines}
+\end{figure}
 
 \section{Sending and Receiving Messages}
 \subsection{Single Send, Single Receive}
@@ -670,7 +685,12 @@ Consistent with the Single Request, Single Release experiment, the first memory 
 
 In this experiment, the send\_message and receive\_message methods were timed. A single message was sent and the time taken was recorded. Similarly, the time taken to receive that message was timed, specifically the time for the function call and not the delay between the time the message was sent and the time the message was received. By doing so we are able to eliminate the effects of having inconsisent memory available (that will be tested in the following experiment). To achieve this, two user processes were defined, the first sends a message of a fixed size then releases the processor, the second would then receive that message and again release the processor. This process would then repeat a total of 498 times. Data was collected across 5 machines, with 498 calls to each function.
 
-%TODO Graph
+\begin{figure}[h!]
+  \centering
+    \includegraphics{SSSRSend.png}
+    \includegraphics{SSSRReceive.png}
+  \caption{Top: Sending messages; Bottom: Receiving messages}
+\end{figure}
 
 In this single send, single receive condition, a total of 2490 trials were taken, and the data showed no variation for either sending messages or receiving messages. The mean run time of sending a message is 399ns. Due to the lack of variation on or between each machine this is also the value of the lower and upper bound of the 95\% confidence interval. The same applies for receiving the message, which is twice as fast at 182ns. 
 
@@ -678,53 +698,229 @@ In this single send, single receive condition, a total of 2490 trials were taken
 \label{sec:cumulative_message_sending}
 
 The cumulative message sending condition, as the name implies, had messages accumulate before any were received. The purpose of this is to the see the relation between the number of messages sent (and not yet received) with the time it takes to send a new message. In order to test this, 50 messages were sent from within a single user processes. Once finished, another process would take over and receive those 50 messages. The results from 5 different machines are displayed in the Figure.
-%TODO Graph
+\begin{figure}[h!]
+  \centering
+    \includegraphics{SendMessage.png}
+  \caption{Cumulative message sending}
+\end{figure}
 
 Similar to the single send, single receive condition in \ref{sec:single_send_single_receive}, the results were the same across all machines. A linear trend line is superimposed onto the results. The trend displayed has an R2 value of 1 showing that this linear trend is very significant. This correlates with the expected O(n) complexity of the send method described in \ref{sec:send_message}. The trend shows an increase of 11ns per additional message sent. 
 
 The message receiving process of this experiment was also measured. For all 250 messages received, the time taken was consistent at 182ns. This is as well expected due to the O(1) complexity of the receive message method describe in \ref{sec:receive_message}.
 
-\subsection{Affects of Message Length}
+\subsection{Effects of Message Length}
 \label{sec:message_length}
 Another factor that was tested is the length of the message being sent. Depending on the implementation for the kernel it is possible that in some cases a longer message will take longer to send or receive. To test this, messages were continuously sent and received in the same manner as the single send, single receive condition in \ref{sec:single_send_single_receive} with the addition of an accumulating message (ie the first message sent was “a”, the second message “aa” and so forth).  This was tested up until a message of 50 characters was sent. As shown in the two figures, the message length had no effect on the time taken to send or receive messages.
 
-%TODO add two graphs
+\begin{figure}[h!]
+  \centering
+    \includegraphics{MessageLength.png}
+  \caption{Sending messages with variable message length}
+\end{figure}
+
 
 \appendix
 \chapter{Raw Measurement Data}
 \label{appendix:raw_data}
 
-\section{Trial Information}
+\section{Data Analysis For Single Request Single Release}
 
-\begin{tabular}{l | l | l}
-    Trial&Total Runtime&Notes \\
-    \hline
-    1&4.219&Normal (no stress processes) \\
-    2&7.754&Wall clock \\
-    3&8.487&Normal (no stress processes)\\
-    4&6.5&No Memory Muncher or Release Process \\
-    5&30.988&Stress processes \\
+\subsection{Request}
+Summary of Fit
+\newline
+\begin{tabular}{l | l}
+  Rsquare&2.63E-05 \\
+  Adj Rsquare&-0.00077 \\
+  Root Mean Square Error&11.43196 \\
+  Mean of Response&1229.237 \\
+  Observations (or Sum Wgts)&5000 \\
 \end{tabular}
+\newline
 
-\section{Function Runtime Profiling}
-\begin{tabular}{l | l | l | l | l}
-    Function & Trial & Time ($\mu s$) & \# of Calls & Average time / call ($\mu s$) \\
-    \hline
-    k\_sendMessage&1&601.58&552&1.090 \\
-    k\_receiveMessage&1&408.22&565&0.723 \\
-    k\_acquireMemoryBlock&1&244.12&294&0.830 \\
-    k\_sendMessage&2&647.44&594&1.090 \\
-    k\_receiveMessage&2&437.78&606&0.722 \\
-    k\_acquireMemoryBlock&2&258.68&320&0.808 \\
-    k\_sendMessage&3&630.99&579&1.090 \\
-    k\_receiveMessage&3&426.83&591&0.722 \\
-    k\_acquireMemoryBlock&3&259.24&321&0.808 \\
-    k\_sendMessage&4&108.80&100&1.088 \\
-    k\_receiveMessage&4&74.44&110&0.677 \\
-    k\_acquireMemoryBlock&4&92.47&123&0.752 \\
-    k\_sendMessage&5&750.63&687&1.093 \\
-    k\_receiveMessage&5&497.09&693&0.717 \\
-    k\_acquireMemoryBlock&5&329.90&447&0.738 \\
+Analysis of Variance
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Source&DF&Sum of Square&Mean Square&F Ratio&Prob > F \\
+\hline
+Machine&4&17.14&4.285&0.0328&0.9979 \\
+Error&4995&652795.5&130.69&-&- \\ 
+C. Total&4999&652812.7&-&-&- \\      
 \end{tabular}
+\newline
+
+Means of Oneway Anova
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Machine&Number&Mean&Std Error&Lower 95\%&Upper 95\% \\
+\hline
+16769&1000&1229.29&0.36151&1228.6&1230 \\
+16773&1000&1229.29&0.36151&1228.6&1230 \\
+16781&1000&1229.17&0.36151&1228.5&1229.9 \\
+16782&1000&1229.17&0.36151&1228.5&1229.9 \\
+16783&1000&1229.27&0.36151&1228.6&1230 \\
+\end{tabular}
+\newline
+
+Means and Std Deviations
+\newline
+\begin{tabular}{l | l | l | l | l | l | l}
+Machine&Number&Mean&Std Dev&Std Err Mean&Lower 95\%&Upper 95\% \\
+\hline
+16769&1000&1229.29&11.7342&0.37107&1228.6&1230 \\
+16773&1000&1229.29&11.7342&0.37107&1228.6&1230 \\
+16781&1000&1229.17&11.0616&0.3498&1228.5&1229.9 \\
+16782&1000&1229.17&11.0616&0.3498&1228.5&1229.9 \\
+16783&1000&1229.27&11.5476&0.36517&1228.6&1230 \\
+\end{tabular}
+\newline
+
+\subsection{Release}
+Summary of Fit
+\newline
+\begin{tabular}{l | l}
+  Rsquare&3.79E-05 \\
+  Adj Rsquare&-0.00076 \\
+  Root Mean Square Error&6.8087 \\
+  Mean of Response&405.4416 \\
+  Observations (or Sum Wgts)&5000 \\
+\end{tabular}
+\newline
+  \newline
+
+Analysis of Variance
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+  Source&DF&Sum of Squares&Mean Square&F Ratio&Prob > F \\
+  \hline
+  Machine&4&8.79&2.1968&0.0474&0.9958 \\
+  Error&4995&231560.2&46.3584&-&- \\
+  C. Total&4999&231569&-&-&- \\
+\end{tabular}
+\newline
+
+Means for Oneway Anova
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+  Machine&Number of Trials&Mean&Std Error&Lower 95\%&Upper 95\% \\
+  \hline
+  16769&1000&405.416&0.21531&404.99&405.84 \\
+  16773&1000&405.416&0.21531&404.99&405.84 \\
+  16781&1000&405.436&0.21531&405.01&405.86 \\
+  16782&1000&405.416&0.21531&404.99&405.84 \\
+  16783&1000&405.524&0.21531&405.10&405.95 \\
+\end{tabular}
+\newline
+
+Means And Std Deviations
+\newline
+\begin{tabular}{l | l | l | l | l | l |l}
+  Machine&Number&Mean&Std Dev&Std Err Mean&Lower 95\%&Upper 95\% \\
+  \hline
+  16769&1000&405.416&6.56765&0.20769&405.01&405.82 \\
+  16773&1000&405.416&6.56765&0.20769&405.01&405.82 \\ 
+  16781&1000&405.436&6.90519&0.21836&405.01&405.86 \\
+  16782&1000&405.416&6.56765&0.20769&405.01&405.82 \\
+  16783&1000&405.524&7.39649&0.23390&405.07&405.98 \\
+\end{tabular}
+\newline
+
+\section{Data Analysis for Single Send Single Receive}
+\subsection{Send}
+Summary of Fit
+\newline
+\begin{tabular}{l | l}
+  Rsquare&- \\
+  Adj Rsquare&- \\
+  Root Mean Square Error&0 \\
+  Mean of Response&399 \\
+  Observations (or Sum Wgts)&2490 \\
+\end{tabular}
+\newline
+
+Analysis of Variance
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Source&DF&Sum of Square&Mean Square&F Ratio&Prob > F \\
+\hline
+Machine&4&0&0&-&- \\
+Error&2485&0&0&-&- \\ 
+C. Total&2489&0&-&-&- \\      
+\end{tabular}
+\newline
+
+Means of Oneway Anova
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Machine&Number&Mean&Std Error&Lower 95\%&Upper 95\% \\
+\hline
+16769&498&399&0&399&399 \\
+16773&498&399&0&399&399 \\
+16781&498&399&0&399&399 \\
+16782&498&399&0&399&399 \\
+16783&498&399&0&399&399 \\
+\end{tabular}
+\newline
+
+Means and Std Deviations
+\newline
+\begin{tabular}{l | l | l | l | l | l | l}
+Machine&Number&Mean&Std Dev&Std Err Mean&Lower 95\%&Upper 95\% \\
+\hline
+16769&498&399&0&0&399&399 \\
+16773&498&399&0&0&399&399 \\
+16781&498&399&0&0&399&399 \\
+16782&498&399&0&0&399&399 \\
+16783&498&399&0&0&399&399 \\
+\end{tabular}
+\newline
+
+\subsection{Receive}
+Summary of Fit
+\newline
+\begin{tabular}{l | l}
+  Rsquare&- \\
+  Adj Rsquare&- \\
+  Root Mean Square Error&0 \\
+  Mean of Response&182 \\
+  Observations (or Sum Wgts)&2490 \\
+\end{tabular}
+\newline
+
+Analysis of Variance
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Source&DF&Sum of Square&Mean Square&F Ratio&Prob > F \\
+\hline
+Machine&4&0&0&-&- \\
+Error&2485&0&0&-&- \\ 
+C. Total&2489&0&-&-&- \\      
+\end{tabular}
+\newline
+
+Means of Oneway Anova
+\newline
+\begin{tabular}{l | l | l | l | l | l}
+Machine&Number&Mean&Std Error&Lower 95\%&Upper 95\% \\
+\hline
+16769&498&182&0&182&182 \\
+16773&498&182&0&182&182 \\
+16781&498&182&0&182&182 \\
+16782&498&182&0&182&182 \\
+16783&498&182&0&182&182 \\
+\end{tabular}
+\newline
+
+Means and Std Deviations
+\newline
+\begin{tabular}{l | l | l | l | l | l | l}
+Machine&Number&Mean&Std Dev&Std Err Mean&Lower 95\%&Upper 95\% \\
+\hline
+16769&498&182&0&0&182&182 \\
+16773&498&182&0&0&182&182 \\
+16781&498&182&0&0&182&182 \\
+16782&498&182&0&0&182&182 \\
+16783&498&182&0&0&182&182 \\
+\end{tabular}
+\newline
 
 \end{document}
