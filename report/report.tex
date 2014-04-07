@@ -265,6 +265,7 @@ void user_process() {
 \par All processes will share the same heap memory pool. Thus, this primitive will block the process if there are no remaining free memory blocks. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check this in any way. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
 
 \par Requesting memory is reliant on calls to the heap to find an available memory block to allocate. The heap keeps a list of the status of each memory block to determine whether or not a block of memory can be requested. The following is the implementation used by the heap:
+\label{fig:findfreeblock}
 \begin{algorithmic}
   \Function{FindFreeBlock}{}
     \For{$i = 0$ to $TotalNumberOfBlocks$}
@@ -291,7 +292,7 @@ us find bugs that would otherwise be invisible while developing the RTX.
 int release_memory_block(void *memory_block);
 \end{lstlisting}
 
-\par The second functionality supported by the OS is the ability to release memory. This is a non-blocking (but potentially pre-empting) call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
+\par The second functionality supported by the OS is the ability to release memory. This is a non-blocking (but potentially pre-empting) call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in Figure \ref{fig:findfreeblock} on line 13.
 
 \par In order to release the memory, release\_memory\_block will need to rely on the implementation of the heap. As stated in \ref{sec:request_memory}, the heap keeps a list of all available memory blocks. In order to release a memory block, the heap will set that block in the list as a free block. Releasing the block thus has O(1) complexity as it only relies on an array lookup. The implementation is as follows:
 \begin{algorithmic}
@@ -320,7 +321,7 @@ void user_process() {
 \end{lstlisting}
 
 \section{Interprocess Communication}
-\par Communication between processes is primarilly done through message-based interprocess communication (IPC), although static variables can also be used in some cases. Details of the internal layout of process mailboxes can be found in section TODO. The RTX gives three primitives to carry out this task, one for sending, one for delayed sending, and one for receiving.
+\par Communication between processes is primarilly done through message-based interprocess communication (IPC), although static variables can also be used in some cases. The RTX gives three primitives to carry out this task, one for sending, one for delayed sending, and one for receiving.
 
 \subsection{Send Messages}
 \label{sec:send_message}
