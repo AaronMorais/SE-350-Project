@@ -383,7 +383,7 @@ struct msgbuf {
 \begin{lstlisting}
 void *receive_message(int *sender_id);
 \end{lstlisting}
-\par A process can use this primitive to receive messages from other processes. Unless the sender\_id is NULL, the sender of the message will be written to the sender\_id parameter. The current process will check its mailbox for any incoming messages. If there are no messages in its mailbox, the routine will block the process and select another process for execution. Execution of the process will occur again if a message is sent from another process and this process has the highest priority in the ready queue. The message\_envelope are heap memory underneath. Thus, it is required that unless the process passes the message onto another process, the final receiving process must release the message\_envelope block after its usage. An example of send\_message and receive\_message is shown below.
+\par A process can use this primitive to receive messages from other processes. Unless the sender\_id is NULL, the sender of the message will be written to the sender\_id parameter. The current process will check its mailbox for any incoming messages. If there are no messages in its mailbox, the routine will block the process and select another process for execution. Execution of the process will occur again if a message is sent from another process and this process has the highest priority in the ready queue. The message\_envelope is heap memory underneath. Thus, it is required that unless the process passes the message onto another process, the final receiving process must release the message\_envelope block after its usage. An example of send\_message and receive\_message is shown below.
 
 \begin{lstlisting}
 void process_send() {
@@ -719,44 +719,47 @@ After setting up the initial parameters, the OS takes several steps to boot.
 \begin{picture}(32,41) % picture environment with the size (dimensions)
  % 32 length units wide, and 15 units high.
 
+\put(-2,43.5) {$0x00000000$}
+\put(4.5,44){\vector(1,0){3}}
+\put(28,43.5) {Start of Flash}
+\put(27.5,44){\vector(-1,0){3}}
+
 \put(8,41){\framebox(16,3){RTX Code}}
 \put(8,38){\framebox(16,3){Unmapped Area}}
+
+\put(-2,37.5) {$0x10000000$}
+\put(4.5,38){\vector(1,0){3}}
+\put(28,37.5) {Start of Ram}
+\put(27.5,38){\vector(-1,0){3}}
+
 \put(8,34){\framebox(16,4){RTX Image}}
+\put(28,32.5) {End of RTX Image}
+\put(27.5,33){\vector(-1,0){3}}
+
 \put(8,33){\framebox(16,1){Padding}}
 \put(8,30){\framebox(16,3){PCB 1}}
 \put(8,27){\framebox(16,3){PCB 2}}
 \put(8,24){\framebox(16,3){PCB ...}}
 \put(8,21){\framebox(16,3){PCB n}}
+\put(28,20.5) {PCB Allocation End}
+\put(27.5,21){\vector(-1,0){3}}
 
 \put(8,15){\framebox(16,6){Heap - Shared by all processes}}
+
+\put(28,14.5) {Stack Allocation End}
+\put(27.5,15){\vector(-1,0){3}}
 \put(8,12){\framebox(16,3){Process n Stack}}
 \put(8,9){\framebox(16,3){Process ... Stack}}
 \put(8,6){\framebox(16,3){Process 2 Stack}}
 \put(8,3){\framebox(16,3){Process 1 Stack}}
 
-\put(-2,43.5) {$0x00000000$}
-\put(4.5,44){\vector(1,0){3}}
-
-\put(-2,37.5) {$0x10000000$}
-\put(4.5,38){\vector(1,0){3}}
-
 \put(-2,2.5) {$0x10008000$}
 \put(4.5,3){\vector(1,0){3}}
-
-\put(28,14.5) {Stack Allocation End}
-\put(27.5,15){\vector(-1,0){3}}
-
-\put(28,20.5) {PCB Allocation End}
-\put(27.5,21){\vector(-1,0){3}}
-
-\put(28,32.5) {End of RTX Image}
-\put(27.5,33){\vector(-1,0){3}}
-
-\put(28,37.5) {Start of Ram}
-\put(27.5,38){\vector(-1,0){3}}
+\put(28, 2.5) {End of Ram}
+\put(27.5, 3){\vector(-1, 0){3}}
 
 \end{picture}
-\caption{Layout of Main Memory with n Processes} % title of the Figure
+\caption{Layout of Main Memory with n Processes. The RTX Image contains all global and static variables}
 \label{fig:memory}
 \end{figure}
 \end{enumerate}
@@ -766,7 +769,26 @@ After setting up the initial parameters, the OS takes several steps to boot.
 \section{Description}
 
 \section{Heap}
+One of the more significant design changes we had to do in our RTX was to add a
+header to all blocks in our heap, in order to support sending arbitrary heap
+blocks to arbitrary processes, while allowing the user code to still use the
+entire allocated block. This header contained information usable only within the
+kernel itself, currently just for message passing, although it could theoretically
+be used for other purposes as well. As part of this change, we had to ensure that
+all kernel-level functions passed around HeapBlocks (i.e. a pointer to the
+address before the heap block's header), while all of the user-facing functions
+passed around a pointer to the HeapBlock's data section (otherwise the user
+process would end up overwriting the kernel's data structures inadvertedly).
+Fortunately, this wasn't a huge change to implement since a limited number of
+subsystems relied on the heap functionality at the time, but it took quite a bit
+of debate and discussion to decide on this solution, and accidentially came back
+to bite us in P3 where we forgot to translate a user heap block pointer into
+a kernel heap block pointer before passing it to a kernel-level function.
 
+If I were to do it again, I would probably opt for a footer as opposed to a
+header. This would have allowed us to keep the user-level and kernel-level
+pointers the same, avoiding any possibility of translation errors. But alas,
+this solution didn't even occur to me (nor anyone in our group) at the time.
 \section{Scheduler}
 
 \section{What We Learned}
