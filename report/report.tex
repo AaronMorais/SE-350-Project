@@ -466,14 +466,100 @@ void user_process() {
 
 
 \chapter{Interrupts and Their Handler and Processes}
+The operating system supports two interrupt processes, a timer I-process and a UART I-process.
+\section{Timer I-Process}
+At initialization of the OS, we initialize prescale registered to have a value of 12499, which equals 1 millisecond along with other values that require the interrupt to occur. With these initialized values, we enable the timer 0 interrupts for every 1 millisecond. Once an interrupt occurs, the following handler handles the interrupt.
 
-\section{Description}
+\begin{algorithmic}
+    \Function{TIMER0\_IRQHandler}{}
+        \State Disable other interrupts
+        \State Save state
+        \State \Call{c\_TIMER0\_IRQHandler}{}
+        \State Enable other interrupts
+        \State Put state back and go back to original execution
+    \EndFunction
+    \bigskip
+    \Function{c\_TIMER0\_IRQHandler}{}
+        \State Reset interrupt bit
+        \State Increase static timer count
+        \State message\_peek = \Call{sorted\_message\_queue\_top}{}
+        \If{message\_peek time has elapsed}
+            \State message = \Call{sorted\_message\_queue\_pop}{}
+            \State \Call{send\_message}{message}
+            \State \Call{preempt\_if\_necessary}{}
+        \EndIf
+    \EndFunction
+\end{algorithmic}
+The interrupt process is used to keep a timer accurate to 1 millisecond. It is also used for the delayed send primitive in the kernel API. Messages sent to the timer process are kept in a special mailbox that sorts the messages by earliest send time. On each interrupt, the handler checks whether there are message that have elapsed their delay time and sends them. It preempts the current process if a process is blocked on receive and has a higher priority than the currently interrupted process or running process. Interrupts are also disabled from the start and end of this routine. This is to prevent interrupt nesting to occur. If another interrupt occurs in the middle of this interrupt routine, it will be processed after the routine is finished.
+
+\section{UART I-Process}
+The UART I-Process is the center of receiving keyboard input and transmitting characters for output.
+
+\subsection{Input}
+\label{uart_input}
+The first task of the UART is to receive keyboard input. We receive one input character for each interrupt. This character is passed in the form of a message to the KCD for processing, where it will output to the CRT and be processed for any incoming commands. The input section of the UART also handles debugging hot keys. Three character hot keys: 'a', 'b', 'c', and 'd' are chosen to output the ready queue, blocked on resource queue, blocked on message queue, and timer delayed message queue respectively. These outputs use the polling output rather than the interrupt output because if memory was to run out during execution, we still want to see the output of the queues. This cannot be done with interrupts as it requires message passing, thus memory allocation.
+
+\begin{algorithmic}
+    \If{keyboard input interrupt}
+        \State char\_in = input\_character
+        \If{char\_in is 'a' }
+            \Call{print\_ready\_queue}{}
+        \ElsIf{char\_in is 'b' }
+            \Call{print\_blocked\_memory\_queue}{}
+        \ElsIf{char\_in is 'c' }
+            \Call{print\_blocked\_receive\_queue}{}
+        \ElsIf{char\_in is 'd' }
+            \Call{timer\_print\_delayed\_message\_queue}{}
+        \EndIf
+        \State message = \Call{allocate\_memory\_for\_message}{}
+        \State message.Type = MESSAGE\_TYPE\_KCD\_KEYPRESS\_EVENT
+        \State message.Data = char\_in
+        \State \Call{send\_message}{message}
+    \EndIf
+\end{algorithmic}
+
+\subsection{Output}
+\label{uart_output}
+The second task of the UART is to output characters onto terminal display. A message can contain up to 20 characters. However, the UART display interrupt only supports one character output per interrupt. Thus, the interrupt bit is enabled for the message and a message buffer counter is increased every time an interrupt occurs until the entire message has been outputted to the terminal character by character. Putting this together, we have the following implementation.
+
+\begin{algorithmic}
+    \If{keyboard output interrupt}
+        \If{there is no more characters in the message to print}
+            \State \Call{memory\_release\_block}{message}
+            \State turn off output interrupt bits
+        \Else
+            \State char\_out = message->Data[count]
+            \State give char\_out to register for output
+            \State count++
+        \EndIf
+    \EndIf
+\end{algorithmic}
 
 
-\section{UART}
+\subsection{Putting it together}
+The UART's interrupt handler handles both input from the keyboard and output to terminal screen. Thus, the overall handler has this implementation:
 
-\section{TIMER}
+\begin{algorithmic}
+    \Function{UART0\_IRQHandler}{}
+        \State Disable other interrupts
+        \State Save state
+        \State \Call{c\_UART0\_IRQHandler}{}
+        \State Enable other interrupts
+        \State Put state back and go back to original execution
+    \EndFunction
+    \bigskip
+    \Function{c\_UART0\_IRQHandler}{}
+        \If{input}
+            \State run code from section \ref{uart_input}
+        \ElsIf{output}
+            \State run code from section \ref{uart_output}
+        \Else
+            \State error
+        \EndIf
+    \EndFunction
+\end{algorithmic}
 
+Similar to the timer I-process, the UART I-process will preempt the current process if another process with higher priority receives its message after being blocked on receive. The UART I-process also does not support nested interrupts. Other interrupts are disabled during this routine and will occur only after this handler has finished its execution.
 
 % TODO Make sure to include pseudo-code and testing, if appropriate.
 
@@ -748,7 +834,6 @@ At each iteration of development, processes were designed to test the newly adde
 
 While testing the CRT and KCD, the majority of the tests were manual. These processes are involved with keyboard inputs and visual feedback. As such they were tested with manual input and validations.
 
-
 \section{Debugging}
 When things went awry in AwesomeOS, we would have to get down into the mud and debug our code. The most common indication that something was wrong was that we ended up in the HardFault_Handler, which initially gave us no information about how or why we ended up there, leaving us completely guessing. One of the first things we did as the OS started to grow larger was to add our own HardFault_Handler, which would give us the prior values of the pc, lr, sp, and a few other registers. From here, we could at least figure out what line of code directly caused the hardfault, and try to trace backwards from there to find the culiprit.
 
@@ -986,7 +1071,7 @@ static void proc5(void)
   set_process_priority(6, USER_PROCESS_PRIORITY_HIGH);
   void* message = receive_message(NULL);
   release_memory_block(message);
-  
+
   while (true) {
     int start_time = 0;
     int end_time = 0;
@@ -1015,7 +1100,7 @@ static void proc6(void)
     release_processor();
   }
   LOG("Finished send-receive together");
-  
+
   LOG("Started variable message length together");
   for (int i = 0; i < sample_size; i++) {
     struct msgbuf* message_envelope = (struct msgbuf*)request_memory_block();
