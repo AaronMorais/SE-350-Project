@@ -960,13 +960,15 @@ this solution didn't even occur to me (nor anyone in our group) at the time.
 \section{Lessons Learned}
   Over the course of this RTX project, we faced many obstacles. As we overcame each obstacle, we were able to identify the mistakes we had made and learn from them. The lessons learned from our mistakes allowed us to work more and more effectively, avoiding previous pitfalls that cost us a fair amount of development time.
 
-
 The successful implementation of the RTX project can be mainly attributed to the fact that the development process of the project was well defined early on. We were highly organized from the outset, defining coding conventions for the project, enforcing code reviews for code that wasn’t pair programmed and creating a private github repository. This repository provided us with a distributed version control system so that group members could contribute code from their own machines. Additionally, we were able to use the issue tracking and code review functionality available within github to keep our project organized.
 
-There were some mistakes that we ran into often when working on this project. When variables are not initialized, this mistake is difficult to find. Using the simulator within the Keil IDE does not reveal this issue because the simulator sets all variables to empty values on creation. However, when testing on the board, values would instantiated with garbage value causing issues. Conducting development of the RTX while testing on the board and being more cautious avoided mistakes such as this.
+Time management was an issue that plagued development. For most deliverables, a considerable amount of work was done right before the deadline. If we had managed our time better, the code quality of the system could potentially be better, there would have been less stress to meet deadlines and additional functionality such as memory protection could have been implemented for the RTX.
 
-Overall, the project was successful and we were happy.
-%*****aaronWIP
+There were some mistakes that we ran into often when working on this project. When variables are not initialized, this mistake is difficult to find. Using the simulator within the Keil IDE does not reveal this issue because the simulator sets all variables to empty values on creation. However, when testing on the board, values would instantiated with garbage value causing issues. Additionally, not clearing the values in memory blocks caused issues when they were reallocated for reuse. For example, an element was able to point back to itself because the header was not cleared. Conducting development of the RTX while testing on the board and being more cautious avoided mistakes such as this.
+
+For debugging, the use of unit tests and a hard fault handler was extremely useful. Unit tests were written for simple functions and data structures such as our priority queue, heap queue and heap. Testing these functions provided a sanity check of the systems functionality and verified that changes did not cause any regressions. The hard fault handler was also extremely useful for tracking down bugs. It provided access to memory at the time of hard fault, including the program counter, making it easier to pinpoint specific issues with the system.
+
+Overall, we are happy with what we have accomplished. We’ve created a robust system that meets all of the design criteria.
 
 \part{Testing and Analysis}
 
