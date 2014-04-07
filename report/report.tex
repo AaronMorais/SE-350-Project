@@ -784,9 +784,10 @@ The user-level test processes were designed to test the RTX. Six aspects of the 
 
   The wall clock registers the character ‘W’ with the KCD process. A reset, set or terminate command can be issued to the wall clock process. If a reset command is received, the process will begin updating the time every second starting from “00:00:00” to the console CRT. When a set command is received, the input is parsed, verified for correctness and then the wall clock begins outputting the clock every second starting from the user supplied time. A terminate command stops the console out from occurring.
 
-  In order for the wall clock to output to the console each second, it sends a message to itself with a one second delay. If a message of this nature is received by the process, it will compute the current time offset based on the time elapsed value from the timer interrupt handler. With this time offset, it will print the current time.
+  In order for the wall clock to output to the console each second, it sends a message to itself with a one second delay. If a message of this nature is received by the process, it will compute the current time offset based on the time elapsed value from the timer interrupt handler. With this time offset, it will print the current time. The implementation details can be found in algorithm 14.
 
 \begin{algorithm}
+\label{alg:wall_clock}
   \caption{Wall Clock}
   \begin{algorithmic}[1]
     \Function{wall\_clock\_process}{}
@@ -921,56 +922,6 @@ After setting up the initial parameters, the OS takes several steps to boot.
         \end{enumerate}
     \item Initialize registers for timer interrupts
     \item Hand the processor over to the first process and start the initial execution.
-\newpage
-\begin{figure}[h]
-\setlength{\unitlength}{0.14in} % selecting unit length
-\centering % used for centering Figure
-\begin{picture}(32,41) % picture environment with the size (dimensions)
- % 32 length units wide, and 15 units high.
-
-\put(-2,43.5) {$0x00000000$}
-\put(4.5,44){\vector(1,0){3}}
-\put(28,43.5) {Start of Flash}
-\put(27.5,44){\vector(-1,0){3}}
-
-\put(8,41){\framebox(16,3){RTX Code}}
-\put(8,38){\framebox(16,3){Unmapped Area}}
-
-\put(-2,37.5) {$0x10000000$}
-\put(4.5,38){\vector(1,0){3}}
-\put(28,37.5) {Start of Ram}
-\put(27.5,38){\vector(-1,0){3}}
-
-\put(8,34){\framebox(16,4){RTX Image}}
-\put(28,32.5) {End of RTX Image}
-\put(27.5,33){\vector(-1,0){3}}
-
-\put(8,33){\framebox(16,1){Padding}}
-\put(8,30){\framebox(16,3){PCB 1}}
-\put(8,27){\framebox(16,3){PCB 2}}
-\put(8,24){\framebox(16,3){PCB ...}}
-\put(8,21){\framebox(16,3){PCB n}}
-\put(28,20.5) {PCB Allocation End}
-\put(27.5,21){\vector(-1,0){3}}
-
-\put(8,15){\framebox(16,6){Heap - Shared by all processes}}
-
-\put(28,14.5) {Stack Allocation End}
-\put(27.5,15){\vector(-1,0){3}}
-\put(8,12){\framebox(16,3){Process n Stack}}
-\put(8,9){\framebox(16,3){Process ... Stack}}
-\put(8,6){\framebox(16,3){Process 2 Stack}}
-\put(8,3){\framebox(16,3){Process 1 Stack}}
-
-\put(-2,2.5) {$0x10008000$}
-\put(4.5,3){\vector(1,0){3}}
-\put(28, 2.5) {End of Ram}
-\put(27.5, 3){\vector(-1, 0){3}}
-
-\end{picture}
-\caption{Layout of Main Memory with n Processes. The RTX Image contains all global and static variables}
-\label{fig:memory}
-\end{figure}
 \end{enumerate}
 
 \chapter{Major Design Changes}
@@ -1168,6 +1119,58 @@ Another factor that was tested is the length of the message being sent. Dependin
 
 \appendix
 \label{sec:appendix}
+\chapter{Memory Layout}
+\label{sec:appendix_memory_layout}
+\begin{figure}[h]
+\setlength{\unitlength}{0.14in} % selecting unit length
+\centering % used for centering Figure
+\begin{picture}(32,41) % picture environment with the size (dimensions)
+ % 32 length units wide, and 15 units high.
+
+\put(-2,43.5) {$0x00000000$}
+\put(4.5,44){\vector(1,0){3}}
+\put(28,43.5) {Start of Flash}
+\put(27.5,44){\vector(-1,0){3}}
+
+\put(8,41){\framebox(16,3){RTX Code}}
+\put(8,38){\framebox(16,3){Unmapped Area}}
+
+\put(-2,37.5) {$0x10000000$}
+\put(4.5,38){\vector(1,0){3}}
+\put(28,37.5) {Start of Ram}
+\put(27.5,38){\vector(-1,0){3}}
+
+\put(8,34){\framebox(16,4){RTX Image}}
+\put(28,32.5) {End of RTX Image}
+\put(27.5,33){\vector(-1,0){3}}
+
+\put(8,33){\framebox(16,1){Padding}}
+\put(8,30){\framebox(16,3){PCB 1}}
+\put(8,27){\framebox(16,3){PCB 2}}
+\put(8,24){\framebox(16,3){PCB ...}}
+\put(8,21){\framebox(16,3){PCB n}}
+\put(28,20.5) {PCB Allocation End}
+\put(27.5,21){\vector(-1,0){3}}
+
+\put(8,15){\framebox(16,6){Heap - Shared by all processes}}
+
+\put(28,14.5) {Stack Allocation End}
+\put(27.5,15){\vector(-1,0){3}}
+\put(8,12){\framebox(16,3){Process n Stack}}
+\put(8,9){\framebox(16,3){Process ... Stack}}
+\put(8,6){\framebox(16,3){Process 2 Stack}}
+\put(8,3){\framebox(16,3){Process 1 Stack}}
+
+\put(-2,2.5) {$0x10008000$}
+\put(4.5,3){\vector(1,0){3}}
+\put(28, 2.5) {End of Ram}
+\put(27.5, 3){\vector(-1, 0){3}}
+
+\end{picture}
+\caption{Layout of Main Memory with n Processes. The RTX Image contains all global and static variables}
+\label{fig:memory}
+\end{figure}
+
 \chapter{Raw Measurement Data}
 \label{appendix:raw_data}
 
