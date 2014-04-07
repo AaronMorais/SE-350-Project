@@ -11,6 +11,8 @@
     graphicx
 }
 
+\usepackage[margin=1in]{geometry}
+
 \definecolor{light-gray}{rgb}{0.9, 0.9, 0.9}
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
@@ -102,28 +104,21 @@
 \end{abstract}
 
 \tableofcontents
-\listofalgorithms
 \listoffigures
 
-% Uncomment these if we add any figures or tables
+% NOTE(sanjay): uncomment these if we add any figures or tables
 % \listoftables
 
 
 \part{Introduction}
-The software engineering class of 2016 has been given the task of writing a real time executive (RTX) on a Keil MCB1700 board with a LPC1768 microcontroller. This operating provides a basic multiprogramming environment on a uniprocessor core with 5 priority levels, preemption, heap memory management, a basic timing service, and system I/O for user inputs, outputs, and debugging purposes. This report discusses the usage and implementation of this operating system implemented by group 2.
-
-The first section of this report discusses the implementation of the operating system. It discusses the global variables used in the operating system and what their needs are. Then, it goes on to give a layout of each kernel API call that the user has access to. Next, interrupt and system process implementations are discussed in detail. This will cover which API calls use the process and how these processes interact with both the user and the kernel. Example user processes were also written for testing and execution of the operating system. Section \ref{sec:user_processes} goes into more details about each individual user process and what their purpose is in the creation of the operating system. We also discuss the initialization of the OS, which includes parameters the OS is given before its initial execution of a process and the initialization steps it must carry. Finally, we end the kernel API discussion with lessons we have learned and major design decisions that may help other people in the future.
-
-Apart from implementation of the RTX, testing and timing analysis was also done on the operating system. The last section discusses the result of the tests (such as unit tests and debugging techniques) that were done the and results of the timing analysis. The timing analysis analyzes two four kernel API primitives on different machines and with different parameters. The raw material were formalized for analysis using mathematical statistics.
-
-
+% TODO INTRODUCTION
 
 \part{Awesome RTX}
 % Make sure to include pseudocode and testing, if appropriate.
 
 \chapter{Global Variables}
 \section{Description}
-There are various amounts of variables used throughout the RTX. This section describes the global variables that are used to accomplish tasks in the RTX. Other global variables such as the global process IDs can be seen in the appendix (Section \ref{sec:appendix}) There are three major sections that required global variables and data structures: memory management in the heap, scheduler, and user processes.
+There are various amounts of variables used throughout the RTX. This section describes the global variables that are used to accomplish tasks in the RTX. Other global variables such as the global process IDs can be seen in the appendix TODO. There are three major sections that required global variables and data structures: memory management in the heap, scheduler, and user processes.
 
 \section{Heap Data Structures}
 The RTX provides functionality to request and release memory from the heap, which is shared and stored in the RAM of the board. There is one main data structure that stores each memory block.
@@ -185,7 +180,7 @@ typedef struct PCB {
 } PCB;
 
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
-PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
+PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
 \end{lstlisting}
 
 PCBs and the priority queues are used in the following sections:
@@ -224,13 +219,39 @@ typedef enum {
 
 This priority structure is used by the process management unit to schedule and block processes based on their priorities. The RTX provides users with UserProcessPriority while keeping an internal structure of ProcessPriority.
 
+\subsection{Message Passing}
+Message passing is a way for interprocess communication provided by the RTX. Messages are created in the form of a msgbuf structure, which includes the type and content. Some processes such as the CRT and KCD will require a certain type of message to be sent before the message can be processed correctly.
+
+\begin{lstlisting}
+typedef enum {
+  MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
+  MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
+  MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
+  MESSAGE_TYPE_WALL_CLOCK               = 3,
+  MESSAGE_TYPE_COUNT_REPORT             = 4,
+  MESSAGE_TYPE_WAKEUP_10                = 5,
+
+  MESSAGE_TYPE_NUM                      = 6,
+} MessageType;
+
+struct msgbuf {
+  MessageType mtype:
+  char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
+};
+
+\end{lstlisting}
+
+The message passing data structure is evident in the KCD, wall clock process, and all I-processes. It can also be used in all user processes.
+
+
 \chapter{Kernel API}
 % TODO add a section on implementation details and run time analysis.
 \section{Description}
-This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Exact details can be found in the raw code.
+This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Details of the implementation can be found in section TODO or from the raw code.
 
 \section{Memory Management}
 \subsection{Description}
+% TODO fill in figure blah
 The RTX provides the utility of simple memory management of the heap. The main memory on the Keil MCB1700 is divided into sections of the RTX Image, PCB data, the heap, and process stacks seen in Figure \ref{fig:memory}.
 
 The Keil MCB1700 does not have the necessary hardware to support virtual memory. Thus, a fixed memory management scheme is used. The OS kernel is always loaded into main memory in its entirity. When the OS boots, a user stated number of PCBs and process stack are allocated. The OS also allocates memory for system processes such as the Keyboard Command Decoder Process (KCD) and the CRT Display Process. After allocation of PCBs and process stacks, the remaining memory is used for the heap, which is shared between all processes. This section will be focused on the memory management of the heap.
@@ -242,7 +263,7 @@ The heap is further divided into a variable number of blocks. Each block contain
 \begin{lstlisting}
 void *request_memory_block();
 \end{lstlisting}
-\par The first functionality supported by the OS is the ability to request memory. This call gives back a pointer to a memory block in the heap. The size of the memory block is defined by the constant HEAP\_BLOCK\_SIZE, which defaults to 128 bytes. These blocks are used for storing local variables or as envelopes for interprocess communication (described in section \ref{sec:send_message}). The user must cast the memory block to the proper type for his or her own use. An example of the usage is provided below, which stores the numbers 0-31 in an array of size 32.
+\par The first functionality supported by the OS is the ability to request memory. This call gives back a pointer to a memory block in the heap. The size of the memory block is defined by the constant HEAP\_BLOCK\_SIZE, which defaults to 128 bytes. These blocks are used for storing local variables or as envelopes for interprocess communication (described in section TODO). The user must cast the memory block to the proper type for his or her own use. An example of the usage is provided below, which stores the numbers 0-31 in an array of size 32.
 \begin{lstlisting}
 void user_process() {
     int size = 32;
@@ -263,16 +284,19 @@ void user_process() {
 \par All processes will share the same heap memory pool. Thus, this primitive will block the process if there are no remaining free memory blocks. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check this in any way. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
 
 \par Requesting memory is reliant on calls to the heap to find an available memory block to allocate. The heap keeps a list of the status of each memory block to determine whether or not a block of memory can be requested. The following is the implementation used by the heap:
-\begin{algorithmic}
-  \Function{FindFreeBlock}{}
-    \For{$i = 0$ to $TotalNumberOfBlocks$}
-      \If{FreeSpaceBitmap[i] is a free block}
-        \State return i
-      \EndIf
-    \EndFor
-  \State return not found
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+  \caption{Requesting Memory}
+  \begin{algorithmic}[1]
+    \Function{FindFreeBlock}{}
+      \For{$i = 0$ to $TotalNumberOfBlocks$}
+        \If{FreeSpaceBitmap[i] is a free block}
+          \State return i
+        \EndIf
+      \EndFor
+    \State return not found
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 The lookup time of the FreeSpaceBitmap is O(1) as it is a simple array lookup and a boolean evaluation. Finding a free block has its dependencies on the total number of blocks. The best case for requesting memory is O(1) when the first block in the heap is free. Since this is a linear search, on average the complexity is O(n) where n is the total number of blocks.
 
@@ -292,11 +316,14 @@ int release_memory_block(void *memory_block);
 \par The second functionality supported by the OS is the ability to release memory. This is a non-blocking (but potentially pre-empting) call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
 
 \par In order to release the memory, release\_memory\_block will need to rely on the implementation of the heap. As stated in \ref{sec:request_memory}, the heap keeps a list of all available memory blocks. In order to release a memory block, the heap will set that block in the list as a free block. Releasing the block thus has O(1) complexity as it only relies on an array lookup. The implementation is as follows:
-\begin{algorithmic}
-  \Function{ReleaseMemory}{MemoryBlock}
-    \State FreeSpaceBitmap[position of MemoryBlock] $\gets$ true
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+    \caption{Releasing Memory}
+    \begin{algorithmic}[1]
+    \Function{ReleaseMemory}{MemoryBlock}
+      \State FreeSpaceBitmap[position of MemoryBlock] $\gets$ true
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \bigskip
 
@@ -326,7 +353,7 @@ void user_process() {
 int send_message(int process_id, void *message_envelope);
 \end{lstlisting}
 
-\par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory\_block() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX. The message data has a predefined size which is smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message().
+\par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory\_block() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX (see section TODO for more information). The message data has a predefined size which is smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message().
 \newline
 \begin{lstlisting}
 typedef enum {
@@ -344,6 +371,7 @@ struct msgbuf {
     char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
 };
 \end{lstlisting}
+% TODO (Justin) make sure that's okay for the mtext and type:P
 \par The primitive returns a status which validates the, message, receiver process ID, and ready queue. User processes is allowed to send a message to any user processes or system processes such as the KCD. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
 
 \par In order to keep track of messages that have been sent, the messages are stored in a queue, specifically a linked list. Messages are added to the end of the linked list resulting in an O(n) insertion complexity. It is possible to have this run in O(1) time by using a doubly-linked list and keeping track of the first and last elements in the list, but it seemed more important to provide a working prototype first, and optimize the runtime when (if) it became an issue. O(n) is likely to be quite small even in the worst case, given the limited size of the RTX heap.
@@ -441,95 +469,106 @@ void user_process() {
 The operating system supports two interrupt processes, a timer I-process and a UART I-process.
 \section{Timer I-Process}
 At initialization of the OS, we initialize prescale registered to have a value of 12499, which equals 1 millisecond along with other values that require the interrupt to occur. With these initialized values, we enable the timer 0 interrupts for every 1 millisecond. Once an interrupt occurs, the following handler handles the interrupt.
-
-\begin{algorithmic}
-    \Function{TIMER0\_IRQHandler}{}
-        \State Disable other interrupts
-        \State Save state
-        \State \Call{c\_TIMER0\_IRQHandler}{}
-        \State Enable other interrupts
-        \State Put state back and go back to original execution
-    \EndFunction
-    \bigskip
-    \Function{c\_TIMER0\_IRQHandler}{}
-        \State Reset interrupt bit
-        \State Increase static timer count
-        \State message\_peek = \Call{sorted\_message\_queue\_top}{}
-        \If{message\_peek time has elapsed}
-            \State message = \Call{sorted\_message\_queue\_pop}{}
-            \State \Call{send\_message}{message}
-            \State \Call{preempt\_if\_necessary}{}
-        \EndIf
-    \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+    \caption{Timer Interrupt}
+    \begin{algorithmic}[1]
+      \Function{TIMER0\_IRQHandler}{}
+          \State Disable other interrupts
+          \State Save state
+          \State \Call{c\_TIMER0\_IRQHandler}{}
+          \State Enable other interrupts
+          \State Put state back and go back to original execution
+      \EndFunction
+      \bigskip
+      \Function{c\_TIMER0\_IRQHandler}{}
+          \State Reset interrupt bit
+          \State Increase static timer count
+          \State message\_peek = \Call{sorted\_message\_queue\_top}{}
+          \If{message\_peek time has elapsed}
+              \State message = \Call{sorted\_message\_queue\_pop}{}
+              \State \Call{send\_message}{message}
+              \State \Call{preempt\_if\_necessary}{}
+          \EndIf
+      \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 The interrupt process is used to keep a timer accurate to 1 millisecond. It is also used for the delayed send primitive in the kernel API. Messages sent to the timer process are kept in a special mailbox that sorts the messages by earliest send time. On each interrupt, the handler checks whether there are message that have elapsed their delay time and sends them. It preempts the current process if a process is blocked on receive and has a higher priority than the currently interrupted process or running process. Interrupts are also disabled from the start and end of this routine. This is to prevent interrupt nesting to occur. If another interrupt occurs in the middle of this interrupt routine, it will be processed after the routine is finished.
 
 \section{UART I-Process}
 The UART I-Process is the center of receiving keyboard input and transmitting characters for output.
 
 \subsection{Input}
-\label{sec:uart_input}
+\label{uart_input}
 The first task of the UART is to receive keyboard input. We receive one input character for each interrupt. This character is passed in the form of a message to the KCD for processing, where it will output to the CRT and be processed for any incoming commands. The input section of the UART also handles debugging hot keys. Three character hot keys: 'a', 'b', 'c', and 'd' are chosen to output the ready queue, blocked on resource queue, blocked on message queue, and timer delayed message queue respectively. These outputs use the polling output rather than the interrupt output because if memory was to run out during execution, we still want to see the output of the queues. This cannot be done with interrupts as it requires message passing, thus memory allocation.
 
-\begin{algorithmic}
-    \If{keyboard input interrupt}
-        \State char\_in = input\_character
-        \If{char\_in is 'a' }
-            \Call{print\_ready\_queue}{}
-        \ElsIf{char\_in is 'b' }
-            \Call{print\_blocked\_memory\_queue}{}
-        \ElsIf{char\_in is 'c' }
-            \Call{print\_blocked\_receive\_queue}{}
-        \ElsIf{char\_in is 'd' }
-            \Call{timer\_print\_delayed\_message\_queue}{}
-        \EndIf
-        \State message = \Call{allocate\_memory\_for\_message}{}
-        \State message.Type = MESSAGE\_TYPE\_KCD\_KEYPRESS\_EVENT
-        \State message.Data = char\_in
-        \State \Call{send\_message}{message}
-    \EndIf
-\end{algorithmic}
+\begin{algorithm}
+    \caption{UART Input}
+    \begin{algorithmic}[1]
+      \If{keyboard input interrupt}
+          \State char\_in = input\_character
+          \If{char\_in is 'a' }
+              \Call{print\_ready\_queue}{}
+          \ElsIf{char\_in is 'b' }
+              \Call{print\_blocked\_memory\_queue}{}
+          \ElsIf{char\_in is 'c' }
+              \Call{print\_blocked\_receive\_queue}{}
+          \ElsIf{char\_in is 'd' }
+              \Call{timer\_print\_delayed\_message\_queue}{}
+          \EndIf
+          \State message = \Call{allocate\_memory\_for\_message}{}
+          \State message.Type = MESSAGE\_TYPE\_KCD\_KEYPRESS\_EVENT
+          \State message.Data = char\_in
+          \State \Call{send\_message}{message}
+      \EndIf
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Output}
-\label{sec:uart_output}
+\label{uart_output}
 The second task of the UART is to output characters onto terminal display. A message can contain up to 20 characters. However, the UART display interrupt only supports one character output per interrupt. Thus, the interrupt bit is enabled for the message and a message buffer counter is increased every time an interrupt occurs until the entire message has been outputted to the terminal character by character. Putting this together, we have the following implementation.
 
-\begin{algorithmic}
-    \If{keyboard output interrupt}
-        \If{there is no more characters in the message to print}
-            \State \Call{memory\_release\_block}{message}
-            \State turn off output interrupt bits
-        \Else
-            \State char\_out = message->Data[count]
-            \State give char\_out to register for output
-            \State count++
-        \EndIf
-    \EndIf
-\end{algorithmic}
+\begin{algorithm}
+    \caption{UART Output}
+    \begin{algorithmic}[1]
+      \If{keyboard output interrupt}
+          \If{there is no more characters in the message to print}
+              \State \Call{memory\_release\_block}{message}
+              \State turn off output interrupt bits
+          \Else
+              \State char\_out = message->Data[count]
+              \State give char\_out to register for output
+              \State count++
+          \EndIf
+      \EndIf
+  \end{algorithmic}
+\end{algorithm}
 
 
 \subsection{Putting it together}
 The UART's interrupt handler handles both input from the keyboard and output to terminal screen. Thus, the overall handler has this implementation:
 
-\begin{algorithmic}
-    \Function{UART0\_IRQHandler}{}
-        \State Disable other interrupts
-        \State Save state
-        \State \Call{c\_UART0\_IRQHandler}{}
-        \State Enable other interrupts
-        \State Put state back and go back to original execution
-    \EndFunction
-    \bigskip
-    \Function{c\_UART0\_IRQHandler}{}
-        \If{input}
-            \State run code from section \ref{sec:uart_input}
-        \ElsIf{output}
-            \State run code from section \ref{sec:uart_output}
-        \Else
-            \State error
-        \EndIf
-    \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+    \caption{UART Interrupt}
+    \begin{algorithmic}[1]
+      \Function{UART0\_IRQHandler}{}
+          \State Disable other interrupts
+          \State Save state
+          \State \Call{c\_UART0\_IRQHandler}{}
+          \State Enable other interrupts
+          \State Put state back and go back to original execution
+      \EndFunction
+      \bigskip
+      \Function{c\_UART0\_IRQHandler}{}
+          \If{input}
+              \State run code from section \ref{uart_input}
+          \ElsIf{output}
+              \State run code from section \ref{uart_output}
+          \Else
+              \State error
+          \EndIf
+      \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 Similar to the timer I-process, the UART I-process will preempt the current process if another process with higher priority receives its message after being blocked on receive. The UART I-process also does not support nested interrupts. Other interrupts are disabled during this routine and will occur only after this handler has finished its execution.
 
@@ -543,41 +582,47 @@ The RTX consists of system processes that sit on top of the kernel. These system
 
 \subsection{Null Process}
 The design of the RTX requires that a process should always be executing. Thus, if there are no user or other system processes, the null process executes. The only job of the null process is to keep the processor running. It has the lowest priority of any process using the RTX. If any process is added into the ready queue during the execution of this process, a preemption will occur and the new process will take control of the processor. The final implementation follows the following form.
-
- \begin{algorithmic}
-  \Function{null\_process}{}
-    \While{true}
-    \EndWhile
-  \EndFunction
- \end{algorithmic}
+\begin{algorithm}
+    \caption{Null Process}
+    \begin{algorithmic}[1]
+      \Function{null\_process}{}
+        \While{true}
+        \EndWhile
+      \EndFunction
+    \end{algorithmic}
+\end{algorithm}
 
 \subsection{CRT Display Process}
 \label{sec:crt_process}
 % TODO make footnotes for details
-The RTX supports output to terminal display. CRT is a system process that the RTX uses to accomplish the task of display. The CRT process depends on the UART I-Process (details of the UART can be found in Section \ref{sec:uart_output}). The CRT is implemented using the following algorithm.
+The RTX supports output to terminal display. CRT is a system process that the RTX uses to accomplish the task of display. The CRT process depends on the UART I-Process (details of the UART can be found in section TODO). The CRT is implemented using the following algorithm.
 
-\begin{algorithmic}
-  \Function{crt\_process}{}
-    \While{true}
-        \State message = \Call{receive\_message}{NULL}
-        \If{message is not a CRT display request}
-            \State continue
-        \EndIf
-        \State \Call{send\_message}{PROCESS\_ID\_UART, message}
-        \State Set interrupt bits
-    \EndWhile
-  \EndFunction
- \end{algorithmic}
+\begin{algorithm}
+  \caption{CRT}
+  \begin{algorithmic}[1]
+    \Function{crt\_process}{}
+      \While{true}
+          \State message = \Call{receive\_message}{NULL}
+          \If{message is not a CRT display request}
+              \State continue
+          \EndIf
+          \State \Call{send\_message}{PROCESS\_ID\_UART, message}
+          \State Set interrupt bits
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
  The CRT display process accepts message requests from any process of type MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST. This tells the CRT to send the message for display to the UART I-process, which interacts with the hardware registers to output to terminal. Since the UART process is an interrupt process, the interrupt bit must be set in order for the process to run. Thus, after sending the message to UART's mailbox, the CRT process enables the interrupt bits for the I-process to trigger. The UART I-process passes the message character by character to the hardware to display to the terminal.
 
 \subsection{Keyboard Command Decoder Process}
 \label{sec:kcd_process}
-The RTX provides functionality to forward user input commands to a particular process. The keyboard command decoder process (KCD) handles two tasks: giving input to the CRT for terminal display and forwarding certain inputs to different processes for further processing. For the first task, all keyboard inputs are filtered by the KCD. The UART I-process is called when a key is first pressed. The UART I-process (explained further in section \ref{sec:uart_input}) then passes a message to the KCD telling of type key press. In the first case, the KCD will take this message and pass it on to the CRT for terminal display.
+The RTX provides functionality to forward user input commands to a particular process. The keyboard command decoder process (KCD) handles two tasks: giving input to the CRT for terminal display and forwarding certain inputs to different processes for further processing. For the first task, all keyboard inputs are filtered by the KCD. The UART I-process is called when a key is first pressed. The UART I-process (explained further in section TODO) then passes a message to the KCD telling of type key press. In the first case, the KCD will take this message and pass it on to the CRT for terminal display.
 
 In the latter case, processes can register a command with the KCD. Each command registration consists of a single capital letter of the alphabet. If a command is taken, the KCD will not register the command and exit with an error. After a valid command has been registered, user input with the pattern "\%" followed by a upper case character will be parsed by the KCD. If user types in "\%" followed by a registered character, the KCD will buffer the input until the user presses the return key. In that scenario, the KCD will pass it onto the registered process. The following algorithm of the KCD explains this in more detail.
-
-\begin{algorithmic}
+\begin{algorithm}
+  \caption{KCD}
+  \begin{algorithmic}[1]
     \Function{process\_input}{message}
         \If{ There a "\%" character in the buffer }
             \If{message.Content is a command character}
@@ -617,7 +662,8 @@ In the latter case, processes can register a command with the KCD. Each command 
             \EndIf
         \EndWhile
     \EndFunction
-\end{algorithmic}
+  \end{algorithmic}
+\end{algorithm}
 
 An example of this usage is the wall clock process (described in more detail in section \ref{sec:wall_clock_process}). The wall clock process registers the character 'W' as a command. The registration will be done by passing a message to the KCD of command registration type. This message is received by the KCD. If the 'W' command has not been registered, it becomes registered by the wall clock process. Meanwhile, the user types in random characters. Any character that is not '\%' is passed by the KCD to the CRT for display. Once a '\%' is received, the KCD checks the next character to see if it's a registered command. If its not a registered command, the KCD clears the buffer and starts at the beginning. If it is a registered command, the KCD keeps a buffer of all the input characters. This buffer fills with data and is sent to the wall clock process for processing after the user presses enter. The buffer is only 20 characters long. Thus, any data for a process after 20 characters will not be sent to the registered process on enter.
 
@@ -634,167 +680,181 @@ The user-level test processes were designed to test the RTX. Six aspects of the 
 \noindent{{\bf Test Process 1 - }Request Memory and Release Memory}
 
 \noindent The first test process tests the functionality of requesting and releasing memory blocks. A number of memory blocks are requested and stored sequentially, and then immediately released. The process is implemented using the following algorithm.
-\begin{algorithmic}
-\Function{TEST\_PROCESS\_1}{}
-  \State number\_of\_memory\_blocks = 30
-    \For{i = 0 to number\_of\_memory\_blocks}
-    \State memory\_blocks[i] = REQUEST\_MEMORY\_BLOCK()
-  \EndFor
-  \State mark the request memory test as passed
-  \For{i = 0 to number\_of\_memory\_blocks}
-    \State RELEASE\_MEMORY\_BLOCK(memory\_blocks[i])
-  \EndFor
-  \State mark the release memory test as passed
-  \State set the priority of process 1 to lowest
-  \State set the priority of process 2 to high
-  \While{true}
-    \State increment static iteration counter
-  \EndWhile
-\EndFunction
-\end{algorithmic}
+\begin{algorithm}
+  \caption{User Test Process 1}
+  \begin{algorithmic}[1]
+    \Function{TEST\_PROCESS\_1}{}
+      \State number\_of\_memory\_blocks = 30
+        \For{i = 0 to number\_of\_memory\_blocks}
+        \State memory\_blocks[i] = REQUEST\_MEMORY\_BLOCK()
+      \EndFor
+      \State mark the request memory test as passed
+      \For{i = 0 to number\_of\_memory\_blocks}
+        \State RELEASE\_MEMORY\_BLOCK(memory\_blocks[i])
+      \EndFor
+      \State mark the release memory test as passed
+      \State set the priority of process 1 to lowest
+      \State set the priority of process 2 to high
+      \While{true}
+        \State increment static iteration counter
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \noindent {\bf Test Process 2 - }Set priority
 
 \noindent The second test process tests the functionality of setting the priority of processes. In addition, the process preemption that can occur due to changing priorities is also tested. During this test, process 3 and 4 are given higher priority than process 2. Once this occurs, process 2 is preempted and is not scheduled to run again. Details of this process are shown in the following algorithm.
-\begin{algorithmic}
-\Function{TEST\_PROCESS\_2}{}
-  \State mark the set priority test as passed
-  \State set the priority of process 3 to high
-  \State set the priority of process 4 to medium
-  \State set the priority of process 2 to lowest
+\begin{algorithm}
+  \caption{User Test Process 2}
+  \begin{algorithmic}[1]
+    \Function{TEST\_PROCESS\_2}{}
+      \State mark the set priority test as passed
+      \State set the priority of process 3 to high
+      \State set the priority of process 4 to medium
+      \State set the priority of process 2 to lowest
 
-  \State mark the set priority test as failed
-  \While{true}
-  \EndWhile
-\EndFunction
-\end{algorithmic}
+      \State mark the set priority test as failed
+      \While{true}
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \noindent {\bf Test Process 3 and 4 - }Send and receive message
 
 \noindent Process 3 and 4 test the send and receive message functionality by sending messages between each other. Process 3 waits to receive messages from process 4. Once process 3 has received a set number of messages and process 4 has sent the same required number, the test will be marked as successful. The next test will be conducted by increasing the priority of process 5 and decreasing the priorities of process 3 and 4 to trigger preemption. The details of these two test processes can be seen below.
-\begin{algorithmic}
-\Function{TEST\_PROCESS\_3}{}
-  \State received\_messages = 0
-  \State required\_messages = 50
-  \While{true}
-    \State mark received message test as failed
-    \State message = RECEIVE\_MESSAGE(NULL)
-    \State received\_messages = received\_message + 1
-    \State RELEASE\_MEMORY\_BLOCK(message)
-    \If{received\_messages is equal to required\_messages}
-      \State mark the receive message test as passed
-          \State set the priority of process 5 to high
-          \State set the priority of process 4 to lowest
-          \State set the priority of process 3 to lowest
-    \EndIf
-  \EndWhile
-\EndFunction
+\begin{algorithm}
+  \caption{User Test Process 3 and 4}
+  \begin{algorithmic}[1]
+    \Function{TEST\_PROCESS\_3}{}
+      \State received\_messages = 0
+      \State required\_messages = 50
+      \While{true}
+        \State mark received message test as failed
+        \State message = RECEIVE\_MESSAGE(NULL)
+        \State received\_messages = received\_message + 1
+        \State RELEASE\_MEMORY\_BLOCK(message)
+        \If{received\_messages is equal to required\_messages}
+          \State mark the receive message test as passed
+              \State set the priority of process 5 to high
+              \State set the priority of process 4 to lowest
+              \State set the priority of process 3 to lowest
+        \EndIf
+      \EndWhile
+    \EndFunction
 
-\Function{TEST\_PROCESS\_4}{}
-  \State sent\_messages = 0
-  \State required\_messages = 50
-  \State test\_phrase = "The quick brown fox jumped over the lazy dog”
-  \While{true}
-    \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
-    \State set the value of mtype property for message\_envelope to 10
-    \State set the value of mtext property for message\_envelope to test\_phrase
-    \State sent\_messages = sent\_message + 1
-    \If{sent\_messages is equal to required\_messages}
-      \State mark the send message test as passed
-    \Else
-      \State send message\_envelope to process 3
-    \EndIf
-  \EndWhile
-\EndFunction
-\end{algorithmic}
+    \Function{TEST\_PROCESS\_4}{}
+      \State sent\_messages = 0
+      \State required\_messages = 50
+      \State test\_phrase = "The quick brown fox jumped over the lazy dog”
+      \While{true}
+        \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
+        \State set the value of mtype property for message\_envelope to 10
+        \State set the value of mtext property for message\_envelope to test\_phrase
+        \State sent\_messages = sent\_message + 1
+        \If{sent\_messages is equal to required\_messages}
+          \State mark the send message test as passed
+        \Else
+          \State send message\_envelope to process 3
+        \EndIf
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \noindent {\bf Test Process 5 - } Delayed send
 
 \noindent Process 5 tests the delayed send functionality of the RTX. To begin this test, the process sends a message to itself. Immediately afterward a receive message api call is made, blocking the process. Process 1 is at medium priority and runs during the 1000 ms duration that process 5 is blocked. By incrementing a static pointer in a while loop within process 1, verifying that the counter is greater than 0 confirms that the message sent successfully and in a delayed manner as desired.  The delayed send process algorithm can be seen below.
 
-\begin{algorithmic}
-\Function{TEST\_PROCESS\_5}{}
-  \State set\_process\_priority(1, USER\_PROCESS\_PRIORITY\_MEDIUM)
+\begin{algorithm}
+  \caption{User Test Process 5}
+  \begin{algorithmic}[1]
+    \Function{TEST\_PROCESS\_5}{}
+      \State set\_process\_priority(1, USER\_PROCESS\_PRIORITY\_MEDIUM)
 
-  \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
-  \State send message\_envelope to process 5 in 1000 ms
-  \State message = RECEIVE\_MESSAGE(NULL)
+      \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
+      \State send message\_envelope to process 5 in 1000 ms
+      \State message = RECEIVE\_MESSAGE(NULL)
 
-  \If{static iteration counter is greater than 0}
-    \State mark the delayed send test as passed
-  \EndIf
-  \State RELEASE\_MEMORY\_BLOCK(message)
+      \If{static iteration counter is greater than 0}
+        \State mark the delayed send test as passed
+      \EndIf
+      \State RELEASE\_MEMORY\_BLOCK(message)
 
-  \State set the priority of process 1 to lowest
-  \State set the priority of process 5 to lowest
-  \State set the priority of process 6 to high
-  \While{true}
-  \EndWhile
-\EndFunction
-\end{algorithmic}
+      \State set the priority of process 1 to lowest
+      \State set the priority of process 5 to lowest
+      \State set the priority of process 6 to high
+      \While{true}
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Wall Clock Process}
-\label{sec:wall_clock_process}
     The RTX provides a process that will act as a wall clock. When it is running, it will output its current time value to the CRT each second. The wall clock registers for commands with the KCD and based on commands that it is given, the wall clock can be started at time “00:00:00”, set to a user specified time or terminated.
 
   The wall clock registers the character ‘W’ with the KCD process. A reset, set or terminate command can be issued to the wall clock process. If a reset command is received, the process will begin updating the time every second starting from “00:00:00” to the console CRT. When a set command is received, the input is parsed, verified for correctness and then the wall clock begins outputting the clock every second starting from the user supplied time. A terminate command stops the console out from occurring.
 
   In order for the wall clock to output to the console each second, it sends a message to itself with a one second delay. If a message of this nature is received by the process, it will compute the current time offset based on the time elapsed value from the timer interrupt handler. With this time offset, it will print the current time.
 
-\begin{algorithmic}
-\Function{wall\_clock\_process}{}
-  \State is\_running = false
-  \State time\_base = 0
-  \State register the character ‘W’ as a command with the KCD process.
-  \State send a message of type MESSAGE\_TYPE\_WALL\_CLOCK to this process in 1000ms
-  \While{true}
-    \State message = RECEIVE\_MESSAGE(NULL)
-    \If{message is empty}
-      \State log error
-      \State continue while loop
-    \EndIf
-    \If{message property mtext is clock reset}
-      \State is\_running = true
-      \State time\_base = 0 - TIMER\_ELAPSED\_MS()
-      \State RELEASE\_MEMORY\_BLOCK(message)
-      \State break while loop
-    \ElsIf {message property mtext is clock set}
-      \State new\_time\_offset = wall\_clock\_parse\_time(message property mtext)
-      \If{new\_time\_offset is less than zero}
-        \State is\_running = false
-        \State set message property mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
-        \State send message to the CRT process
-        \State continue while loop
-      \EndIf
-      \State is\_running = true
-      \State time\_base = new\_time\_offset - TIMER\_ELAPSED\_MS()
-      \State RELEASE\_MEMORY\_BLOCK(message)
-      \State break while loop
-    \ElsIf{message property mtext is clock terminate}
-      \State is\_running = not value of is\_running
+\begin{algorithm}
+  \caption{Wall Clock}
+  \begin{algorithmic}[1]
+    \Function{wall\_clock\_process}{}
+      \State is\_running = false
+      \State time\_base = 0
+      \State register the character ‘W’ as a command with the KCD process.
+      \State send a message of type MESSAGE\_TYPE\_WALL\_CLOCK to this process in 1000ms
+      \While{true}
+        \State message = RECEIVE\_MESSAGE(NULL)
+        \If{message is empty}
+          \State log error
+          \State continue while loop
+        \EndIf
+        \If{message property mtext is clock reset}
+          \State is\_running = true
+          \State time\_base = 0 - TIMER\_ELAPSED\_MS()
+          \State RELEASE\_MEMORY\_BLOCK(message)
+          \State break while loop
+        \ElsIf {message property mtext is clock set}
+          \State new\_time\_offset = wall\_clock\_parse\_time(message property mtext)
+          \If{new\_time\_offset is less than zero}
+            \State is\_running = false
+            \State set message property mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
+            \State send message to the CRT process
+            \State continue while loop
+          \EndIf
+          \State is\_running = true
+          \State time\_base = new\_time\_offset - TIMER\_ELAPSED\_MS()
+          \State RELEASE\_MEMORY\_BLOCK(message)
+          \State break while loop
+        \ElsIf{message property mtext is clock terminate}
+          \State is\_running = not value of is\_running
+                \State RELEASE\_MEMORY\_BLOCK(message)
+                \State break while loop
+        \Else
+          \If{message mtype is not of type wall clock}
+            \State log error
             \State RELEASE\_MEMORY\_BLOCK(message)
-            \State break while loop
-    \Else
-      \If{message mtype is not of type wall clock}
-        \State log error
-        \State RELEASE\_MEMORY\_BLOCK(message)
-        \State continue while loop
-      \EndIf
-      \State timer\_message = REQUEST\_MEMORY\_BLOCK()
-      \State set timer\_message mtype to MESSAGE\_TYPE\_WALL\_CLOCK
-send timer\_message to wall clock in 1000ms
-      \If{if is\_running}
-        \State set message mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
-        \State set message mtext to value from function wall\_clock\_print\_time given (TIMER\_ELAPSED\_MS() + time\_base)
-        \State send message to the CRT process
-      \Else
-        \State RELEASE\_MEMORY\_BLOCK(message)
-      \EndIf
-      \State break while loop
-    \EndIf
-  \EndWhile
-\EndFunction
-\end{algorithmic}
+            \State continue while loop
+          \EndIf
+          \State timer\_message = REQUEST\_MEMORY\_BLOCK()
+          \State set timer\_message mtype to MESSAGE\_TYPE\_WALL\_CLOCK
+    send timer\_message to wall clock in 1000ms
+          \If{if is\_running}
+            \State set message mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
+            \State set message mtext to value from function wall\_clock\_print\_time given (TIMER\_ELAPSED\_MS() + time\_base)
+            \State send message to the CRT process
+          \Else
+            \State RELEASE\_MEMORY\_BLOCK(message)
+          \EndIf
+          \State break while loop
+        \EndIf
+      \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Set Priority Command Process}
   The RTX provides users with the ability to set the priority of other user processes via KCD commands. The set priority command process registers the character ‘C’ as a command with the KCD. The expected input command input looks like “\%C process\_id new\_priority”. The user can specify the process id of any user process and apply a new priority within the accepted range for user processes. The process functions by waiting to receive commands from the KCD, parsing a received command and taking action on the command inputed. Taking action involves using the set\_process\_priority function from the RTX api and the priority change occurs immediately, potentially causing preemption to occur.
@@ -954,15 +1014,13 @@ this solution didn't even occur to me (nor anyone in our group) at the time.
 \section{Lessons Learned}
   Over the course of this RTX project, we faced many obstacles. As we overcame each obstacle, we were able to identify the mistakes we had made and learn from them. The lessons learned from our mistakes allowed us to work more and more effectively, avoiding previous pitfalls that cost us a fair amount of development time.
 
+
 The successful implementation of the RTX project can be mainly attributed to the fact that the development process of the project was well defined early on. We were highly organized from the outset, defining coding conventions for the project, enforcing code reviews for code that wasn’t pair programmed and creating a private github repository. This repository provided us with a distributed version control system so that group members could contribute code from their own machines. Additionally, we were able to use the issue tracking and code review functionality available within github to keep our project organized.
 
-Time management was an issue that plagued development. For most deliverables, a considerable amount of work was done right before the deadline. If we had managed our time better, the code quality of the system could potentially be better, there would have been less stress to meet deadlines and additional functionality such as memory protection could have been implemented for the RTX.
+There were some mistakes that we ran into often when working on this project. When variables are not initialized, this mistake is difficult to find. Using the simulator within the Keil IDE does not reveal this issue because the simulator sets all variables to empty values on creation. However, when testing on the board, values would instantiated with garbage value causing issues. Conducting development of the RTX while testing on the board and being more cautious avoided mistakes such as this.
 
-There were some mistakes that we ran into often when working on this project. When variables are not initialized, this mistake is difficult to find. Using the simulator within the Keil IDE does not reveal this issue because the simulator sets all variables to empty values on creation. However, when testing on the board, values would instantiated with garbage value causing issues. Additionally, not clearing the values in memory blocks caused issues when they were reallocated for reuse. For example, an element was able to point back to itself because the header was not cleared. Conducting development of the RTX while testing on the board and being more cautious avoided mistakes such as this.
-
-For debugging, the use of unit tests and a hard fault handler was extremely useful. Unit tests were written for simple functions and data structures such as our priority queue, heap queue and heap. Testing these functions provided a sanity check of the systems functionality and verified that changes did not cause any regressions. The hard fault handler was also extremely useful for tracking down bugs. It provided access to memory at the time of hard fault, including the program counter, making it easier to pinpoint specific issues with the system.
-
-Overall, we are happy with what we have accomplished. We’ve created a robust system that meets all of the design criteria.
+Overall, the project was successful and we were happy.
+%*****aaronWIP
 
 \part{Testing and Analysis}
 
@@ -1011,18 +1069,21 @@ wasn't properly saved for blocked processes! BAM! Moving the saving of the stack
 \label{sec:single_request_single_release}
 In the first analysis, the request\_memory and release\_memory methods were timed. Single request, single release means that a single memory block was requested and the time taken was recorded. Similarly for releasing a memory block. By doing so we are able to keep the heap in the same state, eliminating the effects of cumulative memory requests (which will be tested in section \ref{sec:cumulative_memory_requests}). The method to time this is shown in the following algorithm. Data was collected across 5 machines, with 1000 calls to each function.
 
-\begin{algorithmic}
-  \Function{Single\_Request\_Single\_Release}{}
-    \For{$i = 0$ to $1000$}
-      \State RequestStartTime[i] $\gets$ Curent Time
-      \State memoryBlock $\gets$  \Call{request\_memory\_block}{}
-      \State RequestEndTime[i] $\gets$ Curent Time
-      \State ReleaseStartTime[i] $\gets$ Curent Time
-      \State \Call{release\_memory\_block}{memoryBlock}
-      \State ReleaseEndTime[i] $\gets$ Curent Time
-    \EndFor
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+  \caption{Single Request and Single Release}
+  \begin{algorithmic}[1]
+    \Function{Single\_Request\_Single\_Release}{}
+      \For{$i = 0$ to $1000$}
+        \State RequestStartTime[i] $\gets$ Curent Time
+        \State memoryBlock $\gets$  \Call{request\_memory\_block}{}
+        \State RequestEndTime[i] $\gets$ Curent Time
+        \State ReleaseStartTime[i] $\gets$ Curent Time
+        \State \Call{release\_memory\_block}{memoryBlock}
+        \State ReleaseEndTime[i] $\gets$ Curent Time
+      \EndFor
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 Based on the analysis, the mean run time for release memory is 405.44ns. The standard error (marked in the green mean diamonds on the figure) is very small, giving a 95\% confidence interval ranging from [404.99, 405.84] to [405.1, 405.95]. The F ratio is incredibly small (0.0474), meaning that there is little to no variance among the different machines and as such it can be concluded that the hardware does not greatly affect the performance of the method.
 
@@ -1045,25 +1106,26 @@ The results of releasing memory are very similar to that of requesting memory. T
 
 \par The cumulative memory requests condition had 50 memory blocks requested and then subsequently released. This differs from experiment in \ref{sec:single_request_single_release} where the requested memory blocks do not accumulate. The purpose of this experiment is to see the effect of depleting resources on run time. Once again, trials were taken over 5 machines, however, each machine showed the same performance. To acheive this, the following two method calls were made.
 
-\begin{algorithmic}
-  \Function{Cumulative\_Request}{}
-    \For{$i = 0$ to $50$}
-      \State RequestStartTime[i] $\gets$ Curent Time
-      \State memoryBlock $\gets$  \Call{request\_memory\_block}{}
-      \State RequestEndTime[i] $\gets$ Curent Time
-    \EndFor
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}
+  \caption{Cumulative Memory Request and Memory release}
+  \begin{algorithmic}[1]
+    \Function{Cumulative\_Request}{}
+      \For{$i = 0$ to $50$}
+        \State RequestStartTime[i] $\gets$ Curent Time
+        \State memoryBlock $\gets$  \Call{request\_memory\_block}{}
+        \State RequestEndTime[i] $\gets$ Curent Time
+      \EndFor
+    \EndFunction
 
-\begin{algorithmic}
-  \Function{Cumulative\_Release}{}
-    \For{$i = 0$ to $50$}
-      \State ReleaseStartTime[i] $\gets$ Curent Time
-      \State memoryBlock $\gets$  \Call{release\_memory\_block}{}
-      \State ReleaseEndTime[i] $\gets$ Curent Time
-    \EndFor
-  \EndFunction
-\end{algorithmic}
+    \Function{Cumulative\_Release}{}
+      \For{$i = 0$ to $50$}
+        \State ReleaseStartTime[i] $\gets$ Curent Time
+        \State memoryBlock $\gets$  \Call{release\_memory\_block}{}
+        \State ReleaseEndTime[i] $\gets$ Curent Time
+      \EndFor
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \par Consistent with the Single Request, Single Release experiment, the first memory block requested took 1229ns. A linear trend line is overlaid on top showing an R2 value of 1 (a perfect trend). The trend shows that for each additional memory block requested, the run time increase by 17ns. This linear trend is in accordance with the implementation of the request memory method which has O(n) complexity described in \ref{sec:request_memory}.
 
@@ -1114,7 +1176,6 @@ Another factor that was tested is the length of the message being sent. Dependin
 
 
 \appendix
-\label{sec:appendix}
 \chapter{Raw Measurement Data}
 \label{appendix:raw_data}
 
