@@ -116,7 +116,13 @@
 
 
 \part{Introduction}
-% TODO INTRODUCTION
+The software engineering class of 2016 has been given the task of writing a real time executive (RTX) on a Keil MCB1700 board with a LPC1768 microcontroller. This operating provides a basic multiprogramming environment on a uniprocessor core with 5 priority levels, preemption, heap memory management, a basic timing service, and system I/O for user inputs, outputs, and debugging purposes. This report discusses the usage and implementation of this operating system implemented by group 2.
+
+The first section of this report discusses the implementation of the operating system. It discusses the global variables used in the operating system and what their needs are. Then, it goes on to give a layout of each kernel API call that the user has access to. Next, interrupt and system process implementations are discussed in detail. This will cover which API calls use the process and how these processes interact with both the user and the kernel. Example user processes were also written for testing and execution of the operating system. Section \ref{sec:user_processes} goes into more details about each individual user process and what their purpose is in the creation of the operating system. We also discuss the initialization of the OS, which includes parameters the OS is given before its initial execution of a process and the initialization steps it must carry. Finally, we end the kernel API discussion with lessons we have learned and major design decisions that may help other people in the future.
+
+Apart from implementation of the RTX, testing and timing analysis was also done on the operating system. The last section discusses the result of the tests (such as unit tests and debugging techniques) that were done the and results of the timing analysis. The timing analysis analyzes two four kernel API primitives on different machines and with different parameters. The raw material were formalized for analysis using mathematical statistics.
+
+
 
 \part{Awesome RTX}
 % Make sure to include pseudocode and testing, if appropriate.
