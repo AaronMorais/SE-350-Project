@@ -191,7 +191,7 @@ typedef struct PCB {
 } PCB;
 
 PCB* g_ready_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
-PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM];
+PCB* g_blocked_process_priority_queue[PROCESS_PRIORITY_NUM] = {NULL};
 \end{lstlisting}
 
 PCBs and the priority queues are used in the following sections:
@@ -230,41 +230,15 @@ typedef enum {
 
 This priority structure is used by the process management unit to schedule and block processes based on their priorities. The RTX provides users with UserProcessPriority while keeping an internal structure of ProcessPriority.
 
-\subsection{Message Passing}
-Message passing is a way for interprocess communication provided by the RTX. Messages are created in the form of a msgbuf structure, which includes the type and content. Some processes such as the CRT and KCD will require a certain type of message to be sent before the message can be processed correctly.
-
-\begin{lstlisting}
-typedef enum {
-  MESSAGE_TYPE_KCD_KEYPRESS_EVENT       = 0,
-  MESSAGE_TYPE_KCD_COMMAND_REGISTRATION = 1,
-  MESSAGE_TYPE_CRT_DISPLAY_REQUEST      = 2,
-  MESSAGE_TYPE_WALL_CLOCK               = 3,
-  MESSAGE_TYPE_COUNT_REPORT             = 4,
-  MESSAGE_TYPE_WAKEUP_10                = 5,
-
-  MESSAGE_TYPE_NUM                      = 6,
-} MessageType;
-
-struct msgbuf {
-  MessageType mtype:
-  char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
-};
-
-\end{lstlisting}
-
-The message passing data structure is evident in the KCD, wall clock process, and all I-processes. It can also be used in all user processes.
-
-
 \chapter{Kernel API}
 % TODO add a section on implementation details and run time analysis.
 \section{Description}
-This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Details of the implementation can be found in section TODO or from the raw code.
+This section describes the kernel API that is available to users in the RTX. It will only go into details of how to use each API function call and states of different scenarios. Exact details can be found in the raw code.
 
 \section{Memory Management}
 \subsection{Description}
 % TODO fill in figure blah
-The RTX provides the utility of simple memory management of the heap. The main memory on the Keil MCB1700 is divided into sections of the RTX Image, PCB data, the heap, and process stacks seen in figure blah.
-*** TODO insert figure blah here ***
+The RTX provides the utility of simple memory management of the heap. The main memory on the Keil MCB1700 is divided into sections of the RTX Image, PCB data, the heap, and process stacks seen in Figure \ref{fig:memory}.
 
 The Keil MCB1700 does not have the necessary hardware to support virtual memory. Thus, a fixed memory management scheme is used. The OS kernel is always loaded into main memory in its entirity. When the OS boots, a user stated number of PCBs and process stack are allocated. The OS also allocates memory for system processes such as the Keyboard Command Decoder Process (KCD) and the CRT Display Process. After allocation of PCBs and process stacks, the remaining memory is used for the heap, which is shared between all processes. This section will be focused on the memory management of the heap.
 
@@ -275,7 +249,7 @@ The heap is further divided into a variable number of blocks. Each block contain
 \begin{lstlisting}
 void *request_memory_block();
 \end{lstlisting}
-\par The first functionality supported by the OS is the ability to request memory. This call gives back a pointer to a memory block in the heap. The size of the memory block is defined by the constant HEAP\_BLOCK\_SIZE, which defaults to 128 bytes. These blocks are used for storing local variables or as envelopes for interprocess communication (described in section TODO). The user must cast the memory block to the proper type for his or her own use. An example of the usage is provided below, which stores the numbers 0-31 in an array of size 32.
+\par The first functionality supported by the OS is the ability to request memory. This call gives back a pointer to a memory block in the heap. The size of the memory block is defined by the constant HEAP\_BLOCK\_SIZE, which defaults to 128 bytes. These blocks are used for storing local variables or as envelopes for interprocess communication (described in section \ref{sec:send_message}). The user must cast the memory block to the proper type for his or her own use. An example of the usage is provided below, which stores the numbers 0-31 in an array of size 32.
 \begin{lstlisting}
 void user_process() {
     int size = 32;
@@ -359,7 +333,7 @@ void user_process() {
 int send_message(int process_id, void *message_envelope);
 \end{lstlisting}
 
-\par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory\_block() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX (see section TODO for more information). The message data has a predefined size which is smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message().
+\par A process can compose a message envelope to be sent to another process. Memory for envelope message must be requested from the RTX using the request\_memory\_block() routine. The envelope consists of a type (mtype) and the message data (mtext) which must be filled in as seen below. The predefined message types are used for the KCD, CRT, and Wall Clock process, which are built into the RTX. The message data has a predefined size which is smaller than the HEAP\_BLOCK\_SIZE. Thus, any message that are longer will exhibit undefined behavior. The process ID of the receiving process must also be known ahead of time in order to use send\_message().
 \newline
 \begin{lstlisting}
 typedef enum {
@@ -377,7 +351,6 @@ struct msgbuf {
     char mtext[HEAP_BLOCK_SIZE - sizeof(MessageType)];
 };
 \end{lstlisting}
-% TODO (Justin) make sure that's okay for the mtext and type:P
 \par The primitive returns a status which validates the, message, receiver process ID, and ready queue. User processes is allowed to send a message to any user processes or system processes such as the KCD. If the receiving process is currently blocked on receiving message, this call will add the message to the process' message box and put it back on the message queue. The current process continues to execute unless the receiving process has a higher priority. In that case, the current process will be preempted and put to the back of the ready queue. Thus, this primitive may effect the execution of the process.
 
 \par In order to keep track of messages that have been sent, the messages are stored in a queue, specifically a linked list. Messages are added to the end of the linked list resulting in an O(n) insertion complexity. It is possible to have this run in O(1) time by using a doubly-linked list and keeping track of the first and last elements in the list, but it seemed more important to provide a working prototype first, and optimize the runtime when (if) it became an issue. O(n) is likely to be quite small even in the worst case, given the limited size of the RTX heap.
@@ -502,7 +475,7 @@ The interrupt process is used to keep a timer accurate to 1 millisecond. It is a
 The UART I-Process is the center of receiving keyboard input and transmitting characters for output.
 
 \subsection{Input}
-\label{uart_input}
+\label{sec:uart_input}
 The first task of the UART is to receive keyboard input. We receive one input character for each interrupt. This character is passed in the form of a message to the KCD for processing, where it will output to the CRT and be processed for any incoming commands. The input section of the UART also handles debugging hot keys. Three character hot keys: 'a', 'b', 'c', and 'd' are chosen to output the ready queue, blocked on resource queue, blocked on message queue, and timer delayed message queue respectively. These outputs use the polling output rather than the interrupt output because if memory was to run out during execution, we still want to see the output of the queues. This cannot be done with interrupts as it requires message passing, thus memory allocation.
 
 \begin{algorithmic}
@@ -525,7 +498,7 @@ The first task of the UART is to receive keyboard input. We receive one input ch
 \end{algorithmic}
 
 \subsection{Output}
-\label{uart_output}
+\label{sec:uart_output}
 The second task of the UART is to output characters onto terminal display. A message can contain up to 20 characters. However, the UART display interrupt only supports one character output per interrupt. Thus, the interrupt bit is enabled for the message and a message buffer counter is increased every time an interrupt occurs until the entire message has been outputted to the terminal character by character. Putting this together, we have the following implementation.
 
 \begin{algorithmic}
@@ -556,9 +529,9 @@ The UART's interrupt handler handles both input from the keyboard and output to 
     \bigskip
     \Function{c\_UART0\_IRQHandler}{}
         \If{input}
-            \State run code from section \ref{uart_input}
+            \State run code from section \ref{sec:uart_input}
         \ElsIf{output}
-            \State run code from section \ref{uart_output}
+            \State run code from section \ref{sec:uart_output}
         \Else
             \State error
         \EndIf
@@ -588,7 +561,7 @@ The design of the RTX requires that a process should always be executing. Thus, 
 \subsection{CRT Display Process}
 \label{sec:crt_process}
 % TODO make footnotes for details
-The RTX supports output to terminal display. CRT is a system process that the RTX uses to accomplish the task of display. The CRT process depends on the UART I-Process (details of the UART can be found in section TODO). The CRT is implemented using the following algorithm.
+The RTX supports output to terminal display. CRT is a system process that the RTX uses to accomplish the task of display. The CRT process depends on the UART I-Process (details of the UART can be found in Section \ref{sec:uart_output}). The CRT is implemented using the following algorithm.
 
 \begin{algorithmic}
   \Function{crt\_process}{}
@@ -607,7 +580,7 @@ The RTX supports output to terminal display. CRT is a system process that the RT
 
 \subsection{Keyboard Command Decoder Process}
 \label{sec:kcd_process}
-The RTX provides functionality to forward user input commands to a particular process. The keyboard command decoder process (KCD) handles two tasks: giving input to the CRT for terminal display and forwarding certain inputs to different processes for further processing. For the first task, all keyboard inputs are filtered by the KCD. The UART I-process is called when a key is first pressed. The UART I-process (explained further in section TODO) then passes a message to the KCD telling of type key press. In the first case, the KCD will take this message and pass it on to the CRT for terminal display.
+The RTX provides functionality to forward user input commands to a particular process. The keyboard command decoder process (KCD) handles two tasks: giving input to the CRT for terminal display and forwarding certain inputs to different processes for further processing. For the first task, all keyboard inputs are filtered by the KCD. The UART I-process is called when a key is first pressed. The UART I-process (explained further in section \ref{sec:uart_input}) then passes a message to the KCD telling of type key press. In the first case, the KCD will take this message and pass it on to the CRT for terminal display.
 
 In the latter case, processes can register a command with the KCD. Each command registration consists of a single capital letter of the alphabet. If a command is taken, the KCD will not register the command and exit with an error. After a valid command has been registered, user input with the pattern "\%" followed by a upper case character will be parsed by the KCD. If user types in "\%" followed by a registered character, the KCD will buffer the input until the user presses the return key. In that scenario, the KCD will pass it onto the registered process. The following algorithm of the KCD explains this in more detail.
 
@@ -768,6 +741,7 @@ The user-level test processes were designed to test the RTX. Six aspects of the 
 \end{algorithmic}
 
 \subsection{Wall Clock Process}
+\label{sec:wall_clock_process}
     The RTX provides a process that will act as a wall clock. When it is running, it will output its current time value to the CRT each second. The wall clock registers for commands with the KCD and based on commands that it is given, the wall clock can be started at time “00:00:00”, set to a user specified time or terminated.
 
   The wall clock registers the character ‘W’ with the KCD process. A reset, set or terminate command can be issued to the wall clock process. If a reset command is received, the process will begin updating the time every second starting from “00:00:00” to the console CRT. When a set command is received, the input is parsed, verified for correctness and then the wall clock begins outputting the clock every second starting from the user supplied time. A terminate command stops the console out from occurring.
