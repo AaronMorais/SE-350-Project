@@ -793,51 +793,34 @@ The user-level test processes were designed to test the RTX. Six aspects of the 
       \State is\_running = false
       \State time\_base = 0
       \State register the character ‘W’ as a command with the KCD process.
-      \State send a message of type MESSAGE\_TYPE\_WALL\_CLOCK to this process in 1000ms
+      \State send a tick message to myself in 1000ms
       \While{true}
-        \State message = RECEIVE\_MESSAGE(NULL)
-        \If{message is empty}
-          \State log error
-          \State continue while loop
-        \EndIf
-        \If{message property mtext is clock reset}
+        \State message = receive\_message(NULL)
+        \If{clock reset message}
           \State is\_running = true
-          \State time\_base = 0 - TIMER\_ELAPSED\_MS()
-          \State RELEASE\_MEMORY\_BLOCK(message)
-          \State break while loop
-        \ElsIf {message property mtext is clock set}
-          \State new\_time\_offset = wall\_clock\_parse\_time(message property mtext)
-          \If{new\_time\_offset is less than zero}
+          \State time\_base = 0 - elappsed\_ms()
+          \State release(message)
+        \ElsIf {clock set message}
+          \State new\_time\_offset = parse\_time(message)
+          \If{parse error}
             \State is\_running = false
-            \State set message property mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
-            \State send message to the CRT process
+            \State send error message to the CRT process
             \State continue while loop
           \EndIf
           \State is\_running = true
-          \State time\_base = new\_time\_offset - TIMER\_ELAPSED\_MS()
-          \State RELEASE\_MEMORY\_BLOCK(message)
-          \State break while loop
-        \ElsIf{message property mtext is clock terminate}
+          \State time\_base = new\_time\_offset - elapsed\_ms()
+          \State release(message)
+        \ElsIf{clock terminate message}
           \State is\_running = not value of is\_running
-                \State RELEASE\_MEMORY\_BLOCK(message)
-                \State break while loop
+          \State release(message)
         \Else
-          \If{message mtype is not of type wall clock}
-            \State log error
-            \State RELEASE\_MEMORY\_BLOCK(message)
-            \State continue while loop
-          \EndIf
-          \State timer\_message = REQUEST\_MEMORY\_BLOCK()
-          \State set timer\_message mtype to MESSAGE\_TYPE\_WALL\_CLOCK
-    send timer\_message to wall clock in 1000ms
+          \State timer\_message = request\_memory\_block()
+          \State send timer\_message as tick message to myself 	in 1000ms
           \If{if is\_running}
-            \State set message mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
-            \State set message mtext to value from function wall\_clock\_print\_time given (TIMER\_ELAPSED\_MS() + time\_base)
-            \State send message to the CRT process
+            \State send current time to CRT for printing
           \Else
-            \State RELEASE\_MEMORY\_BLOCK(message)
+            \State release(message)
           \EndIf
-          \State break while loop
         \EndIf
       \EndWhile
     \EndFunction
