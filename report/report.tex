@@ -166,7 +166,7 @@ The HeapBlock structure stores a header and the content of the block. When a mem
 The RTX has a fixed-priority based scheduler that acts as a uniprocessor system. Context switching is required and the following data structures are used for this purpose.
 
 \subsection{Ready and Blocked Priority Queues}
-On initialization, each in memory process is given a process control block (PCB). The PCB contains data on the process such as its process ID, stack pointer, process state, and priority that the kernel will use for scheduling. The blocked and ready priority queues of PCBs keep track of which processes are blocked and ready for execution. Each process is in one of the 5 states at all time listed in ProcessState. More details about the states can be found in section TODO. Processes that are in state PROCES\_STATE\_READY are on the ready queue. Processes in state PROCESS\_STATE\_BLOCKED are in the blocked queue. There is also an implicit queue for processes blocked on message but we won't go into that in this section.
+On initialization, each in memory process is given a process control block (PCB). The PCB contains data on the process such as its process ID, stack pointer, process state, and priority that the kernel will use for scheduling. The blocked and ready priority queues of PCBs keep track of which processes are blocked and ready for execution. Each process is in one of the 5 states at all time listed in ProcessState. Processes that are in state PROCES\_STATE\_READY are on the ready queue. Processes in state PROCESS\_STATE\_BLOCKED are in the blocked queue. There is also a sort of implicit queue for processes blocked on message but we won't go into that in this section.
 
 \begin{lstlisting}
 typedef enum {
