@@ -478,6 +478,7 @@ At initialization of the OS, we initialize prescale registered to have a value o
         \State Enable other interrupts
         \State Put state back and go back to original execution
     \EndFunction
+    \bigskip
     \Function{c\_TIMER0\_IRQHandler}{}
         \State Reset interrupt bit
         \State Increase static timer count
@@ -495,6 +496,7 @@ The interrupt process is used to keep a timer accurate to 1 millisecond. It is a
 The UART I-Process is the center of receiving keyboard input and transmitting characters for output.
 
 \subsection{Input}
+\label{uart_input}
 The first task of the UART is to receive keyboard input. We receive one input character for each interrupt. This character is passed in the form of a message to the KCD for processing, where it will output to the CRT and be processed for any incoming commands. The input section of the UART also handles debugging hot keys. Three character hot keys: 'a', 'b', 'c', and 'd' are chosen to output the ready queue, blocked on resource queue, blocked on message queue, and timer delayed message queue respectively. These outputs use the polling output rather than the interrupt output because if memory was to run out during execution, we still want to see the output of the queues. This cannot be done with interrupts as it requires message passing, thus memory allocation.
 
 \begin{algorithmic}
@@ -513,11 +515,11 @@ The first task of the UART is to receive keyboard input. We receive one input ch
         \State message.Type = MESSAGE\_TYPE\_KCD\_KEYPRESS\_EVENT
         \State message.Data = char\_in
         \State \Call{send\_message}{message}
-
     \EndIf
 \end{algorithmic}
 
 \subsection{Output}
+\label{uart_output}
 The second task of the UART is to output characters onto terminal display. A message can contain up to 20 characters. However, the UART display interrupt only supports one character output per interrupt. Thus, the interrupt bit is enabled for the message and a message buffer counter is increased every time an interrupt occurs until the entire message has been outputted to the terminal character by character. Putting this together, we have the following implementation.
 
 \begin{algorithmic}
@@ -530,9 +532,34 @@ The second task of the UART is to output characters onto terminal display. A mes
             \State give char\_out to register for output
             \State count++
         \EndIf
-
     \EndIf
 \end{algorithmic}
+
+
+\subsection{Putting it together}
+The UART's interrupt handler handles both input from the keyboard and output to terminal screen. Thus, the overall handler has this implementation:
+
+\begin{algorithmic}
+    \Function{UART0\_IRQHandler}{}
+        \State Disable other interrupts
+        \State Save state
+        \State \Call{c\_UART0\_IRQHandler}{}
+        \State Enable other interrupts
+        \State Put state back and go back to original execution
+    \EndFunction
+    \bigskip
+    \Function{c\_UART0\_IRQHandler}{}
+        \If{input}
+            \State run code from section \ref{uart_input}
+        \ElsIf{output}
+            \State run code from section \ref{uart_output}
+        \Else
+            \State error
+        \EndIf
+    \EndFunction
+\end{algorithmic}
+
+Similar to the timer I-process, the UART I-process will preempt the current process if another process with higher priority receives its message after being blocked on receive. The UART I-process also does not support nested interrupts. Other interrupts are disabled during this routine and will occur only after this handler has finished its execution.
 
 % TODO Make sure to include pseudo-code and testing, if appropriate.
 
