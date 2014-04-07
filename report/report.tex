@@ -11,7 +11,7 @@
     graphicx
 }
 
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.8in]{geometry}
 
 \definecolor{light-gray}{rgb}{0.9, 0.9, 0.9}
 \definecolor{mygreen}{rgb}{0,0.6,0}
@@ -151,10 +151,10 @@ typedef struct HeapBlock {
 The HeapBlock structure stores a header and the content of the block. When a memory is requested, users are given the data with a adjustable size of HEAP\_BLOCK\_SIZE and do not have knowledge of the header. Helper functions in the RTX turn the user block back into kernel block by adjusting the pointer of the block. Each header contains information used for message passing. This global data structure is used in the following sections:
 \begin{enumerate}
     \item {\bf Process Message Passing} - Uses this data structure to pass messages between processes. Message envelopes are implemented as HeapBlocks.
-    \item {\bf Timer I-Process} - The process uses message passing to send delayed messages.
-    \item {\bf UART I-Process} - The process uses message passing to process input and output characters.
-    \item {\bf CRT I-Process} - The process receives messages and passes message for terminal output.
-    \item {\bf KCD Process} - The KCD uses message passing to CRT for display and user processes for processing.
+    \item {\bf Timer I-Process} - Uses message passing to send delayed messages.
+    \item {\bf UART I-Process} - Uses message passing for input and output characters.
+    \item {\bf CRT I-Process} - Receives messages and passes message for terminal output.
+    \item {\bf KCD Process} - Passes messages to CRT and user processes for display and processing.
 \end{enumerate}
 
 
@@ -852,10 +852,10 @@ typedef struct {
 } PROC_INIT;
 \end{lstlisting}
         \begin{enumerate}
-            \item { \bf Process ID (pid) }- Each process can be assigned a particular process ID as long as two processes does not have the same ID.
-            \item { \bf Process Priority (priority) }- Each process can be assigned a priority from lowest to high.
+            \item { \bf Process ID (pid) }- Each process is assigned a particular process ID as long as two processes does not have the same ID.
+            \item { \bf Process Priority (priority) }- Each process is assigned a priority from lowest to high.
             \item { \bf Process Stack Size (stack\_size) }- Each process is assigned a default value of 512 bytes for the stack size. This value can be varied if a user process wants more stack and this number is known at the beginning
-            \item { \bf Process Entry Point (entry\_point) }- This is the place in memory where the initial instructions are.
+            \item { \bf Process Entry Point (entry\_point) }- Location of initial instructions.
         \end{enumerate}
 \end{enumerate}
 
@@ -869,9 +869,9 @@ After setting up the initial parameters, the OS takes several steps to boot.
         \begin{enumerate}
             \item Initialize the start pointer to the end of the RTX image with padding
             \item Initialize the end pointer to the end of RAM
-            \item Allocate a PCB block for each process totaling to n PCB blocks starting at the start pointer
-            \item Allocate a stack block for each process given the stack size starting at the end pointer
-            \item Separate the remaining memory in between the PCB and process stacks into heap blocks.
+            \item Allocate PCB block for each process totaling to n PCB blocks
+            \item Allocate stack block for each process given the stack size
+            \item Separate remaining memory between the PCB and process stacks into heap blocks.
         \end{enumerate}
     \item Initialize registers for timer interrupts
     \item Hand the processor over to the first process and start the initial execution.
