@@ -649,25 +649,185 @@ In the latter case, processes can register a command with the KCD. Each command 
 
 An example of this usage is the wall clock process (described in more detail in section \ref{sec:wall_clock_process}). The wall clock process registers the character 'W' as a command. The registration will be done by passing a message to the KCD of command registration type. This message is received by the KCD. If the 'W' command has not been registered, it becomes registered by the wall clock process. Meanwhile, the user types in random characters. Any character that is not '\%' is passed by the KCD to the CRT for display. Once a '\%' is received, the KCD checks the next character to see if it's a registered command. If its not a registered command, the KCD clears the buffer and starts at the beginning. If it is a registered command, the KCD keeps a buffer of all the input characters. This buffer fills with data and is sent to the wall clock process for processing after the user presses enter. The buffer is only 20 characters long. Thus, any data for a process after 20 characters will not be sent to the registered process on enter.
 
-
-
 \section{User Processes}
 \label{sec:user_processes}
 
+\subsection{Description}
+The RTX contains user processes that operate at an unprivileged level. These processes are designed to demonstrate the overall functionality of the system. Tasks are carried out within these processes by making calls to the RTX APIs, taking advantage of the kernel abstraction to accomplish more user specific goals. User processes include the test processes, wall clock process, set priority command process and stress test processes.
+
+
+\subsection{User-Level Test Processes}
+The user-level test processes were designed to test the RTX. Six aspects of the RTX’s functionality was chosen to be tested through the RTX API. Without using any knowledge of the kernels design or data structures, the following functionality was tested within 6 processes:
+\newline
+\noindent{{\bf Test Process 1 - }Request Memory and Release Memory}
+
+\noindent The first test process tests the functionality of requesting and releasing memory blocks. A number of memory blocks are requested and stored sequentially, and then immediately released. The process is implemented using the following algorithm.
+\begin{algorithmic}
+\Function{TEST\_PROCESS\_1}{}
+  \State number\_of\_memory\_blocks = 30
+    \For{i = 0 to number\_of\_memory\_blocks}
+    \State memory\_blocks[i] = REQUEST\_MEMORY\_BLOCK()
+  \EndFor
+  \State mark the request memory test as passed
+  \For{i = 0 to number\_of\_memory\_blocks}
+    \State RELEASE\_MEMORY\_BLOCK(memory\_blocks[i])
+  \EndFor
+  \State mark the release memory test as passed
+  \State set the priority of process 1 to lowest
+  \State set the priority of process 2 to high
+  \While{true}
+    \State increment static iteration counter
+  \EndWhile
+\EndFunction
+\end{algorithmic}
+
+\noindent {\bf Test Process 2 - }Set priority
+
+\noindent The second test process tests the functionality of setting the priority of processes. In addition, the process preemption that can occur due to changing priorities is also tested. During this test, process 3 and 4 are given higher priority than process 2. Once this occurs, process 2 is preempted and is not scheduled to run again. Details of this process are shown in the following algorithm.
+\begin{algorithmic}
+\Function{TEST\_PROCESS\_2}{}
+  \State mark the set priority test as passed
+  \State set the priority of process 3 to high
+  \State set the priority of process 4 to medium
+  \State set the priority of process 2 to lowest
+
+  \State mark the set priority test as failed
+  \While{true}
+  \EndWhile
+\EndFunction
+\end{algorithmic}
+
+\newline\noindent {\bf Test Process 3 and 4 - }Send and receive message
+
+\noindent Process 3 and 4 test the send and receive message functionality by sending messages between each other. Process 3 waits to receive messages from process 4. Once process 3 has received a set number of messages and process 4 has sent the same required number, the test will be marked as successful. The next test will be conducted by increasing the priority of process 5 and decreasing the priorities of process 3 and 4 to trigger preemption. The details of these two test processes can be seen below.
+\begin{algorithmic}
+\Function{TEST\_PROCESS\_3}{}
+  \State received\_messages = 0
+  \State required\_messages = 50
+  \While{true}
+    \State mark received message test as failed
+    \State message = RECEIVE\_MESSAGE(NULL)
+    \State received\_messages = received\_message + 1
+    \State RELEASE\_MEMORY\_BLOCK(message)
+    \If{received\_messages is equal to required\_messages}
+      \State mark the receive message test as passed
+          \State set the priority of process 5 to high
+          \State set the priority of process 4 to lowest
+          \State set the priority of process 3 to lowest
+    \EndIf
+  \EndWhile
+\EndFunction
+
+\Function{TEST\_PROCESS\_4}{}
+  \State sent\_messages = 0
+  \State required\_messages = 50
+  \State test\_phrase = "The quick brown fox jumped over the lazy dog”
+  \While{true}
+    \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
+    \State set the value of mtype property for message\_envelope to 10
+    \State set the value of mtext property for message\_envelope to test\_phrase
+    \State sent\_messages = sent\_message + 1
+    \If{sent\_messages is equal to required\_messages}
+      \State mark the send message test as passed
+    \Else
+      \State send message\_envelope to process 3
+    \EndIf
+  \EndWhile
+\EndFunction
+\end{algorithmic}
+
+\newline\noindent {\bf Test Process 5 - } Delayed send
+
+\noindent Process 5 tests the delayed send functionality of the RTX. To begin this test, the process sends a message to itself. Immediately afterward a receive message api call is made, blocking the process. Process 1 is at medium priority and runs during the 1000 ms duration that process 5 is blocked. By incrementing a static pointer in a while loop within process 1, verifying that the counter is greater than 0 confirms that the message sent successfully and in a delayed manner as desired.  The delayed send process algorithm can be seen below.
+
+\begin{algorithmic}
+\Function{TEST\_PROCESS\_5}{}
+  \State set\_process\_priority(1, USER\_PROCESS\_PRIORITY\_MEDIUM)
+
+  \State message\_envelope = REQUEST\_MEMORY\_BLOCK()
+  \State send message\_envelope to process 5 in 1000 ms
+  \State message = RECEIVE\_MESSAGE(NULL)
+
+  \If{static iteration counter is greater than 0}
+    \State mark the delayed send test as passed
+  \EndIf
+  \State RELEASE\_MEMORY\_BLOCK(message)
+
+  \State set the priority of process 1 to lowest
+  \State set the priority of process 5 to lowest
+  \State set the priority of process 6 to high
+  \While{true}
+  \EndWhile
+\EndFunction
+\end{algorithmic}
+
 \subsection{Wall Clock Process}
-\label{sec:wall_clock_process}
+    The RTX provides a process that will act as a wall clock. When it is running, it will output its current time value to the CRT each second. The wall clock registers for commands with the KCD and based on commands that it is given, the wall clock can be started at time “00:00:00”, set to a user specified time or terminated.
 
-\subsection{`funProcess'}
+  The wall clock registers the character ‘W’ with the KCD process. A reset, set or terminate command can be issued to the wall clock process. If a reset command is received, the process will begin updating the time every second starting from “00:00:00” to the console CRT. When a set command is received, the input is parsed, verified for correctness and then the wall clock begins outputting the clock every second starting from the user supplied time. A terminate command stops the console out from occurring.
 
-\subsection{`schizophrenicProcess'}
+  In order for the wall clock to output to the console each second, it sends a message to itself with a one second delay. If a message of this nature is received by the process, it will compute the current time offset based on the time elapsed value from the timer interrupt handler. With this time offset, it will print the current time.
 
-\subsection{`fibProcess'}
+\begin{algorithmic}
+\Function{wall\_clock\_process}{}
+  \State is\_running = false
+  \State time\_base = 0
+  \State register the character ‘W’ as a command with the KCD process.
+  \State send a message of type MESSAGE\_TYPE\_WALL\_CLOCK to this process in 1000ms
+  \While{true}
+    \State message = RECEIVE\_MESSAGE(NULL)
+    \If{message is empty}
+      \State log error
+      \State continue while loop
+    \EndIf
+    \If{message property mtext is clock reset}
+      \State is\_running = true
+      \State time\_base = 0 - TIMER\_ELAPSED\_MS()
+      \State RELEASE\_MEMORY\_BLOCK(message)
+      \State break while loop
+    \ElseIf {message property mtext is clock set}
+      \State new\_time\_offset = wall\_clock\_parse\_time(message property mtext)
+      \If{new\_time\_offset is less than zero}
+        \State is\_running = false
+        \State set message property mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
+        \State send message to the CRT process
+        \State continue while loop
+      \EndIf
+      \State is\_running = true
+      \State time\_base = new\_time\_offset - TIMER\_ELAPSED\_MS()
+      \State RELEASE\_MEMORY\_BLOCK(message)
+      \State break while loop
+    \ElseIf{message property mtext is clock terminate}
+      \State is\_running = not value of is\_running
+            \State RELEASE\_MEMORY\_BLOCK(message)
+            \State break while loop
+    \Else
+      \If{message mtype is not of type wall clock}
+        \State log error
+        \State RELEASE\_MEMORY\_BLOCK(message)
+        \State continue while loop
+      \EndIf
+      \State timer\_message = REQUEST\_MEMORY\_BLOCK()
+      \State set timer\_message mtype to MESSAGE\_TYPE\_WALL\_CLOCK
+send timer\_message to wall clock in 1000ms
+      \If{if is\_running}
+        \State set message mtype to MESSAGE\_TYPE\_CRT\_DISPLAY\_REQUEST
+        \State set message mtext to value from function wall\_clock\_print\_time given (TIMER\_ELAPSED\_MS() + time\_base)
+        \State send message to the CRT process
+      \Else
+        \State RELEASE\_MEMORY\_BLOCK(message)
+      \EndIf
+      \State break while loop
+    \EndIf
+  \EndWhile
+\EndFunction
+\end{algorithmic}
 
-\subsection{`memoryMuncherProcess'}
+\subsection{Set Priority Command Process}
+  The RTX provides users with the ability to set the priority of other user processes via KCD commands. The set priority command process registers the character ‘C’ as a command with the KCD. The expected input command input looks like “\%C process\_id new\_priority”. The user can specify the process id of any user process and apply a new priority within the accepted range for user processes. The process functions by waiting to receive commands from the KCD, parsing a received command and taking action on the command inputed. Taking action involves using the set\_process\_priority function from the RTX api and the priority change occurs immediately, potentially causing preemption to occur.
 
-\subsection{`releaseProcess'}
-
-
+\subsection{Stress Test Processes}
+The RTX contains three stress test processes designed to work with each other to verify the behavior of the system. By depleting the available memory blocks of the system, the stress tests processes A, B and C test the robustness of the system by verifying correctness of behavior under heavy load. This heavy load on the system would generally never be tested with regular user processes. When the memory blocks are depleted, certain functionality of the system such as hot key debugging services within the uart must be made available. Additionally, as the memory stress is decreased, the memory blocks must be distributed appropriately to the highest priority process. Through stress testing our system, we were able to determine areas of weakness and make our RTX more robust.
 
 \chapter{Initialization}
 
@@ -818,7 +978,16 @@ pointers the same, avoiding any possibility of translation errors. But alas,
 this solution didn't even occur to me (nor anyone in our group) at the time.
 \section{Scheduler}
 
-\section{What We Learned}
+\section{Lessons Learned}
+  Over the course of this RTX project, we faced many obstacles. As we overcame each obstacle, we were able to identify the mistakes we had made and learn from them. The lessons learned from our mistakes allowed us to work more and more effectively, avoiding previous pitfalls that cost us a fair amount of development time.
+
+
+The successful implementation of the RTX project can be mainly attributed to the fact that the development process of the project was well defined early on. We were highly organized from the outset, defining coding conventions for the project, enforcing code reviews for code that wasn’t pair programmed and creating a private github repository. This repository provided us with a distributed version control system so that group members could contribute code from their own machines. Additionally, we were able to use the issue tracking and code review functionality available within github to keep our project organized.
+
+There were some mistakes that we ran into often when working on this project. When variables are not initialized, this mistake is difficult to find. Using the simulator within the Keil IDE does not reveal this issue because the simulator sets all variables to empty values on creation. However, when testing on the board, values would instantiated with garbage value causing issues. Conducting development of the RTX while testing on the board and being more cautious avoided mistakes such as this.
+
+Overall, the project was successful and we were happy.
+%*****aaronWIP
 
 \part{Testing and Analysis}
 
