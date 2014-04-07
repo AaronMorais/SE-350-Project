@@ -276,18 +276,18 @@ void user_process() {
 
     int* array = (int*)request_memory_block();
 
-    for( int i = 0; i < size; i++ ) {
+    for (int i = 0; i < size; i++) {
         array[i] = i;
     }
 
     // ...
 
-    release_memory_block( (void*)array );
+    release_memory_block((void*)array);
 }
 \end{lstlisting}
 % TODO maybe put a caption here CODE1
 
-\par All processes will share the same heap memory pool. Thus, this primitive will block the process if the OS does not have anymore memory blocks to give out at the time, thus effecting the execution of the process. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check for segmentation faulting. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
+\par All processes will share the same heap memory pool. Thus, this primitive will block the process if there are no remaining free memory blocks. In that case, it will only be unblocked there is a new memory block available and if it has the highest priority on the list of processes waiting for a memory block. When using the memory block, the user must be aware of writing past the heap block size. The OS does not check this in any way. Thus, undefined behavior may occur. Also, the user must remember to release the memory block or memory leakage will occur.
 
 \par Requesting memory is reliant on calls to the heap to find an available memory block to allocate. The heap keeps a list of the status of each memory block to determine whether or not a block of memory can be requested. The following is the implementation used by the heap:
 \begin{algorithmic}
@@ -303,6 +303,12 @@ void user_process() {
 
 The lookup time of the FreeSpaceBitmap is O(1) as it is a simple array lookup and a boolean evaluation. Finding a free block has its dependencies on the total number of blocks. The best case for requesting memory is O(1) when the first block in the heap is free. Since this is a linear search, on average the complexity is O(n) where n is the total number of blocks.
 
+Although this is worse in theta complexity than a simple free-list implementation,
+it was chosen because it allows almost all memory errors to be caught immediately,
+significantly easing debugging. We verify heap block alignment, check for double-
+frees, and verify that the pointer lies within the heap, each of which has helped
+us find bugs that would otherwise be invisible while developing the RTX.
+
 \bigskip
 
 \subsection{Releasing Memory}
@@ -310,7 +316,7 @@ The lookup time of the FreeSpaceBitmap is O(1) as it is a simple array lookup an
 int release_memory_block(void *memory_block);
 \end{lstlisting}
 
-\par The second functionality supported by the OS is the ability to release memory. This is a non-blocking call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
+\par The second functionality supported by the OS is the ability to release memory. This is a non-blocking (but potentially pre-empting) call that returns the memory block back to the OS. This should be called when a message is received and not passed on or when the process is done using the memory block. If any process is blocked on memory, it will be unblocked and put to the ready queue. If the current process has lower priority than the unblocked process, then the current process will be preempted and the higher priority process will be executed instead. An example of this can be seen in figure CODE1 TODO on line 13.
 
 \par In order to release the memory, release\_memory\_block will need to rely on the implementation of the heap. As stated in \ref{sec:request_memory}, the heap keeps a list of all available memory blocks. In order to release a memory block, the heap will set that block in the list as a free block. Releasing the block thus has O(1) complexity as it only relies on an array lookup. The implementation is as follows:
 \begin{algorithmic}
