@@ -202,7 +202,7 @@ PCBs and the priority queues are used in the following sections:
 \end{enumerate}
 
 \subsection{Priorities}
-The RTX is based on a fixed-priority scheduler with 5 user process priorities and 2 system process priorities given below. Users are given priorities PROCESS\_PRIORITY\_HIGH to PROCESS\_PRIORITY\_LOWEST. PROCESS\_PRIORITY\_NULL\_PROCESS is given to the null process and PROCESS\_PRIORITY\_SYSTEM\_PROCESS are given to critical processes such as the KCD, CRT, timer I-process, and UART I-process.
+The RTX is based on a fixed-priority scheduler with 4 user process priorities and 3 system process priorities given below. Users are given priorities PROCESS\_PRIORITY\_HIGH to PROCESS\_PRIORITY\_LOWEST. PROCESS\_PRIORITY\_NULL\_PROCESS is given to the null process and PROCESS\_PRIORITY\_SYSTEM\_PROCESS are given to critical processes such as the KCD and CRT. Finally, psuedo-processes, such as the timer I-process and UART I-process are given PROCESS\_PRIORITY\_UNSCHEDULABLE, since they "schedule" themselves whenever an interrupt happens, and should never be run by the normal scheduler (in fact, they don't even have stacks!).
 
 \begin{lstlisting}
 typedef enum {
@@ -228,7 +228,7 @@ typedef enum {
 } UserProcessPriority;
 \end{lstlisting}
 
-This priority structure is used by the process management unit to schedule and block processes based on their priorities. The RTX provides users with UserProcessPriority while keeping an internal structure of ProcessPriority.
+This priority structure is used by the process management subsystem to schedule and block processes based on their priorities. The RTX provides users with UserProcessPriority while keeping an internal structure of ProcessPriority with additional levels.
 
 \chapter{Kernel API}
 % TODO add a section on implementation details and run time analysis.
