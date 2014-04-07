@@ -91,20 +91,14 @@
 \maketitle
 
 \begin{abstract}
-    % Using the Keil Development Environment (Keil IDE) and LPC1768 boards using
-    % the ARM instruction set, an operating system was implemented with basic
-    % functionality throughout this project. The operating system offers a stable
-    % and succinct API, and also tries to ensure high-performance.
-    % It offers a message-passing interface between processes, and allows
-    % processes to release the processor to share CPU time. Additionally, we
-    % implemented memory management of the on-board memory, allowing processes to
-    % dynamically acquire and release memory during our operating-system's
-    % runtime.
-    % I/O between keyboard input and display output on a UART connection was also
-    % implemented, which allows users to interact with processes on the system in
-    % near real-time. Overall, this operating system offers a minimal but fast
-    % API, and is easily extendible with features necessary to implement a larger
-    % and more feature-complete operating system with minimal overhead.
+    The AwesomeOS, an real time executable built with Keil Development Environment (Keil IDE) on top of a Keil MCB1700 board with a LPC1768 microcontroller, is implemented as an operating system with basic functionalities and interaction through terminal input / output.
+
+    The operating system offers basic multiprogramming with an API for interprocess communication through many to one message passing with process mailboxes. In addition, it offers the ability for memory management of the heap in the RAM of the board. This lets processes allocate and destroy memory during run time.
+
+    The AwesomeOS also offers services in the form of system processes, which talks to interrupt processes for lower level communication. The first service is a timing service, which lets processes communicate with each other after a delayed period of time. The next service this operating system offers is the ability to interact with users and programmers through keyboard inputs and terminal display outputs. Finally, user processes are able to change and select priorities which determine the order of execution.
+
+    The AwesomeOS tries to offer a fast way to service user processes and finish tasks. It implements a system based scheme which allows other services to be added easily. It also modularizes each section to allow clean maintenance and future extensibility.
+
 \end{abstract}
 
 \tableofcontents
